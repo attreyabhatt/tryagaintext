@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../services/api_client.dart';
@@ -11,7 +12,8 @@ class ConversationsScreen extends StatefulWidget {
   State<ConversationsScreen> createState() => _ConversationsScreenState();
 }
 
-class _ConversationsScreenState extends State<ConversationsScreen> {
+class _ConversationsScreenState extends State<ConversationsScreen>
+    with SingleTickerProviderStateMixin {
   String _situation = 'stuck_after_reply';
   final _conversationCtrl = TextEditingController();
   final _herInfoCtrl = TextEditingController();
@@ -20,13 +22,27 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
   bool _isExtractingImage = false;
   String? _errorMessage;
   final ImagePicker _picker = ImagePicker();
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
 
   // Initialize API client
   final _apiClient = ApiClient('https://tryagaintext.com');
 
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+  }
+
   Future<void> _generateSuggestions() async {
     if (_situation != 'just_matched' && _conversationCtrl.text.trim().isEmpty) {
-      _showError('Please paste the conversation first');
+      _showError('Please add your conversation first');
       return;
     }
 
@@ -49,23 +65,23 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
         _suggestions = suggestions;
         _isLoading = false;
       });
+
+      if (suggestions.isNotEmpty) {
+        _animationController.forward();
+      }
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Failed to generate suggestions: ${e.toString()}';
+        _errorMessage = 'Oops! Something went wrong. Please try again.';
       });
     }
   }
 
   Future<void> _uploadScreenshot() async {
     try {
-      // Show bottom sheet with options
-      final ImageSource? source = await _showImageSourceSheet();
-      if (source == null) return;
-
       final XFile? image = await _picker.pickImage(
-        source: source,
-        imageQuality: 85, // Compress slightly for faster upload
+        source: ImageSource.gallery,
+        imageQuality: 85,
       );
 
       if (image == null) return;
@@ -75,299 +91,768 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
         _errorMessage = null;
       });
 
-      // Extract conversation from image using API
       final extractedConversation = await _apiClient.extractFromImage(
         File(image.path),
       );
 
-      // Update the conversation text field
       setState(() {
         _conversationCtrl.text = extractedConversation;
         _isExtractingImage = false;
-        _suggestions = []; // Clear previous suggestions
+        _suggestions = [];
       });
 
+      _animationController.reset();
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Conversation extracted successfully!'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Screenshot processed successfully!'),
+            ],
+          ),
+          backgroundColor: Colors.green[600],
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
     } catch (e) {
       setState(() {
         _isExtractingImage = false;
-        _errorMessage = 'Failed to extract conversation: ${e.toString()}';
+        _errorMessage =
+            'Could not process screenshot. Please try again or paste text manually.';
       });
     }
   }
 
-  Future<ImageSource?> _showImageSourceSheet() async {
-    return await showModalBottomSheet<ImageSource>(
-      context: context,
-      builder: (BuildContext context) {
-        return SafeArea(
-          child: Wrap(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_camera),
-                title: const Text('Camera'),
-                onTap: () => Navigator.of(context).pop(ImageSource.camera),
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('Gallery'),
-                onTap: () => Navigator.of(context).pop(ImageSource.gallery),
-              ),
-              ListTile(
-                leading: const Icon(Icons.cancel),
-                title: const Text('Cancel'),
-                onTap: () => Navigator.of(context).pop(),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   void _showError(String message) {
     setState(() => _errorMessage = message);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void _copySuggestion(String message) {
-    // You can add clipboard functionality here if needed
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Suggestion copied!')));
+  Future<void> _copySuggestion(String message) async {
+    await Clipboard.setData(ClipboardData(text: message));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.copy, color: Colors.white, size: 20),
+            SizedBox(width: 8),
+            Text('Copied to clipboard!'),
+          ],
+        ),
+        backgroundColor: Theme.of(context).primaryColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('TryAgainText'),
-        actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.settings)),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: (_isLoading || _isExtractingImage)
-            ? null
-            : _generateSuggestions,
-        label: Text(
-          _isLoading
-              ? 'Generating...'
-              : _isExtractingImage
-              ? 'Extracting...'
-              : 'Generate Reply',
-        ),
-        icon: (_isLoading || _isExtractingImage)
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Icon(Icons.whatshot),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(value: 'just_matched', label: Text('Just matched')),
-              ButtonSegment(
-                value: 'stuck_after_reply',
-                label: Text('Help with message'),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: theme.primaryColor,
+                borderRadius: BorderRadius.circular(12),
               ),
-              ButtonSegment(value: 'left_on_read', label: Text('Left on read')),
-            ],
-            selected: {_situation},
-            onSelectionChanged: (s) => setState(() {
-              _situation = s.first;
-              _suggestions = []; // Clear suggestions when switching modes
-              _errorMessage = null;
-            }),
-          ),
-          const SizedBox(height: 20.0),
-
-          if (_situation == 'just_matched') ...[
-            const SizedBox(height: 20.0),
-            TextField(
-              controller: _herInfoCtrl,
-              minLines: 2,
-              maxLines: 5,
-              decoration: const InputDecoration(
-                hintText: 'Has a cat. Loves poems.',
-                labelText: "Her info (bio/hobbies/vibe) - Optional",
-                border: OutlineInputBorder(),
-              ),
+              child: const Icon(Icons.favorite, color: Colors.white, size: 20),
             ),
-            const SizedBox(height: 20.0),
-          ],
-
-          if (_situation != 'just_matched') ...[
-            Row(
+            const SizedBox(width: 12),
+            const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Paste chat or '),
-                TextButton.icon(
-                  onPressed: _isExtractingImage ? null : _uploadScreenshot,
-                  icon: _isExtractingImage
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.image),
-                  label: Text(
-                    _isExtractingImage ? 'Extracting...' : 'Select screenshot',
+                Text(
+                  'FlirtFix',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                Text(
+                  'Your dating conversation wingman',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.normal,
                   ),
                 ),
               ],
             ),
-            TextField(
-              controller: _conversationCtrl,
-              minLines: 5,
-              maxLines: 12,
-              decoration: InputDecoration(
-                hintText: _situation == 'stuck_after_reply'
-                    ? "you: How was your day?\nher: It was great"
-                    : "you: hey, free thursday?\nher: (seen, no reply)",
-                border: const OutlineInputBorder(),
-                suffixIcon: _conversationCtrl.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          setState(() {
-                            _conversationCtrl.clear();
-                            _suggestions = [];
-                          });
-                        },
-                        tooltip: 'Clear conversation',
-                      )
-                    : null,
-              ),
-            ),
-            const SizedBox(height: 20.0),
           ],
-
-          const Text(
-            'Suggestions',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        ),
+        actions: [
+          IconButton(
+            onPressed: () {},
+            icon: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.settings, color: Colors.grey),
+            ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Situation Selector
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 20,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: SegmentedButton<String>(
+                  style: SegmentedButton.styleFrom(
+                    selectedBackgroundColor: theme.primaryColor,
+                    selectedForegroundColor: Colors.white,
+                    backgroundColor: Colors.transparent,
+                    side: BorderSide.none,
+                  ),
+                  segments: const [
+                    ButtonSegment(
+                      value: 'just_matched',
+                      label: Text(
+                        'New Match',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      icon: Icon(Icons.favorite_border, size: 18),
+                    ),
+                    ButtonSegment(
+                      value: 'stuck_after_reply',
+                      label: Text(
+                        'Need Reply',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      icon: Icon(Icons.chat_bubble_outline, size: 18),
+                    ),
+                    ButtonSegment(
+                      value: 'left_on_read',
+                      label: Text(
+                        'Left on Read',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      icon: Icon(Icons.visibility_off, size: 18),
+                    ),
+                  ],
+                  selected: {_situation},
+                  onSelectionChanged: (s) => setState(() {
+                    _situation = s.first;
+                    _suggestions = [];
+                    _errorMessage = null;
+                    _animationController.reset();
+                  }),
+                ),
+              ),
 
-          if (_errorMessage != null) ...[
-            Card(
-              color: Theme.of(context).colorScheme.errorContainer,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  _errorMessage!,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onErrorContainer,
+              const SizedBox(height: 32),
+
+              // Input Section
+              if (_situation == 'just_matched') ...[
+                _buildSectionTitle('Tell us about them', '💕'),
+                const SizedBox(height: 16),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 15,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: TextField(
+                    controller: _herInfoCtrl,
+                    minLines: 3,
+                    maxLines: 5,
+                    style: const TextStyle(fontSize: 16),
+                    decoration: InputDecoration(
+                      hintText: 'Loves hiking, has 2 dogs, studies medicine...',
+                      hintStyle: TextStyle(color: Colors.grey[400]),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.all(20),
+                      prefixIcon: Container(
+                        margin: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: theme.primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.person, color: theme.primaryColor),
+                      ),
+                    ),
+                  ),
+                ),
+              ] else ...[
+                _buildSectionTitle('Your conversation', '💬'),
+                const SizedBox(height: 16),
+
+                // Upload or paste options
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey[200]!, width: 1),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: _isExtractingImage ? null : _uploadScreenshot,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 16,
+                              horizontal: 20,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _isExtractingImage
+                                  ? Colors.grey[100]
+                                  : theme.primaryColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: _isExtractingImage
+                                    ? Colors.grey[300]!
+                                    : theme.primaryColor.withOpacity(0.3),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (_isExtractingImage) ...[
+                                  SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: theme.primaryColor,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Text(
+                                    'Processing...',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ] else ...[
+                                  Icon(
+                                    Icons.photo_library,
+                                    color: theme.primaryColor,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Upload Screenshot',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: theme.primaryColor,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          'OR',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 15,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: TextField(
+                    controller: _conversationCtrl,
+                    minLines: 6,
+                    maxLines: 10,
+                    style: const TextStyle(fontSize: 16),
+                    decoration: InputDecoration(
+                      hintText: _situation == 'stuck_after_reply'
+                          ? "You: How was your weekend?\nThem: Pretty good, went hiking!\nYou: That sounds amazing! Where did you go?"
+                          : "You: Want to grab coffee this Thursday?\nThem: (seen 2 hours ago)",
+                      hintStyle: TextStyle(color: Colors.grey[400]),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.all(20),
+                      suffixIcon: _conversationCtrl.text.isNotEmpty
+                          ? IconButton(
+                              icon: Icon(Icons.clear, color: Colors.grey[400]),
+                              onPressed: () {
+                                setState(() {
+                                  _conversationCtrl.clear();
+                                  _suggestions = [];
+                                  _animationController.reset();
+                                });
+                              },
+                            )
+                          : null,
+                    ),
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 32),
+
+              // Generate Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: (_isLoading || _isExtractingImage)
+                      ? null
+                      : _generateSuggestions,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: theme.colorScheme.onSurface
+                        .withOpacity(0.12),
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                    shadowColor: Colors.transparent,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (_isLoading) ...[
+                        const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Crafting replies...',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ] else ...[
+                        const Icon(Icons.auto_awesome, size: 22),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Get Smart Replies',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 8),
-          ],
 
-          if (_isLoading) ...[
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(32),
-                child: Column(
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Generating suggestions...'),
-                  ],
-                ),
-              ),
-            ),
-          ] else if (_isExtractingImage) ...[
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(32),
-                child: Column(
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Extracting conversation from image...'),
-                  ],
-                ),
-              ),
-            ),
-          ] else if (_suggestions.isEmpty && _errorMessage == null) ...[
-            const Card(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'No suggestions generated yet.\nFill in the details above and tap "Generate Reply".',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontStyle: FontStyle.italic),
-                ),
-              ),
-            ),
-          ] else ...[
-            ..._suggestions
-                .map(
-                  (suggestion) => Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      title: Text(
-                        suggestion.message,
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                      subtitle: Row(
-                        children: [
-                          Icon(
-                            Icons.trending_up,
-                            size: 16,
-                            color: _getConfidenceColor(suggestion.confidence),
+              const SizedBox(height: 32),
+
+              // Results Section
+              if (_errorMessage != null) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.red[50],
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.red[200]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline, color: Colors.red[600]),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: TextStyle(
+                            color: Colors.red[700],
+                            fontWeight: FontWeight.w500,
                           ),
-                          const SizedBox(width: 4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+
+              if (_isLoading) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(40),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 15,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: theme.primaryColor.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: CircularProgressIndicator(
+                          color: theme.primaryColor,
+                          strokeWidth: 3,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Analyzing your conversation...',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'This might take a few seconds',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else if (_suggestions.isEmpty && _errorMessage == null) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 15,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.blue[50],
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.chat_bubble_outline,
+                          size: 40,
+                          color: Colors.blue[400],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Ready to help you connect!',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[800],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Share your conversation details and we\'ll suggest the perfect replies',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else ...[
+                FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.green[100],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.check_circle,
+                              color: Colors.green[600],
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
                           Text(
-                            'Confidence: ${(suggestion.confidence * 100).toStringAsFixed(0)}%',
-                            style: TextStyle(
-                              color: _getConfidenceColor(suggestion.confidence),
-                              fontWeight: FontWeight.w500,
+                            '${_suggestions.length} Smart Replies',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
                             ),
                           ),
                         ],
                       ),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.copy),
-                        onPressed: () => _copySuggestion(suggestion.message),
-                        tooltip: 'Copy suggestion',
-                      ),
-                      contentPadding: const EdgeInsets.all(16),
-                    ),
-                  ),
-                )
-                .toList(),
-          ],
+                      const SizedBox(height: 16),
 
-          // Add some bottom padding so FAB doesn't overlap content
-          const SizedBox(height: 80),
-        ],
+                      ..._suggestions.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final suggestion = entry.value;
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => _copySuggestion(suggestion.message),
+                              borderRadius: BorderRadius.circular(16),
+                              child: Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: _getConfidenceColor(
+                                              suggestion.confidence,
+                                            ).withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            '#${index + 1}',
+                                            style: TextStyle(
+                                              color: _getConfidenceColor(
+                                                suggestion.confidence,
+                                              ),
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: _getConfidenceColor(
+                                              suggestion.confidence,
+                                            ).withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.trending_up,
+                                                size: 14,
+                                                color: _getConfidenceColor(
+                                                  suggestion.confidence,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                '${(suggestion.confidence * 100).toStringAsFixed(0)}%',
+                                                style: TextStyle(
+                                                  color: _getConfidenceColor(
+                                                    suggestion.confidence,
+                                                  ),
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      suggestion.message,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        height: 1.4,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.touch_app,
+                                          size: 16,
+                                          color: Colors.grey[400],
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Tap to copy',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[500],
+                                            fontStyle: FontStyle.italic,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 40),
+            ],
+          ),
+        ),
       ),
     );
   }
 
+  Widget _buildSectionTitle(String title, String emoji) {
+    return Row(
+      children: [
+        Text(emoji, style: const TextStyle(fontSize: 20)),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+      ],
+    );
+  }
+
   Color _getConfidenceColor(double confidence) {
-    if (confidence >= 0.8) return Colors.green;
-    if (confidence >= 0.6) return Colors.orange;
-    return Colors.red;
+    if (confidence >= 0.8) return Colors.green[600]!;
+    if (confidence >= 0.6) return Colors.orange[600]!;
+    return Colors.red[600]!;
   }
 
   @override
   void dispose() {
     _conversationCtrl.dispose();
     _herInfoCtrl.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 }
