@@ -1,5 +1,5 @@
-name: tryagaintext
-description: "A new Flutter project."
+name: flirtfix
+description: "Helps users with their conversations on dating apps by providing AI-generated message suggestions."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -37,6 +37,7 @@ dependencies:
   http: ^1.5.0
   flutter_launcher_icons: ^0.14.4
   image_picker: ^1.2.0
+  http_parser: ^4.1.2
 
 dev_dependencies:
   flutter_test:

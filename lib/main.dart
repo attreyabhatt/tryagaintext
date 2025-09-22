@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:tryagaintext/views/screens/conversations_screen.dart';
+import '../views/screens/conversations_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -21,7 +21,7 @@ class _MyAppState extends State<MyApp> {
       title: 'FlirtFix',
       theme: _buildLightTheme(),
       darkTheme: _buildDarkTheme(),
-      themeMode: ThemeMode.system, // Respects user's system preference
+      themeMode: ThemeMode.light, // Respects user's system preference
       home: const ConversationsScreen(),
     );
   }

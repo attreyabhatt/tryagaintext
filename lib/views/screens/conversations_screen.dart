@@ -82,6 +82,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
         imageQuality: 85,
+        maxWidth: 1920, // Reasonable max width
+        maxHeight: 1920, // Reasonable max height
       );
 
       if (image == null) return;
@@ -91,9 +93,35 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         _errorMessage = null;
       });
 
-      final extractedConversation = await _apiClient.extractFromImage(
-        File(image.path),
-      );
+      // Validate file exists and has content
+      final file = File(image.path);
+      if (!await file.exists()) {
+        throw Exception('Selected file does not exist');
+      }
+
+      final fileSize = await file.length();
+      if (fileSize == 0) {
+        throw Exception('Selected file is empty');
+      }
+
+      // Check file size (limit to 10MB)
+      if (fileSize > 10 * 1024 * 1024) {
+        throw Exception(
+          'File size too large. Please select an image under 10MB.',
+        );
+      }
+
+      print('Processing file: ${image.path}');
+      print('File size: ${fileSize} bytes');
+
+      final extractedConversation = await _apiClient.extractFromImage(file);
+
+      if (extractedConversation.isEmpty ||
+          extractedConversation.toLowerCase().contains('failed to extract')) {
+        throw Exception(
+          'Could not extract conversation from image. Please try a clearer screenshot.',
+        );
+      }
 
       setState(() {
         _conversationCtrl.text = extractedConversation;
@@ -103,27 +131,31 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
       _animationController.reset();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 8),
-              Text('Screenshot processed successfully!'),
-            ],
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Screenshot processed successfully!'),
+              ],
+            ),
+            backgroundColor: Colors.green[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
-          backgroundColor: Colors.green[600],
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
+        );
+      }
     } catch (e) {
+      print('Screenshot upload error: $e');
       setState(() {
         _isExtractingImage = false;
-        _errorMessage =
-            'Could not process screenshot. Please try again or paste text manually.';
+        _errorMessage = e.toString().contains('Exception: ')
+            ? e.toString().replaceFirst('Exception: ', '')
+            : 'Could not process screenshot. Please try again or paste text manually.';
       });
     }
   }
