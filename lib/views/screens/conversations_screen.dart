@@ -3,7 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../services/api_client.dart';
+import '../../services/auth_service.dart';
 import '../../models/suggestion.dart';
+import '../../models/user.dart';
+import 'login_screen.dart';
 
 class ConversationsScreen extends StatefulWidget {
   const ConversationsScreen({super.key});
@@ -25,6 +28,12 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
+  // Authentication state
+  User? _currentUser;
+  int _chatCredits = 0;
+  bool _isLoggedIn = false;
+  bool _isTrialExpired = false;
+
   // Initialize API client
   final _apiClient = ApiClient('https://tryagaintext.com');
 
@@ -38,6 +47,132 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final isLoggedIn = await AuthService.isLoggedIn();
+    if (isLoggedIn) {
+      final user = await AuthService.getStoredUser();
+      final credits = await AuthService.getStoredCredits();
+
+      if (mounted) {
+        setState(() {
+          _currentUser = user;
+          _chatCredits = credits;
+          _isLoggedIn = true;
+        });
+      }
+
+      // Refresh user data from server
+      await AuthService.refreshUserData();
+      final updatedCredits = await AuthService.getStoredCredits();
+
+      if (mounted) {
+        setState(() {
+          _chatCredits = updatedCredits;
+        });
+      }
+    }
+  }
+
+  Future<void> _showAuthDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Credits Required'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.credit_card_off, size: 64, color: Colors.orange[400]),
+            const SizedBox(height: 16),
+            Text(
+              _isTrialExpired
+                  ? 'Your free trial has expired. Sign up to get free credits and continue using FlirtFix!'
+                  : 'You need credits to generate replies. Sign up now to get free credits!',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Maybe Later'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+            ),
+            child: const Text('Sign Up', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      _navigateToAuth();
+    }
+  }
+
+  Future<void> _navigateToAuth() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+    );
+
+    if (result == true) {
+      // User successfully logged in, refresh data
+      await _loadUserData();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                Text('Welcome back! You have $_chatCredits credits'),
+              ],
+            ),
+            backgroundColor: Colors.green[600],
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sign Out'),
+        content: const Text('Are you sure you want to sign out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Sign Out'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await AuthService.logout();
+      setState(() {
+        _currentUser = null;
+        _chatCredits = 0;
+        _isLoggedIn = false;
+        _isTrialExpired = false;
+        _suggestions = [];
+      });
+    }
   }
 
   Future<void> _generateSuggestions() async {
@@ -66,14 +201,32 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         _isLoading = false;
       });
 
+      // Update credits if logged in
+      if (_isLoggedIn) {
+        final updatedCredits = await AuthService.getStoredCredits();
+        setState(() {
+          _chatCredits = updatedCredits;
+        });
+      }
+
       if (suggestions.isNotEmpty) {
         _animationController.forward();
       }
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Oops! Something went wrong. Please try again.';
       });
+
+      if (e is InsufficientCreditsException || e is TrialExpiredException) {
+        setState(() {
+          _isTrialExpired = true;
+        });
+        await _showAuthDialog();
+      } else {
+        setState(() {
+          _errorMessage = 'Oops! Something went wrong. Please try again.';
+        });
+      }
     }
   }
 
@@ -82,8 +235,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
         imageQuality: 85,
-        maxWidth: 1920, // Reasonable max width
-        maxHeight: 1920, // Reasonable max height
+        maxWidth: 1920,
+        maxHeight: 1920,
       );
 
       if (image == null) return;
@@ -93,7 +246,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         _errorMessage = null;
       });
 
-      // Validate file exists and has content
       final file = File(image.path);
       if (!await file.exists()) {
         throw Exception('Selected file does not exist');
@@ -104,15 +256,11 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         throw Exception('Selected file is empty');
       }
 
-      // Check file size (limit to 10MB)
       if (fileSize > 10 * 1024 * 1024) {
         throw Exception(
           'File size too large. Please select an image under 10MB.',
         );
       }
-
-      print('Processing file: ${image.path}');
-      print('File size: ${fileSize} bytes');
 
       final extractedConversation = await _apiClient.extractFromImage(file);
 
@@ -128,6 +276,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         _isExtractingImage = false;
         _suggestions = [];
       });
+
+      // Update credits if logged in
+      if (_isLoggedIn) {
+        final updatedCredits = await AuthService.getStoredCredits();
+        setState(() {
+          _chatCredits = updatedCredits;
+        });
+      }
 
       _animationController.reset();
 
@@ -150,13 +306,22 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         );
       }
     } catch (e) {
-      print('Screenshot upload error: $e');
       setState(() {
         _isExtractingImage = false;
-        _errorMessage = e.toString().contains('Exception: ')
-            ? e.toString().replaceFirst('Exception: ', '')
-            : 'Could not process screenshot. Please try again or paste text manually.';
       });
+
+      if (e is InsufficientCreditsException || e is TrialExpiredException) {
+        setState(() {
+          _isTrialExpired = true;
+        });
+        await _showAuthDialog();
+      } else {
+        setState(() {
+          _errorMessage = e.toString().contains('Exception: ')
+              ? e.toString().replaceFirst('Exception: ', '')
+              : 'Could not process screenshot. Please try again or paste text manually.';
+        });
+      }
     }
   }
 
@@ -227,18 +392,100 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           ],
         ),
         actions: [
-          IconButton(
-            onPressed: () {},
-            icon: Container(
+          // Credits display
+          if (_isLoggedIn) ...[
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: theme.primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: theme.primaryColor.withOpacity(0.3)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.credit_card, size: 16, color: theme.primaryColor),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$_chatCredits',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: theme.primaryColor,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          // Settings/Profile menu
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              switch (value) {
+                case 'login':
+                  _navigateToAuth();
+                  break;
+                case 'logout':
+                  _handleLogout();
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              if (!_isLoggedIn)
+                const PopupMenuItem(
+                  value: 'login',
+                  child: Row(
+                    children: [
+                      Icon(Icons.login),
+                      SizedBox(width: 8),
+                      Text('Sign In'),
+                    ],
+                  ),
+                ),
+              if (_isLoggedIn) ...[
+                PopupMenuItem(
+                  enabled: false,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _currentUser?.username ?? '',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        '$_chatCredits credits',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'logout',
+                  child: Row(
+                    children: [
+                      Icon(Icons.logout),
+                      SizedBox(width: 8),
+                      Text('Sign Out'),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+            child: Container(
+              margin: const EdgeInsets.only(right: 8),
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: Colors.grey[200],
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.settings, color: Colors.grey),
+              child: Icon(
+                _isLoggedIn ? Icons.person : Icons.person_outline,
+                color: Colors.grey[700],
+              ),
             ),
           ),
-          const SizedBox(width: 8),
         ],
       ),
       body: SingleChildScrollView(
@@ -247,6 +494,95 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Trial warning banner
+              if (!_isLoggedIn && _isTrialExpired) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.orange[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.orange[200]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning_amber, color: Colors.orange[600]),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Free trial expired',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.orange[800],
+                              ),
+                            ),
+                            Text(
+                              'Sign up to get 6 free credits',
+                              style: TextStyle(color: Colors.orange[700]),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: _navigateToAuth,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange[600],
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                        ),
+                        child: const Text('Sign Up'),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+
+              // Low credits warning
+              if (_isLoggedIn && _chatCredits <= 2) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.amber[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.amber[200]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.battery_2_bar, color: Colors.amber[600]),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Low credits',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.amber[800],
+                              ),
+                            ),
+                            Text(
+                              'You have $_chatCredits credits remaining',
+                              style: TextStyle(color: Colors.amber[700]),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+
+              // Rest of the UI remains the same as in the original ConversationsScreen
               // Situation Selector
               Container(
                 padding: const EdgeInsets.all(4),

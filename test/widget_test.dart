@@ -28,3 +28,10 @@ void main() {
     expect(find.text('1'), findsOneWidget);
   });
 }
+
+// whi8le trying to login I get the error Sep 22 20:46:34  Login error: type object 'Token' has no attribute 'objects'
+// Sep 22 20:46:34  Traceback (most recent call last):
+// Sep 22 20:46:34    File "/workspace/src/mobileapi/views.py", line 94, in login
+// Sep 22 20:46:34      token, created = Token.objects.get_or_create(user=user)
+// Sep 22 20:46:34                       ^^^^^^^^^^^^^
+// Sep 22 20:46:34  AttributeError: type object 'Token' has no attribute 'objects'

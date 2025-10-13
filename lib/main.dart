@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../views/screens/conversations_screen.dart';
+import 'views/screens/conversations_screen.dart';
+import 'services/auth_service.dart';
 
 void main() {
   runApp(const MyApp());
@@ -21,8 +22,8 @@ class _MyAppState extends State<MyApp> {
       title: 'FlirtFix',
       theme: _buildLightTheme(),
       darkTheme: _buildDarkTheme(),
-      themeMode: ThemeMode.light, // Respects user's system preference
-      home: const ConversationsScreen(),
+      themeMode: ThemeMode.light,
+      home: const SplashScreen(),
     );
   }
 
@@ -136,6 +137,107 @@ class _MyAppState extends State<MyApp> {
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+}
+
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    // Add a small delay to show splash screen
+    await Future.delayed(const Duration(milliseconds: 1500));
+
+    // Check authentication status and navigate accordingly
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const ConversationsScreen()),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFE91E63), // Use your original pink color
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // App Logo
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(32),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.favorite,
+                color: Color(0xFFE91E63), // Use your original pink color
+                size: 64,
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
+            // App Name
+            const Text(
+              'FlirtFix',
+              style: TextStyle(
+                fontSize: 36,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                letterSpacing: -0.5,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // Tagline
+            const Text(
+              'Your dating conversation wingman',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.white70,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+
+            const SizedBox(height: 48),
+
+            // Loading indicator
+            const SizedBox(
+              width: 32,
+              height: 32,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

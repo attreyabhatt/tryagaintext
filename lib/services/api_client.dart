@@ -2,118 +2,213 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../models/suggestion.dart';
+import '../models/generate_response.dart';
+import 'auth_service.dart';
 
 class ApiClient {
   final String baseUrl;
 
   ApiClient(this.baseUrl);
 
-  /// Calls POST /api/generate/ and returns a list of suggestions.
+  Future<Map<String, String>> _getHeaders() async {
+    final headers = <String, String>{'Content-Type': 'application/json'};
+
+    final token = await AuthService.getToken();
+    if (token != null) {
+      headers['Authorization'] = 'Token $token';
+    }
+
+    return headers;
+  }
+
   Future<List<Suggestion>> generate({
     required String lastText,
     required String situation,
-    String herInfo = "",
+    String herInfo = '',
   }) async {
-    final uri = Uri.parse('$baseUrl/api/generate/');
-    final res = await http
-        .post(
-          uri,
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'last_text': lastText,
-            'situation': situation,
-            'her_info': herInfo,
-          }),
-        )
-        .timeout(const Duration(seconds: 30));
-
-    if (res.statusCode != 200) {
-      throw HttpException('Server ${res.statusCode}: ${res.body}');
-    }
-
-    final map = jsonDecode(res.body) as Map<String, dynamic>;
-    final replyString = map['reply'] as String? ?? '[]';
-    final list = jsonDecode(replyString) as List<dynamic>;
-    return list
-        .map((e) => Suggestion.fromJson(e as Map<String, dynamic>))
-        .toList();
-  }
-
-  /// Calls POST /api/extract-image/ with a screenshot image file.
-  Future<String> extractFromImage(File image) async {
-    final uri = Uri.parse('$baseUrl/api/extract-image/');
-
     try {
-      // Read file bytes
-      final bytes = await image.readAsBytes();
-      print('📱 Mobile Debug - File path: ${image.path}');
-      print('📱 Mobile Debug - File size: ${bytes.length} bytes');
-      print('📱 Mobile Debug - Request URI: $uri');
+      final headers = await _getHeaders();
 
-      // Check if file is empty
-      if (bytes.isEmpty) {
-        throw Exception('Image file is empty');
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/generate/'),
+        headers: headers,
+        body: jsonEncode({
+          'last_text': lastText,
+          'situation': situation,
+          'her_info': herInfo,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+      final generateResponse = GenerateResponse.fromJson(data);
+
+      if (!generateResponse.success) {
+        if (generateResponse.error == 'insufficient_credits') {
+          throw InsufficientCreditsException(
+            generateResponse.message ?? 'No credits remaining',
+          );
+        } else if (generateResponse.error == 'trial_expired') {
+          throw TrialExpiredException(
+            generateResponse.message ?? 'Trial expired',
+          );
+        } else {
+          throw ApiException(generateResponse.message ?? 'Generation failed');
+        }
       }
 
-      // Create the multipart request
-      final request = http.MultipartRequest('POST', uri);
-
-      // Add the file with explicit filename and try different approaches
-      final multipartFile = http.MultipartFile.fromBytes(
-        'screenshot', // This must match your Django field name
-        bytes,
-        filename: 'mobile_screenshot.jpg', // Explicit filename
-      );
-
-      request.files.add(multipartFile);
-
-      print('📱 Mobile Debug - Multipart file added:');
-      print('   - Field name: screenshot');
-      print('   - Filename: mobile_screenshot.jpg');
-      print('   - Size: ${bytes.length} bytes');
-
-      // Send request
-      print('📱 Mobile Debug - Sending request...');
-      final streamedResponse = await request.send().timeout(
-        const Duration(seconds: 60),
-      );
-
-      print(
-        '📱 Mobile Debug - Response status: ${streamedResponse.statusCode}',
-      );
-
-      // Get response body
-      final responseBody = await streamedResponse.stream.bytesToString();
-      print('📱 Mobile Debug - Response body: $responseBody');
-
-      if (streamedResponse.statusCode != 200) {
-        throw HttpException(
-          'Server error ${streamedResponse.statusCode}: $responseBody',
+      // Update stored credits if available
+      if (generateResponse.creditsRemaining != null) {
+        await AuthService.updateStoredCredits(
+          generateResponse.creditsRemaining!,
         );
       }
 
-      // Parse response
-      final Map<String, dynamic> responseMap;
-      try {
-        responseMap = jsonDecode(responseBody) as Map<String, dynamic>;
-      } catch (e) {
-        print('📱 Mobile Debug - JSON parse error: $e');
-        throw Exception('Invalid response format');
-      }
-
-      final conversation = responseMap['conversation'] as String? ?? '';
-
-      if (conversation.isEmpty) {
-        throw Exception('No conversation extracted from image');
-      }
-
-      print(
-        '📱 Mobile Debug - Success! Extracted ${conversation.length} characters',
-      );
-      return conversation;
+      // Parse reply into suggestions
+      return _parseReplyToSuggestions(generateResponse.reply ?? '');
     } catch (e) {
-      print('📱 Mobile Debug - Error: $e');
-      rethrow;
+      if (e is ApiException) {
+        rethrow;
+      }
+      throw ApiException('Network error. Please try again.');
     }
   }
+
+  Future<String> extractFromImage(File imageFile) async {
+    try {
+      final token = await AuthService.getToken();
+
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/api/extract-image/'),
+      );
+
+      if (token != null) {
+        request.headers['Authorization'] = 'Token $token';
+      }
+
+      request.files.add(
+        await http.MultipartFile.fromPath('screenshot', imageFile.path),
+      );
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      final data = jsonDecode(response.body);
+
+      if (data['error'] == 'insufficient_credits') {
+        throw InsufficientCreditsException(
+          data['conversation'] ?? 'No credits remaining',
+        );
+      }
+
+      if (data['trial_expired'] == true) {
+        throw TrialExpiredException(data['conversation'] ?? 'Trial expired');
+      }
+
+      // Update stored credits if available
+      if (data['credits_remaining'] != null) {
+        await AuthService.updateStoredCredits(data['credits_remaining']);
+      }
+
+      return data['conversation'] ?? '';
+    } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
+      throw ApiException('Failed to extract conversation from image');
+    }
+  }
+
+  List<Suggestion> _parseReplyToSuggestions(String reply) {
+    final suggestions = <Suggestion>[];
+
+    if (reply.trim().isEmpty) {
+      return suggestions;
+    }
+
+    try {
+      // Try to parse as JSON array
+      final decoded = jsonDecode(reply.trim());
+
+      if (decoded is List) {
+        for (var item in decoded) {
+          if (item is Map<String, dynamic>) {
+            final message = item['message']?.toString();
+            final confidenceScore = item['confidence_score'];
+
+            if (message != null && message.trim().isNotEmpty) {
+              double confidence = 0.8;
+              if (confidenceScore is num) {
+                confidence = confidenceScore.toDouble();
+              }
+
+              suggestions.add(
+                Suggestion(message: message.trim(), confidence: confidence),
+              );
+            }
+          }
+        }
+      }
+
+      return suggestions;
+    } catch (e) {
+      // If JSON parsing fails, treat as plain text
+      final lines = reply
+          .split('\n')
+          .where((line) => line.trim().isNotEmpty)
+          .toList();
+
+      for (int i = 0; i < lines.length; i++) {
+        final line = lines[i].trim();
+        if (line.isNotEmpty) {
+          // Remove numbering and cleanup
+          String cleanLine = line
+              .replaceFirst(RegExp(r'^\d+\.\s*'), '')
+              .replaceFirst(RegExp(r'^-\s*'), '');
+
+          if (cleanLine.isNotEmpty) {
+            suggestions.add(
+              Suggestion(
+                message: cleanLine,
+                confidence: _calculateConfidence(i, lines.length),
+              ),
+            );
+          }
+        }
+      }
+    }
+
+    return suggestions;
+  }
+
+  double _calculateConfidence(int index, int total) {
+    if (total == 1) return 0.85;
+
+    switch (index) {
+      case 0:
+        return 0.9;
+      case 1:
+        return 0.8;
+      case 2:
+        return 0.7;
+      default:
+        return 0.6;
+    }
+  }
+}
+
+// Custom exceptions
+class ApiException implements Exception {
+  final String message;
+  ApiException(this.message);
+
+  @override
+  String toString() => message;
+}
+
+class InsufficientCreditsException extends ApiException {
+  InsufficientCreditsException(String message) : super(message);
+}
+
+class TrialExpiredException extends ApiException {
+  TrialExpiredException(String message) : super(message);
 }
