@@ -29,6 +29,8 @@ class ApiClient {
     try {
       final headers = await _getHeaders();
 
+      print('Generating with headers: $headers'); // Debug log
+
       final response = await http.post(
         Uri.parse('$baseUrl/api/generate/'),
         headers: headers,
@@ -38,6 +40,9 @@ class ApiClient {
           'her_info': herInfo,
         }),
       );
+
+      print('Response status: ${response.statusCode}'); // Debug log
+      print('Response body: ${response.body}'); // Debug log
 
       final data = jsonDecode(response.body);
       final generateResponse = GenerateResponse.fromJson(data);
@@ -66,6 +71,7 @@ class ApiClient {
       // Parse reply into suggestions
       return _parseReplyToSuggestions(generateResponse.reply ?? '');
     } catch (e) {
+      print('Generate error: $e'); // Debug log
       if (e is ApiException) {
         rethrow;
       }
