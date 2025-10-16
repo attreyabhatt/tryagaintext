@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'views/screens/conversations_screen.dart';
-import 'services/auth_service.dart';
 
 void main() {
   runApp(const MyApp());
@@ -171,7 +170,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    // final theme = Theme.of(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFFE91E63), // Use your original pink color

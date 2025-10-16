@@ -206,7 +206,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       children: [
                         const TextSpan(text: 'Get '),
                         TextSpan(
-                          text: '6 free credits',
+                          text: '3 free credits',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: theme.primaryColor,

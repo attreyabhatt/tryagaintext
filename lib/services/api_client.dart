@@ -25,11 +25,12 @@ class ApiClient {
     required String lastText,
     required String situation,
     String herInfo = '',
+    required String tone,
   }) async {
     try {
       final headers = await _getHeaders();
 
-      print('Generating with headers: $headers'); // Debug log
+      print('Generating with headers: $headers');
 
       final response = await http.post(
         Uri.parse('$baseUrl/api/generate/'),
@@ -38,11 +39,12 @@ class ApiClient {
           'last_text': lastText,
           'situation': situation,
           'her_info': herInfo,
+          'tone': tone,
         }),
       );
 
-      print('Response status: ${response.statusCode}'); // Debug log
-      print('Response body: ${response.body}'); // Debug log
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
       final data = jsonDecode(response.body);
       final generateResponse = GenerateResponse.fromJson(data);
@@ -71,7 +73,7 @@ class ApiClient {
       // Parse reply into suggestions
       return _parseReplyToSuggestions(generateResponse.reply ?? '');
     } catch (e) {
-      print('Generate error: $e'); // Debug log
+      print('Generate error: $e');
       if (e is ApiException) {
         rethrow;
       }
@@ -121,6 +123,41 @@ class ApiClient {
         rethrow;
       }
       throw ApiException('Failed to extract conversation from image');
+    }
+  }
+
+  Future<String> analyzeProfile(File imageFile) async {
+    try {
+      final token = await AuthService.getToken();
+
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/api/analyze-profile/'),
+      );
+
+      if (token != null) {
+        request.headers['Authorization'] = 'Token $token';
+      }
+
+      request.files.add(
+        await http.MultipartFile.fromPath('profile_image', imageFile.path),
+      );
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      final data = jsonDecode(response.body);
+
+      if (data['success'] == false) {
+        throw ApiException(data['profile_info'] ?? 'Failed to analyze profile');
+      }
+
+      return data['profile_info'] ?? '';
+    } catch (e) {
+      print('Analyze profile error: $e');
+      if (e is ApiException) {
+        rethrow;
+      }
+      throw ApiException('Failed to analyze profile image');
     }
   }
 

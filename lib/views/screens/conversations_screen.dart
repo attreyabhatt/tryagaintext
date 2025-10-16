@@ -7,6 +7,7 @@ import '../../services/auth_service.dart';
 import '../../models/suggestion.dart';
 import '../../models/user.dart';
 import 'login_screen.dart';
+import 'package:flirtfix/views/screens/pricing_screen.dart';
 
 class ConversationsScreen extends StatefulWidget {
   const ConversationsScreen({super.key});
@@ -18,6 +19,7 @@ class ConversationsScreen extends StatefulWidget {
 class _ConversationsScreenState extends State<ConversationsScreen>
     with SingleTickerProviderStateMixin {
   String _situation = 'stuck_after_reply';
+  String _selectedTone = 'Natural'; // Default tone
   final _conversationCtrl = TextEditingController();
   final _herInfoCtrl = TextEditingController();
   List<Suggestion> _suggestions = [];
@@ -36,6 +38,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
   // Initialize API client
   final _apiClient = ApiClient('https://tryagaintext.com');
+
+  bool _isAnalyzingProfile = false;
 
   @override
   void initState() {
@@ -90,8 +94,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             const SizedBox(height: 16),
             Text(
               _isTrialExpired
-                  ? 'Your free trial has expired. Sign up to get free credits and continue using FlirtFix!'
-                  : 'You need credits to generate replies. Sign up now to get free credits!',
+                  ? 'Your free trial has expired. Sign up to get 6 free credits and continue using FlirtFix!'
+                  : 'You need credits to generate replies. Sign up now to get 6 free credits!',
               textAlign: TextAlign.center,
             ),
           ],
@@ -141,6 +145,18 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           ),
         );
       }
+    }
+  }
+
+  Future<void> _navigateToPricing() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const PricingScreen()),
+    );
+
+    // Refresh credits after returning from pricing
+    if (mounted) {
+      await _loadUserData();
     }
   }
 
@@ -194,6 +210,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             : _conversationCtrl.text,
         situation: _situation,
         herInfo: _situation == 'just_matched' ? _herInfoCtrl.text : '',
+        tone: _selectedTone,
       );
 
       setState(() {
@@ -221,7 +238,15 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         setState(() {
           _isTrialExpired = true;
         });
-        await _showAuthDialog();
+
+        // Check if user is logged in to determine which flow
+        if (_isLoggedIn) {
+          // Logged-in user out of credits - go to pricing
+          await _navigateToPricing();
+        } else {
+          // Guest user trial expired - show signup dialog
+          await _showAuthDialog();
+        }
       } else {
         setState(() {
           _errorMessage = 'Oops! Something went wrong. Please try again.';
@@ -314,7 +339,15 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         setState(() {
           _isTrialExpired = true;
         });
-        await _showAuthDialog();
+
+        // Check if user is logged in to determine which flow
+        if (_isLoggedIn) {
+          // Logged-in user out of credits - go to pricing
+          await _navigateToPricing();
+        } else {
+          // Guest user trial expired - show signup dialog
+          await _showAuthDialog();
+        }
       } else {
         setState(() {
           _errorMessage = e.toString().contains('Exception: ')
@@ -322,6 +355,87 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               : 'Could not process screenshot. Please try again or paste text manually.';
         });
       }
+    }
+  }
+
+  Future<void> _uploadProfileImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 1920,
+        maxHeight: 1920,
+      );
+
+      if (image == null) return;
+
+      setState(() {
+        _isAnalyzingProfile = true;
+        _errorMessage = null;
+      });
+
+      final file = File(image.path);
+      if (!await file.exists()) {
+        throw Exception('Selected file does not exist');
+      }
+
+      final fileSize = await file.length();
+      if (fileSize == 0) {
+        throw Exception('Selected file is empty');
+      }
+
+      if (fileSize > 10 * 1024 * 1024) {
+        throw Exception(
+          'File size too large. Please select an image under 10MB.',
+        );
+      }
+
+      print('Analyzing profile image: ${image.path}');
+
+      final profileInfo = await _apiClient.analyzeProfile(file);
+
+      if (profileInfo.isEmpty ||
+          profileInfo.toLowerCase().contains('failed') ||
+          profileInfo.toLowerCase().contains('unable')) {
+        throw Exception(
+          'Could not analyze the image. Please try a clearer screenshot or photo.',
+        );
+      }
+
+      setState(() {
+        _herInfoCtrl.text = profileInfo;
+        _isAnalyzingProfile = false;
+        _suggestions = [];
+      });
+
+      _animationController.reset();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Profile analyzed successfully!'),
+              ],
+            ),
+            backgroundColor: Colors.green[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Profile analysis error: $e');
+      setState(() {
+        _isAnalyzingProfile = false;
+        _errorMessage = e.toString().contains('Exception: ')
+            ? e.toString().replaceFirst('Exception: ', '')
+            : 'Could not analyze profile. Please try again or add details manually.';
+      });
     }
   }
 
@@ -431,6 +545,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 case 'login':
                   _navigateToAuth();
                   break;
+                case 'buy_credits':
+                  _navigateToPricing();
+                  break;
                 case 'logout':
                   _handleLogout();
                   break;
@@ -462,6 +579,17 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                         '$_chatCredits credits',
                         style: TextStyle(color: Colors.grey[600], fontSize: 12),
                       ),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'buy_credits',
+                  child: Row(
+                    children: [
+                      Icon(Icons.shopping_cart),
+                      SizedBox(width: 8),
+                      Text('Buy Credits'),
                     ],
                   ),
                 ),
@@ -525,7 +653,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                               ),
                             ),
                             Text(
-                              'Sign up to get 6 free credits',
+                              'Sign up to get 3 more free credits',
                               style: TextStyle(color: Colors.orange[700]),
                             ),
                           ],
@@ -549,8 +677,58 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 const SizedBox(height: 20),
               ],
 
-              // Low credits warning
-              if (_isLoggedIn && _chatCredits <= 2) ...[
+              // Out of credits banner for logged-in users
+              if (_isLoggedIn && _chatCredits == 0) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.red[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red[200]!),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning, color: Colors.red[600]),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Out of credits',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red[800],
+                              ),
+                            ),
+                            Text(
+                              'Purchase credits to continue',
+                              style: TextStyle(color: Colors.red[700]),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: _navigateToPricing,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red[600],
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                        ),
+                        child: const Text('Buy Now'),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+
+              // Low credits warning (only show for 1-2 credits, not 0)
+              if (_isLoggedIn && _chatCredits > 0 && _chatCredits <= 2) ...[
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
@@ -654,12 +832,113 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 ),
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
+
+              // Tone Selector - Only show for "Need Reply" situation
+              if (_situation == 'stuck_after_reply') ...[
+                Row(
+                  children: [
+                    Text(
+                      'Tone:',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildCompactToneChip('Natural', '😊'),
+                            const SizedBox(width: 8),
+                            _buildCompactToneChip('Flirty', '😏'),
+                            const SizedBox(width: 8),
+                            _buildCompactToneChip('Funny', '😂'),
+                            const SizedBox(width: 8),
+                            _buildCompactToneChip('Serious', '🤔'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+              ],
 
               // Input Section
               if (_situation == 'just_matched') ...[
                 _buildSectionTitle('Tell us about them', '💕'),
                 const SizedBox(height: 16),
+
+                // Upload profile image button
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey[200]!, width: 1),
+                  ),
+                  child: GestureDetector(
+                    onTap: _isAnalyzingProfile ? null : _uploadProfileImage,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 14,
+                        horizontal: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _isAnalyzingProfile
+                            ? Colors.grey[100]
+                            : theme.primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _isAnalyzingProfile
+                              ? Colors.grey[300]!
+                              : theme.primaryColor.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (_isAnalyzingProfile) ...[
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: theme.primaryColor,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              'Analyzing profile...',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ] else ...[
+                            Icon(Icons.photo_camera, color: theme.primaryColor),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Upload Profile Screenshot',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: theme.primaryColor,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -678,7 +957,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     maxLines: 5,
                     style: const TextStyle(fontSize: 16),
                     decoration: InputDecoration(
-                      hintText: 'Loves hiking, has 2 dogs, studies medicine...',
+                      hintText:
+                          'Loves hiking, has 2 dogs, studies medicine...\n\nOr upload a profile screenshot above!',
                       hintStyle: TextStyle(color: Colors.grey[400]),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -695,6 +975,18 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                         ),
                         child: Icon(Icons.person, color: theme.primaryColor),
                       ),
+                      suffixIcon: _herInfoCtrl.text.isNotEmpty
+                          ? IconButton(
+                              icon: Icon(Icons.clear, color: Colors.grey[400]),
+                              onPressed: () {
+                                setState(() {
+                                  _herInfoCtrl.clear();
+                                  _suggestions = [];
+                                  _animationController.reset();
+                                });
+                              },
+                            )
+                          : null,
                     ),
                   ),
                 ),
@@ -1212,6 +1504,44 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildCompactToneChip(String tone, String emoji) {
+    final isSelected = _selectedTone == tone;
+    final theme = Theme.of(context);
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedTone = tone;
+          _suggestions = [];
+          _errorMessage = null;
+          _animationController.reset();
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? theme.primaryColor : Colors.grey[100],
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 14)),
+            const SizedBox(width: 6),
+            Text(
+              tone,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? Colors.white : Colors.grey[700],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
