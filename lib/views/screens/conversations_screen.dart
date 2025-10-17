@@ -515,30 +515,44 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         actions: [
           // Credits display
           if (_isLoggedIn) ...[
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: theme.primaryColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: theme.primaryColor.withValues(alpha: 0.3),
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact(); // Optional: adds tactile feedback
+                _navigateToPricing();
+              },
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
                 ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.credit_card, size: 16, color: theme.primaryColor),
-                  const SizedBox(width: 4),
-                  Text(
-                    '$_chatCredits',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: theme.primaryColor,
-                      fontSize: 14,
-                    ),
+                decoration: BoxDecoration(
+                  color: theme.primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: theme.primaryColor.withValues(alpha: 0.3),
                   ),
-                ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.credit_card,
+                      size: 16,
+                      color: theme.primaryColor,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$_chatCredits',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: theme.primaryColor,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                  ],
+                ),
               ),
             ),
           ],
@@ -838,39 +852,101 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
               const SizedBox(height: 24),
 
-              // Tone Selector - Only show for "Need Reply" situation
+              // Alternative: Dropdown style tone selector
               if (_situation == 'stuck_after_reply') ...[
-                Row(
-                  children: [
-                    Text(
-                      'Tone:',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[700],
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 15,
+                        offset: const Offset(0, 2),
                       ),
+                    ],
+                  ),
+                  child: DropdownButtonFormField<String>(
+                    initialValue: _selectedTone,
+                    decoration: InputDecoration(
+                      labelText: 'Tone',
+                      prefixIcon: Container(
+                        margin: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: theme.primaryColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.psychology,
+                          color: theme.primaryColor,
+                        ),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.all(20),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'Natural',
                         child: Row(
                           children: [
-                            _buildCompactToneChip('Natural', '😊'),
-                            const SizedBox(width: 8),
-                            _buildCompactToneChip('Flirty', '😉'),
-                            const SizedBox(width: 8),
-                            _buildCompactToneChip('Funny', '😂'),
-                            const SizedBox(width: 8),
-                            _buildCompactToneChip('Serious', '🤔'),
+                            Text('😊', style: TextStyle(fontSize: 20)),
+                            SizedBox(width: 12),
+                            Text('Natural'),
                           ],
                         ),
                       ),
-                    ),
-                  ],
+                      DropdownMenuItem(
+                        value: 'Flirty',
+                        child: Row(
+                          children: [
+                            Text('😉', style: TextStyle(fontSize: 20)),
+                            SizedBox(width: 12),
+                            Text('Flirty'),
+                          ],
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Funny',
+                        child: Row(
+                          children: [
+                            Text('😂', style: TextStyle(fontSize: 20)),
+                            SizedBox(width: 12),
+                            Text('Funny'),
+                          ],
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Serious',
+                        child: Row(
+                          children: [
+                            Text('🤔', style: TextStyle(fontSize: 20)),
+                            SizedBox(width: 12),
+                            Text('Serious'),
+                          ],
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          _selectedTone = value;
+                          _suggestions = [];
+                          _errorMessage = null;
+                          _animationController.reset();
+                        });
+                      }
+                    },
+                  ),
                 ),
                 const SizedBox(height: 24),
               ],
+
+              // You can also remove the _buildCompactToneChip method since it's no longer needed
 
               // Input Section
               if (_situation == 'just_matched') ...[
@@ -1508,44 +1584,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildCompactToneChip(String tone, String emoji) {
-    final isSelected = _selectedTone == tone;
-    final theme = Theme.of(context);
-
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedTone = tone;
-          _suggestions = [];
-          _errorMessage = null;
-          _animationController.reset();
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? theme.primaryColor : Colors.grey[100],
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 14)),
-            const SizedBox(width: 6),
-            Text(
-              tone,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : Colors.grey[700],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
