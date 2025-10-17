@@ -445,6 +445,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
   Future<void> _copySuggestion(String message) async {
     await Clipboard.setData(ClipboardData(text: message));
+    if (!mounted) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Row(
@@ -517,9 +519,11 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               margin: const EdgeInsets.symmetric(horizontal: 8),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: theme.primaryColor.withOpacity(0.1),
+                color: theme.primaryColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: theme.primaryColor.withOpacity(0.3)),
+                border: Border.all(
+                  color: theme.primaryColor.withValues(alpha: 0.3),
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -774,7 +778,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
+                      color: Colors.black.withValues(alpha: 0.08),
                       blurRadius: 20,
                       offset: const Offset(0, 4),
                     ),
@@ -854,7 +858,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                           children: [
                             _buildCompactToneChip('Natural', '😊'),
                             const SizedBox(width: 8),
-                            _buildCompactToneChip('Flirty', '😏'),
+                            _buildCompactToneChip('Flirty', '😉'),
                             const SizedBox(width: 8),
                             _buildCompactToneChip('Funny', '😂'),
                             const SizedBox(width: 8),
@@ -891,12 +895,12 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                       decoration: BoxDecoration(
                         color: _isAnalyzingProfile
                             ? Colors.grey[100]
-                            : theme.primaryColor.withOpacity(0.1),
+                            : theme.primaryColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: _isAnalyzingProfile
                               ? Colors.grey[300]!
-                              : theme.primaryColor.withOpacity(0.3),
+                              : theme.primaryColor.withValues(alpha: 0.3),
                           width: 1.5,
                         ),
                       ),
@@ -945,7 +949,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 15,
                         offset: const Offset(0, 2),
                       ),
@@ -970,7 +974,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                       prefixIcon: Container(
                         margin: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: theme.primaryColor.withOpacity(0.1),
+                          color: theme.primaryColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(Icons.person, color: theme.primaryColor),
@@ -1015,12 +1019,12 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                             decoration: BoxDecoration(
                               color: _isExtractingImage
                                   ? Colors.grey[100]
-                                  : theme.primaryColor.withOpacity(0.1),
+                                  : theme.primaryColor.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: _isExtractingImage
                                     ? Colors.grey[300]!
-                                    : theme.primaryColor.withOpacity(0.3),
+                                    : theme.primaryColor.withValues(alpha: 0.3),
                                 width: 1.5,
                               ),
                             ),
@@ -1094,7 +1098,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 15,
                         offset: const Offset(0, 2),
                       ),
@@ -1147,7 +1151,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     backgroundColor: theme.colorScheme.primary,
                     foregroundColor: Colors.white,
                     disabledBackgroundColor: theme.colorScheme.onSurface
-                        .withOpacity(0.12),
+                        .withValues(alpha: 0.12),
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -1231,7 +1235,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 15,
                         offset: const Offset(0, 2),
                       ),
@@ -1242,7 +1246,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: theme.primaryColor.withOpacity(0.1),
+                          color: theme.primaryColor.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: CircularProgressIndicator(
@@ -1276,7 +1280,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 15,
                         offset: const Offset(0, 2),
                       ),
@@ -1358,7 +1362,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
+                                color: Colors.black.withValues(alpha: 0.05),
                                 blurRadius: 10,
                                 offset: const Offset(0, 2),
                               ),
@@ -1386,7 +1390,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                                           decoration: BoxDecoration(
                                             color: _getConfidenceColor(
                                               suggestion.confidence,
-                                            ).withOpacity(0.1),
+                                            ).withValues(alpha: 0.1),
                                             borderRadius: BorderRadius.circular(
                                               6,
                                             ),
@@ -1411,7 +1415,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                                           decoration: BoxDecoration(
                                             color: _getConfidenceColor(
                                               suggestion.confidence,
-                                            ).withOpacity(0.1),
+                                            ).withValues(alpha: 0.1),
                                             borderRadius: BorderRadius.circular(
                                               12,
                                             ),
@@ -1476,7 +1480,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                             ),
                           ),
                         );
-                      }).toList(),
+                      }),
                     ],
                   ),
                 ),

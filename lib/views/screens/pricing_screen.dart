@@ -174,7 +174,7 @@ class _PricingScreenState extends State<PricingScreen> {
                   gradient: LinearGradient(
                     colors: [
                       theme.primaryColor,
-                      theme.primaryColor.withOpacity(0.8),
+                      theme.primaryColor.withValues(alpha: 0.8),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -182,7 +182,7 @@ class _PricingScreenState extends State<PricingScreen> {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: theme.primaryColor.withOpacity(0.3),
+                      color: theme.primaryColor.withValues(alpha: 0.3),
                       blurRadius: 15,
                       offset: const Offset(0, 5),
                     ),
@@ -209,7 +209,7 @@ class _PricingScreenState extends State<PricingScreen> {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Row(
@@ -251,7 +251,7 @@ class _PricingScreenState extends State<PricingScreen> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),
@@ -295,7 +295,7 @@ class _PricingScreenState extends State<PricingScreen> {
                   padding: const EdgeInsets.only(bottom: 16),
                   child: _buildPricingCard(plan, theme),
                 );
-              }).toList(),
+              }),
 
               const SizedBox(height: 24),
 
@@ -326,7 +326,7 @@ class _PricingScreenState extends State<PricingScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withOpacity(0.1),
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: Theme.of(context).primaryColor, size: 20),
@@ -358,13 +358,13 @@ class _PricingScreenState extends State<PricingScreen> {
         boxShadow: [
           if (plan.isPopular)
             BoxShadow(
-              color: theme.primaryColor.withOpacity(0.2),
+              color: theme.primaryColor.withValues(alpha: 0.2),
               blurRadius: 15,
               offset: const Offset(0, 5),
             )
           else
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -474,7 +474,7 @@ class _PricingScreenState extends State<PricingScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: theme.primaryColor.withOpacity(0.1),
+                    color: theme.primaryColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -500,32 +500,30 @@ class _PricingScreenState extends State<PricingScreen> {
                 const SizedBox(height: 16),
 
                 // Features
-                ...plan.features
-                    .map(
-                      (feature) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.check_circle,
-                              color: Colors.green[600],
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                feature,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[700],
-                                ),
-                              ),
-                            ),
-                          ],
+                ...plan.features.map(
+                  (feature) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.check_circle,
+                          color: Colors.green[600],
+                          size: 20,
                         ),
-                      ),
-                    )
-                    .toList(),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            feature,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
 
                 const SizedBox(height: 20),
 
