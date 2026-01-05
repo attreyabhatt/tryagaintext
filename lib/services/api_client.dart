@@ -1,14 +1,17 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
-import '../models/suggestion.dart';
+import '../config/app_config.dart';
 import '../models/generate_response.dart';
+import '../models/suggestion.dart';
+import '../utils/app_logger.dart';
 import 'auth_service.dart';
 
 class ApiClient {
   final String baseUrl;
 
-  ApiClient(this.baseUrl);
+  ApiClient([String? baseUrl]) : baseUrl = baseUrl ?? AppConfig.baseUrl;
 
   Future<Map<String, String>> _getHeaders() async {
     final headers = <String, String>{'Content-Type': 'application/json'};
@@ -30,37 +33,27 @@ class ApiClient {
     try {
       final headers = await _getHeaders();
 
-      print('Generating with headers: $headers');
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/api/generate/'),
+            headers: headers,
+            body: jsonEncode({
+              'last_text': lastText,
+              'situation': situation,
+              'her_info': herInfo,
+              'tone': tone,
+            }),
+          )
+          .timeout(AppConfig.requestTimeout);
 
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/generate/'),
-        headers: headers,
-        body: jsonEncode({
-          'last_text': lastText,
-          'situation': situation,
-          'her_info': herInfo,
-          'tone': tone,
-        }),
-      );
-
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
-      final data = jsonDecode(response.body);
+      final data = _decodeJson(response.body);
       final generateResponse = GenerateResponse.fromJson(data);
 
       if (!generateResponse.success) {
-        if (generateResponse.error == 'insufficient_credits') {
-          throw InsufficientCreditsException(
-            generateResponse.message ?? 'No credits remaining',
-          );
-        } else if (generateResponse.error == 'trial_expired') {
-          throw TrialExpiredException(
-            generateResponse.message ?? 'Trial expired',
-          );
-        } else {
-          throw ApiException(generateResponse.message ?? 'Generation failed');
-        }
+        throw ApiException(
+          generateResponse.message ?? 'Generation failed',
+          _mapErrorCode(generateResponse.error),
+        );
       }
 
       // Update stored credits if available
@@ -72,12 +65,15 @@ class ApiClient {
 
       // Parse reply into suggestions
       return _parseReplyToSuggestions(generateResponse.reply ?? '');
+    } on TimeoutException catch (e, stackTrace) {
+      AppLogger.error('Generate request timed out', e, stackTrace);
+      throw ApiException('Request timed out. Please try again.', ApiErrorCode.network);
     } catch (e) {
-      print('Generate error: $e');
       if (e is ApiException) {
         rethrow;
       }
-      throw ApiException('Network error. Please try again.');
+      AppLogger.error('Generate error', e is Exception ? e : null);
+      throw ApiException('Network error. Please try again.', ApiErrorCode.network);
     }
   }
 
@@ -98,18 +94,23 @@ class ApiClient {
         await http.MultipartFile.fromPath('screenshot', imageFile.path),
       );
 
-      final streamedResponse = await request.send();
+      final streamedResponse =
+          await request.send().timeout(AppConfig.uploadTimeout);
       final response = await http.Response.fromStream(streamedResponse);
-      final data = jsonDecode(response.body);
+      final data = _decodeJson(response.body);
 
       if (data['error'] == 'insufficient_credits') {
-        throw InsufficientCreditsException(
+        throw ApiException(
           data['conversation'] ?? 'No credits remaining',
+          ApiErrorCode.insufficientCredits,
         );
       }
 
       if (data['trial_expired'] == true) {
-        throw TrialExpiredException(data['conversation'] ?? 'Trial expired');
+        throw ApiException(
+          data['conversation'] ?? 'Trial expired',
+          ApiErrorCode.trialExpired,
+        );
       }
 
       // Update stored credits if available
@@ -118,11 +119,18 @@ class ApiClient {
       }
 
       return data['conversation'] ?? '';
+    } on TimeoutException catch (e, stackTrace) {
+      AppLogger.error('Extract image request timed out', e, stackTrace);
+      throw ApiException('Request timed out. Please try again.', ApiErrorCode.network);
     } catch (e) {
       if (e is ApiException) {
         rethrow;
       }
-      throw ApiException('Failed to extract conversation from image');
+      AppLogger.error('Extract image error', e is Exception ? e : null);
+      throw ApiException(
+        'Failed to extract conversation from image',
+        ApiErrorCode.server,
+      );
     }
   }
 
@@ -143,21 +151,28 @@ class ApiClient {
         await http.MultipartFile.fromPath('profile_image', imageFile.path),
       );
 
-      final streamedResponse = await request.send();
+      final streamedResponse =
+          await request.send().timeout(AppConfig.uploadTimeout);
       final response = await http.Response.fromStream(streamedResponse);
-      final data = jsonDecode(response.body);
+      final data = _decodeJson(response.body);
 
       if (data['success'] == false) {
-        throw ApiException(data['profile_info'] ?? 'Failed to analyze profile');
+        throw ApiException(
+          data['profile_info'] ?? 'Failed to analyze profile',
+          ApiErrorCode.server,
+        );
       }
 
       return data['profile_info'] ?? '';
+    } on TimeoutException catch (e, stackTrace) {
+      AppLogger.error('Analyze profile request timed out', e, stackTrace);
+      throw ApiException('Request timed out. Please try again.', ApiErrorCode.network);
     } catch (e) {
-      print('Analyze profile error: $e');
       if (e is ApiException) {
         rethrow;
       }
-      throw ApiException('Failed to analyze profile image');
+      AppLogger.error('Analyze profile error', e is Exception ? e : null);
+      throw ApiException('Failed to analyze profile image', ApiErrorCode.server);
     }
   }
 
@@ -237,21 +252,45 @@ class ApiClient {
         return 0.6;
     }
   }
+
+  Map<String, dynamic> _decodeJson(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+    } catch (e) {
+      AppLogger.error('Failed to decode JSON response', e is Exception ? e : null);
+    }
+    return <String, dynamic>{'success': false, 'message': 'Invalid server response'};
+  }
+
+  ApiErrorCode _mapErrorCode(String? error) {
+    switch (error) {
+      case 'insufficient_credits':
+        return ApiErrorCode.insufficientCredits;
+      case 'trial_expired':
+        return ApiErrorCode.trialExpired;
+      default:
+        return ApiErrorCode.unknown;
+    }
+  }
 }
 
 // Custom exceptions
 class ApiException implements Exception {
   final String message;
-  ApiException(this.message);
+  final ApiErrorCode code;
+  ApiException(this.message, [this.code = ApiErrorCode.unknown]);
 
   @override
   String toString() => message;
 }
 
-class InsufficientCreditsException extends ApiException {
-  InsufficientCreditsException(String message) : super(message);
-}
-
-class TrialExpiredException extends ApiException {
-  TrialExpiredException(String message) : super(message);
+enum ApiErrorCode {
+  insufficientCredits,
+  trialExpired,
+  network,
+  server,
+  unknown,
 }

@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import '../../state/app_state.dart';
+import '../../utils/app_logger.dart';
 import '../../services/api_client.dart';
-import '../../services/auth_service.dart';
 import '../../models/suggestion.dart';
-import '../../models/user.dart';
 import 'login_screen.dart';
 import 'package:flirtfix/views/screens/pricing_screen.dart';
 
@@ -30,14 +30,10 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
-  // Authentication state
-  User? _currentUser;
-  int _chatCredits = 0;
-  bool _isLoggedIn = false;
   bool _isTrialExpired = false;
 
   // Initialize API client
-  final _apiClient = ApiClient('https://tryagaintext.com');
+  final _apiClient = ApiClient();
 
   bool _isAnalyzingProfile = false;
 
@@ -51,33 +47,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
-    _loadUserData();
-  }
-
-  Future<void> _loadUserData() async {
-    final isLoggedIn = await AuthService.isLoggedIn();
-    if (isLoggedIn) {
-      final user = await AuthService.getStoredUser();
-      final credits = await AuthService.getStoredCredits();
-
-      if (mounted) {
-        setState(() {
-          _currentUser = user;
-          _chatCredits = credits;
-          _isLoggedIn = true;
-        });
-      }
-
-      // Refresh user data from server
-      await AuthService.refreshUserData();
-      final updatedCredits = await AuthService.getStoredCredits();
-
-      if (mounted) {
-        setState(() {
-          _chatCredits = updatedCredits;
-        });
-      }
-    }
   }
 
   Future<void> _showAuthDialog() async {
@@ -116,6 +85,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       ),
     );
 
+    if (!mounted) return;
     if (result == true) {
       _navigateToAuth();
     }
@@ -127,9 +97,11 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       MaterialPageRoute(builder: (context) => const LoginScreen()),
     );
 
+    if (!mounted) return;
     if (result == true) {
+      final appState = AppStateScope.of(context);
+      await appState.reloadFromStorage();
       // User successfully logged in, refresh data
-      await _loadUserData();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -137,7 +109,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               children: [
                 const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 8),
-                Text('Welcome back! You have $_chatCredits credits'),
+                Text('Welcome back! You have ${appState.credits} credits'),
               ],
             ),
             backgroundColor: Colors.green[600],
@@ -154,10 +126,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       MaterialPageRoute(builder: (context) => const PricingScreen()),
     );
 
+    if (!mounted) return;
     // Refresh credits after returning from pricing
-    if (mounted) {
-      await _loadUserData();
-    }
+    await AppStateScope.of(context).reloadFromStorage();
   }
 
   Future<void> _handleLogout() async {
@@ -179,15 +150,13 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       ),
     );
 
+    if (!mounted) return;
     if (confirm == true) {
-      await AuthService.logout();
       setState(() {
-        _currentUser = null;
-        _chatCredits = 0;
-        _isLoggedIn = false;
         _isTrialExpired = false;
         _suggestions = [];
       });
+      await AppStateScope.of(context).logout();
     }
   }
 
@@ -213,45 +182,36 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         tone: _selectedTone,
       );
 
+      if (!mounted) return;
       setState(() {
         _suggestions = suggestions;
         _isLoading = false;
       });
 
-      // Update credits if logged in
-      if (_isLoggedIn) {
-        final updatedCredits = await AuthService.getStoredCredits();
-        setState(() {
-          _chatCredits = updatedCredits;
-        });
-      }
+      await AppStateScope.of(context).reloadFromStorage();
 
       if (suggestions.isNotEmpty) {
         _animationController.forward();
       }
-    } catch (e) {
+    } on ApiException catch (e) {
       setState(() {
         _isLoading = false;
       });
 
-      if (e is InsufficientCreditsException || e is TrialExpiredException) {
-        setState(() {
-          _isTrialExpired = true;
-        });
-
-        // Check if user is logged in to determine which flow
-        if (_isLoggedIn) {
-          // Logged-in user out of credits - go to pricing
-          await _navigateToPricing();
-        } else {
-          // Guest user trial expired - show signup dialog
-          await _showAuthDialog();
-        }
+      if (_isCreditError(e)) {
+        await _handleCreditError(e);
       } else {
         setState(() {
-          _errorMessage = 'Oops! Something went wrong. Please try again.';
+          _errorMessage = e.message.isNotEmpty
+              ? e.message
+              : 'Oops! Something went wrong. Please try again.';
         });
       }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Oops! Something went wrong. Please try again.';
+      });
     }
   }
 
@@ -296,19 +256,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         );
       }
 
+      if (!mounted) return;
       setState(() {
         _conversationCtrl.text = extractedConversation;
         _isExtractingImage = false;
         _suggestions = [];
       });
 
-      // Update credits if logged in
-      if (_isLoggedIn) {
-        final updatedCredits = await AuthService.getStoredCredits();
-        setState(() {
-          _chatCredits = updatedCredits;
-        });
-      }
+      await AppStateScope.of(context).reloadFromStorage();
 
       _animationController.reset();
 
@@ -330,31 +285,26 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           ),
         );
       }
-    } catch (e) {
+    } on ApiException catch (e) {
       setState(() {
         _isExtractingImage = false;
       });
 
-      if (e is InsufficientCreditsException || e is TrialExpiredException) {
-        setState(() {
-          _isTrialExpired = true;
-        });
-
-        // Check if user is logged in to determine which flow
-        if (_isLoggedIn) {
-          // Logged-in user out of credits - go to pricing
-          await _navigateToPricing();
-        } else {
-          // Guest user trial expired - show signup dialog
-          await _showAuthDialog();
-        }
+      if (_isCreditError(e)) {
+        await _handleCreditError(e);
       } else {
         setState(() {
-          _errorMessage = e.toString().contains('Exception: ')
-              ? e.toString().replaceFirst('Exception: ', '')
+          _errorMessage = e.message.isNotEmpty
+              ? e.message
               : 'Could not process screenshot. Please try again or paste text manually.';
         });
       }
+    } catch (e) {
+      setState(() {
+        _isExtractingImage = false;
+        _errorMessage =
+            'Could not process screenshot. Please try again or paste text manually.';
+      });
     }
   }
 
@@ -390,7 +340,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         );
       }
 
-      print('Analyzing profile image: ${image.path}');
+      AppLogger.debug('Analyzing profile image: ${image.path}');
 
       final profileInfo = await _apiClient.analyzeProfile(file);
 
@@ -402,6 +352,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         );
       }
 
+      if (!mounted) return;
       setState(() {
         _herInfoCtrl.text = profileInfo;
         _isAnalyzingProfile = false;
@@ -428,19 +379,42 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           ),
         );
       }
-    } catch (e) {
-      print('Profile analysis error: $e');
+    } on ApiException catch (e) {
       setState(() {
         _isAnalyzingProfile = false;
-        _errorMessage = e.toString().contains('Exception: ')
-            ? e.toString().replaceFirst('Exception: ', '')
+        _errorMessage = e.message.isNotEmpty
+            ? e.message
             : 'Could not analyze profile. Please try again or add details manually.';
+      });
+    } catch (e) {
+      setState(() {
+        _isAnalyzingProfile = false;
+        _errorMessage =
+            'Could not analyze profile. Please try again or add details manually.';
       });
     }
   }
 
   void _showError(String message) {
     setState(() => _errorMessage = message);
+  }
+
+  bool _isCreditError(ApiException error) {
+    return error.code == ApiErrorCode.insufficientCredits ||
+        error.code == ApiErrorCode.trialExpired;
+  }
+
+  Future<void> _handleCreditError(ApiException error) async {
+    setState(() {
+      _isTrialExpired = error.code == ApiErrorCode.trialExpired;
+    });
+
+    final isLoggedIn = AppStateScope.of(context).isLoggedIn;
+    if (isLoggedIn) {
+      await _navigateToPricing();
+    } else {
+      await _showAuthDialog();
+    }
   }
 
   Future<void> _copySuggestion(String message) async {
@@ -467,177 +441,21 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final appState = AppStateScope.of(context);
+    final isLoggedIn = appState.isLoggedIn;
+    final credits = appState.credits;
+    final username = appState.user?.username ?? '';
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: theme.primaryColor,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.favorite, color: Colors.white, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'FlirtFix',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  Text(
-                    'Your dating conversation wingman',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                      fontWeight: FontWeight.normal,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          // Credits display
-          if (_isLoggedIn) ...[
-            GestureDetector(
-              onTap: () {
-                HapticFeedback.lightImpact(); // Optional: adds tactile feedback
-                _navigateToPricing();
-              },
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 8),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: theme.primaryColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: theme.primaryColor.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.credit_card,
-                      size: 16,
-                      color: theme.primaryColor,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '$_chatCredits',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: theme.primaryColor,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                  ],
-                ),
-              ),
-            ),
-          ],
-          // Settings/Profile menu
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              switch (value) {
-                case 'login':
-                  _navigateToAuth();
-                  break;
-                case 'buy_credits':
-                  _navigateToPricing();
-                  break;
-                case 'logout':
-                  _handleLogout();
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              if (!_isLoggedIn)
-                const PopupMenuItem(
-                  value: 'login',
-                  child: Row(
-                    children: [
-                      Icon(Icons.login),
-                      SizedBox(width: 8),
-                      Text('Sign In'),
-                    ],
-                  ),
-                ),
-              if (_isLoggedIn) ...[
-                PopupMenuItem(
-                  enabled: false,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _currentUser?.username ?? '',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        '$_chatCredits credits',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-                const PopupMenuDivider(),
-                const PopupMenuItem(
-                  value: 'buy_credits',
-                  child: Row(
-                    children: [
-                      Icon(Icons.shopping_cart),
-                      SizedBox(width: 8),
-                      Text('Buy Credits'),
-                    ],
-                  ),
-                ),
-                const PopupMenuDivider(),
-                const PopupMenuItem(
-                  value: 'logout',
-                  child: Row(
-                    children: [
-                      Icon(Icons.logout),
-                      SizedBox(width: 8),
-                      Text('Sign Out'),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-            child: Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                _isLoggedIn ? Icons.person : Icons.person_outline,
-                color: Colors.grey[700],
-              ),
-            ),
-          ),
-        ],
+      appBar: _ConversationsAppBar(
+        isLoggedIn: isLoggedIn,
+        credits: credits,
+        username: username,
+        onLogin: _navigateToAuth,
+        onBuyCredits: _navigateToPricing,
+        onLogout: _handleLogout,
+        onTapCredits: _navigateToPricing,
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -646,7 +464,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Trial warning banner
-              if (!_isLoggedIn && _isTrialExpired) ...[
+              if (!isLoggedIn && _isTrialExpired) ...[
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
@@ -696,7 +514,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               ],
 
               // Out of credits banner for logged-in users
-              if (_isLoggedIn && _chatCredits == 0) ...[
+              if (isLoggedIn && credits == 0) ...[
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
@@ -746,7 +564,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               ],
 
               // Low credits warning (only show for 1-2 credits, not 0)
-              if (_isLoggedIn && _chatCredits > 0 && _chatCredits <= 2) ...[
+              if (isLoggedIn && credits > 0 && credits <= 2) ...[
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
@@ -771,7 +589,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                               ),
                             ),
                             Text(
-                              'You have $_chatCredits credits remaining',
+                              'You have $credits credits remaining',
                               style: TextStyle(color: Colors.amber[700]),
                             ),
                           ],
@@ -892,43 +710,19 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     items: const [
                       DropdownMenuItem(
                         value: 'Natural',
-                        child: Row(
-                          children: [
-                            Text('😊', style: TextStyle(fontSize: 20)),
-                            SizedBox(width: 12),
-                            Text('Natural'),
-                          ],
-                        ),
+                        child: Text('Natural'),
                       ),
                       DropdownMenuItem(
                         value: 'Flirty',
-                        child: Row(
-                          children: [
-                            Text('😉', style: TextStyle(fontSize: 20)),
-                            SizedBox(width: 12),
-                            Text('Flirty'),
-                          ],
-                        ),
+                        child: Text('Flirty'),
                       ),
                       DropdownMenuItem(
                         value: 'Funny',
-                        child: Row(
-                          children: [
-                            Text('😂', style: TextStyle(fontSize: 20)),
-                            SizedBox(width: 12),
-                            Text('Funny'),
-                          ],
-                        ),
+                        child: Text('Funny'),
                       ),
                       DropdownMenuItem(
                         value: 'Serious',
-                        child: Row(
-                          children: [
-                            Text('🤔', style: TextStyle(fontSize: 20)),
-                            SizedBox(width: 12),
-                            Text('Serious'),
-                          ],
-                        ),
+                        child: Text('Serious'),
                       ),
                     ],
                     onChanged: (value) {
@@ -946,11 +740,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 const SizedBox(height: 24),
               ],
 
-              // You can also remove the _buildCompactToneChip method since it's no longer needed
-
               // Input Section
               if (_situation == 'just_matched') ...[
-                _buildSectionTitle('Tell us about them', '💕'),
+                _buildSectionTitle('Tell us about them', Icons.person),
                 const SizedBox(height: 16),
 
                 // Upload profile image button
@@ -1071,7 +863,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                   ),
                 ),
               ] else ...[
-                _buildSectionTitle('Your conversation', '💬'),
+                _buildSectionTitle('Your conversation', Icons.forum),
                 const SizedBox(height: 16),
 
                 // Upload or paste options
@@ -1431,130 +1223,11 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                         final index = entry.key;
                         final suggestion = entry.value;
 
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
-                                blurRadius: 10,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () => _copySuggestion(suggestion.message),
-                              borderRadius: BorderRadius.circular(16),
-                              child: Padding(
-                                padding: const EdgeInsets.all(20),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: _getConfidenceColor(
-                                              suggestion.confidence,
-                                            ).withValues(alpha: 0.1),
-                                            borderRadius: BorderRadius.circular(
-                                              6,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            '#${index + 1}',
-                                            style: TextStyle(
-                                              color: _getConfidenceColor(
-                                                suggestion.confidence,
-                                              ),
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                        const Spacer(),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: _getConfidenceColor(
-                                              suggestion.confidence,
-                                            ).withValues(alpha: 0.1),
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                Icons.trending_up,
-                                                size: 14,
-                                                color: _getConfidenceColor(
-                                                  suggestion.confidence,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                '${(suggestion.confidence * 100).toStringAsFixed(0)}%',
-                                                style: TextStyle(
-                                                  color: _getConfidenceColor(
-                                                    suggestion.confidence,
-                                                  ),
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      suggestion.message,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        height: 1.4,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.touch_app,
-                                          size: 16,
-                                          color: Colors.grey[400],
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          'Tap to copy',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey[500],
-                                            fontStyle: FontStyle.italic,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
+                        return _SuggestionCard(
+                          index: index,
+                          suggestion: suggestion,
+                          onTap: () => _copySuggestion(suggestion.message),
+                          getConfidenceColor: _getConfidenceColor,
                         );
                       }),
                     ],
@@ -1570,10 +1243,10 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     );
   }
 
-  Widget _buildSectionTitle(String title, String emoji) {
+  Widget _buildSectionTitle(String title, IconData icon) {
     return Row(
       children: [
-        Text(emoji, style: const TextStyle(fontSize: 20)),
+        Icon(icon, size: 20, color: Colors.black87),
         const SizedBox(width: 8),
         Text(
           title,
@@ -1599,5 +1272,329 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     _herInfoCtrl.dispose();
     _animationController.dispose();
     super.dispose();
+  }
+}
+
+class _ConversationsAppBar extends StatelessWidget
+    implements PreferredSizeWidget {
+  final bool isLoggedIn;
+  final int credits;
+  final String username;
+  final VoidCallback onLogin;
+  final VoidCallback onBuyCredits;
+  final VoidCallback onLogout;
+  final VoidCallback onTapCredits;
+
+  const _ConversationsAppBar({
+    required this.isLoggedIn,
+    required this.credits,
+    required this.username,
+    required this.onLogin,
+    required this.onBuyCredits,
+    required this.onLogout,
+    required this.onTapCredits,
+  });
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return AppBar(
+      elevation: 0,
+      backgroundColor: Colors.transparent,
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: theme.primaryColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.favorite, color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'FlirtFix',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                Text(
+                  'Your dating conversation wingman',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.normal,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        if (isLoggedIn) ...[
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onTapCredits();
+            },
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: theme.primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: theme.primaryColor.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.credit_card,
+                    size: 16,
+                    color: theme.primaryColor,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$credits',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: theme.primaryColor,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                ],
+              ),
+            ),
+          ),
+        ],
+        PopupMenuButton<String>(
+          onSelected: (value) {
+            switch (value) {
+              case 'login':
+                onLogin();
+                break;
+              case 'buy_credits':
+                onBuyCredits();
+                break;
+              case 'logout':
+                onLogout();
+                break;
+            }
+          },
+          itemBuilder: (context) => [
+            if (!isLoggedIn)
+              const PopupMenuItem(
+                value: 'login',
+                child: Row(
+                  children: [
+                    Icon(Icons.login),
+                    SizedBox(width: 8),
+                    Text('Sign In'),
+                  ],
+                ),
+              ),
+            if (isLoggedIn) ...[
+              PopupMenuItem(
+                enabled: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      username,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      '$credits credits',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'buy_credits',
+                child: Row(
+                  children: [
+                    Icon(Icons.shopping_cart),
+                    SizedBox(width: 8),
+                    Text('Buy Credits'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout),
+                    SizedBox(width: 8),
+                    Text('Sign Out'),
+                  ],
+                ),
+              ),
+            ],
+          ],
+          child: Container(
+            margin: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              isLoggedIn ? Icons.person : Icons.person_outline,
+              color: Colors.grey[700],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SuggestionCard extends StatelessWidget {
+  final int index;
+  final Suggestion suggestion;
+  final VoidCallback onTap;
+  final Color Function(double) getConfidenceColor;
+
+  const _SuggestionCard({
+    required this.index,
+    required this.suggestion,
+    required this.onTap,
+    required this.getConfidenceColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final confidenceColor = getConfidenceColor(suggestion.confidence);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: confidenceColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '#${index + 1}',
+                        style: TextStyle(
+                          color: confidenceColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: confidenceColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.trending_up,
+                            size: 14,
+                            color: confidenceColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${(suggestion.confidence * 100).toStringAsFixed(0)}%',
+                            style: TextStyle(
+                              color: confidenceColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  suggestion.message,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    height: 1.4,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.touch_app,
+                      size: 16,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Tap to copy',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[500],
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'state/app_state.dart';
 import 'views/screens/conversations_screen.dart';
 
 void main() {
@@ -14,15 +15,27 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  late final AppState _appState;
+
+  @override
+  void initState() {
+    super.initState();
+    _appState = AppState();
+    _appState.initialize();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'FlirtFix',
-      theme: _buildLightTheme(),
-      darkTheme: _buildDarkTheme(),
-      themeMode: ThemeMode.light,
-      home: const SplashScreen(),
+    return AppStateScope(
+      notifier: _appState,
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'FlirtFix',
+        theme: _buildLightTheme(),
+        darkTheme: _buildDarkTheme(),
+        themeMode: ThemeMode.light,
+        home: const SplashScreen(),
+      ),
     );
   }
 
@@ -138,6 +151,12 @@ class _MyAppState extends State<MyApp> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _appState.dispose();
+    super.dispose();
   }
 }
 

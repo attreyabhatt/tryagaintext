@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/pricing_plan.dart';
-import '../../services/auth_service.dart';
+import '../../state/app_state.dart';
 import 'login_screen.dart';
 
 class PricingScreen extends StatefulWidget {
@@ -15,29 +15,15 @@ class PricingScreen extends StatefulWidget {
 class _PricingScreenState extends State<PricingScreen> {
   PricingPlan? _selectedPlan;
   bool _isProcessing = false;
-  bool _isLoggedIn = false;
-  int _currentCredits = 0;
 
   @override
   void initState() {
     super.initState();
-    _loadUserData();
-  }
-
-  Future<void> _loadUserData() async {
-    final isLoggedIn = await AuthService.isLoggedIn();
-    final credits = await AuthService.getStoredCredits();
-
-    if (mounted) {
-      setState(() {
-        _isLoggedIn = isLoggedIn;
-        _currentCredits = credits;
-      });
-    }
   }
 
   Future<void> _handlePurchase(PricingPlan plan) async {
-    if (!_isLoggedIn) {
+    final appState = AppStateScope.of(context);
+    if (!appState.isLoggedIn) {
       // Show login dialog
       final result = await showDialog<bool>(
         context: context,
@@ -69,7 +55,7 @@ class _PricingScreenState extends State<PricingScreen> {
         );
 
         if (loginResult == true) {
-          await _loadUserData();
+          await appState.reloadFromStorage();
           // Proceed with purchase after login
           _processPurchase(plan);
         }
@@ -143,6 +129,7 @@ class _PricingScreenState extends State<PricingScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final plans = PricingPlan.allPlans;
+    final appState = AppStateScope.of(context);
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -202,7 +189,7 @@ class _PricingScreenState extends State<PricingScreen> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
-                    if (_isLoggedIn) ...[
+                    if (appState.isLoggedIn) ...[
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -222,7 +209,7 @@ class _PricingScreenState extends State<PricingScreen> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Current: $_currentCredits credits',
+                              'Current: ${appState.credits} credits',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
@@ -301,7 +288,7 @@ class _PricingScreenState extends State<PricingScreen> {
 
               // Disclaimer
               Text(
-                'One-time purchase • Credits never expire • Secure payment via Google Play',
+                'One-time purchase - Credits never expire - Secure payment via Google Play',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey[600],
@@ -457,7 +444,7 @@ class _PricingScreenState extends State<PricingScreen> {
                           ),
                         ),
                         Text(
-                          '${(plan.pricePerCredit * 100).toStringAsFixed(0)}¢ per credit',
+                          '${(plan.pricePerCredit * 100).toStringAsFixed(0)}c per credit',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey[600],
@@ -531,13 +518,10 @@ class _PricingScreenState extends State<PricingScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: isProcessing
-                        ? null
-                        : () => _handlePurchase(plan),
+                    onPressed: isProcessing ? null : () => _handlePurchase(plan),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: plan.isPopular
-                          ? theme.primaryColor
-                          : Colors.grey[800],
+                      backgroundColor:
+                          plan.isPopular ? theme.primaryColor : Colors.grey[800],
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(

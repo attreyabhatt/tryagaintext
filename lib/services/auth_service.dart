@@ -1,12 +1,15 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/app_config.dart';
 import '../models/auth_response.dart';
 import '../models/profile_response.dart';
 import '../models/user.dart';
+import '../utils/app_logger.dart';
 
 class AuthService {
-  static const String baseUrl = 'https://tryagaintext.com/api';
+  static String get baseUrl => AppConfig.apiBaseUrl;
   static const String tokenKey = 'auth_token';
   static const String userKey = 'user_data';
   static const String creditsKey = 'chat_credits';
@@ -89,7 +92,7 @@ class AuthService {
           'email': email,
           'password': password,
         }),
-      );
+      ).timeout(AppConfig.requestTimeout);
 
       final data = jsonDecode(response.body);
       final authResponse = AuthResponse.fromJson(data);
@@ -102,8 +105,14 @@ class AuthService {
       }
 
       return authResponse;
+    } on TimeoutException catch (e, stackTrace) {
+      AppLogger.error('Registration request timed out', e, stackTrace);
+      return AuthResponse(
+        success: false,
+        error: 'Request timed out. Please try again.',
+      );
     } catch (e) {
-      print('Registration error: $e');
+      AppLogger.error('Registration error', e is Exception ? e : null);
       return AuthResponse(
         success: false,
         error: 'Network error. Please try again.',
@@ -121,7 +130,7 @@ class AuthService {
         Uri.parse('$baseUrl/login/'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'username': username, 'password': password}),
-      );
+      ).timeout(AppConfig.requestTimeout);
 
       final data = jsonDecode(response.body);
       final authResponse = AuthResponse.fromJson(data);
@@ -134,8 +143,14 @@ class AuthService {
       }
 
       return authResponse;
+    } on TimeoutException catch (e, stackTrace) {
+      AppLogger.error('Login request timed out', e, stackTrace);
+      return AuthResponse(
+        success: false,
+        error: 'Request timed out. Please try again.',
+      );
     } catch (e) {
-      print('Login error: $e');
+      AppLogger.error('Login error', e is Exception ? e : null);
       return AuthResponse(
         success: false,
         error: 'Network error. Please try again.',
@@ -157,7 +172,7 @@ class AuthService {
           'Content-Type': 'application/json',
           'Authorization': 'Token $token',
         },
-      );
+      ).timeout(AppConfig.requestTimeout);
 
       final data = jsonDecode(response.body);
       final profileResponse = ProfileResponse.fromJson(data);
@@ -170,8 +185,14 @@ class AuthService {
       }
 
       return profileResponse;
+    } on TimeoutException catch (e, stackTrace) {
+      AppLogger.error('Profile request timed out', e, stackTrace);
+      return ProfileResponse(
+        success: false,
+        error: 'Request timed out. Please try again.',
+      );
     } catch (e) {
-      print('Profile fetch error: $e');
+      AppLogger.error('Profile fetch error', e is Exception ? e : null);
       return ProfileResponse(
         success: false,
         error: 'Network error. Please try again.',
