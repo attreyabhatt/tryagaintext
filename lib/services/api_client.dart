@@ -1,7 +1,7 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import '../config/app_config.dart';
 import '../models/generate_response.dart';
 import '../models/suggestion.dart';
@@ -33,18 +33,16 @@ class ApiClient {
     try {
       final headers = await _getHeaders();
 
-      final response = await http
-          .post(
-            Uri.parse('$baseUrl/api/generate/'),
-            headers: headers,
-            body: jsonEncode({
-              'last_text': lastText,
-              'situation': situation,
-              'her_info': herInfo,
-              'tone': tone,
-            }),
-          )
-          .timeout(AppConfig.requestTimeout);
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/generate/'),
+        headers: headers,
+        body: jsonEncode({
+          'last_text': lastText,
+          'situation': situation,
+          'her_info': herInfo,
+          'tone': tone,
+        }),
+      );
 
       final data = _decodeJson(response.body);
       final generateResponse = GenerateResponse.fromJson(data);
@@ -65,9 +63,6 @@ class ApiClient {
 
       // Parse reply into suggestions
       return _parseReplyToSuggestions(generateResponse.reply ?? '');
-    } on TimeoutException catch (e, stackTrace) {
-      AppLogger.error('Generate request timed out', e, stackTrace);
-      throw ApiException('Request timed out. Please try again.', ApiErrorCode.network);
     } catch (e) {
       if (e is ApiException) {
         rethrow;
@@ -91,11 +86,14 @@ class ApiClient {
       }
 
       request.files.add(
-        await http.MultipartFile.fromPath('screenshot', imageFile.path),
+        await http.MultipartFile.fromPath(
+          'screenshot',
+          imageFile.path,
+          contentType: MediaType('image', 'jpeg'),
+        ),
       );
 
-      final streamedResponse =
-          await request.send().timeout(AppConfig.uploadTimeout);
+      final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
       final data = _decodeJson(response.body);
 
@@ -119,9 +117,6 @@ class ApiClient {
       }
 
       return data['conversation'] ?? '';
-    } on TimeoutException catch (e, stackTrace) {
-      AppLogger.error('Extract image request timed out', e, stackTrace);
-      throw ApiException('Request timed out. Please try again.', ApiErrorCode.network);
     } catch (e) {
       if (e is ApiException) {
         rethrow;
@@ -148,11 +143,14 @@ class ApiClient {
       }
 
       request.files.add(
-        await http.MultipartFile.fromPath('profile_image', imageFile.path),
+        await http.MultipartFile.fromPath(
+          'profile_image',
+          imageFile.path,
+          contentType: MediaType('image', 'jpeg'),
+        ),
       );
 
-      final streamedResponse =
-          await request.send().timeout(AppConfig.uploadTimeout);
+      final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
       final data = _decodeJson(response.body);
 
@@ -164,9 +162,6 @@ class ApiClient {
       }
 
       return data['profile_info'] ?? '';
-    } on TimeoutException catch (e, stackTrace) {
-      AppLogger.error('Analyze profile request timed out', e, stackTrace);
-      throw ApiException('Request timed out. Please try again.', ApiErrorCode.network);
     } catch (e) {
       if (e is ApiException) {
         rethrow;
