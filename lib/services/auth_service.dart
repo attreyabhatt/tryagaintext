@@ -92,7 +92,7 @@ class AuthService {
           'email': email,
           'password': password,
         }),
-      ).timeout(AppConfig.requestTimeout);
+      );
 
       final data = jsonDecode(response.body);
       final authResponse = AuthResponse.fromJson(data);
@@ -105,12 +105,6 @@ class AuthService {
       }
 
       return authResponse;
-    } on TimeoutException catch (e, stackTrace) {
-      AppLogger.error('Registration request timed out', e, stackTrace);
-      return AuthResponse(
-        success: false,
-        error: 'Request timed out. Please try again.',
-      );
     } catch (e) {
       AppLogger.error('Registration error', e is Exception ? e : null);
       return AuthResponse(
@@ -130,7 +124,7 @@ class AuthService {
         Uri.parse('$baseUrl/login/'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'username': username, 'password': password}),
-      ).timeout(AppConfig.requestTimeout);
+      );
 
       final data = jsonDecode(response.body);
       final authResponse = AuthResponse.fromJson(data);
@@ -143,12 +137,6 @@ class AuthService {
       }
 
       return authResponse;
-    } on TimeoutException catch (e, stackTrace) {
-      AppLogger.error('Login request timed out', e, stackTrace);
-      return AuthResponse(
-        success: false,
-        error: 'Request timed out. Please try again.',
-      );
     } catch (e) {
       AppLogger.error('Login error', e is Exception ? e : null);
       return AuthResponse(
@@ -172,7 +160,7 @@ class AuthService {
           'Content-Type': 'application/json',
           'Authorization': 'Token $token',
         },
-      ).timeout(AppConfig.requestTimeout);
+      );
 
       final data = jsonDecode(response.body);
       final profileResponse = ProfileResponse.fromJson(data);
@@ -185,12 +173,6 @@ class AuthService {
       }
 
       return profileResponse;
-    } on TimeoutException catch (e, stackTrace) {
-      AppLogger.error('Profile request timed out', e, stackTrace);
-      return ProfileResponse(
-        success: false,
-        error: 'Request timed out. Please try again.',
-      );
     } catch (e) {
       AppLogger.error('Profile fetch error', e is Exception ? e : null);
       return ProfileResponse(
