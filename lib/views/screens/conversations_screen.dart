@@ -26,8 +26,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   List<Suggestion> _suggestions = [];
   bool _isLoading = false;
   bool _isExtractingImage = false;
-  bool _isStreaming = false;
-  String _streamedText = '';
   String? _errorMessage;
   final ImagePicker _picker = ImagePicker();
   late AnimationController _animationController;
@@ -170,79 +168,49 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     }
 
     setState(() {
-      _isLoading = false;
-      _isStreaming = true;
-      _streamedText = '';
+      _isLoading = true;
       _errorMessage = null;
       _suggestions = [];
     });
 
     try {
-      final buffer = StringBuffer();
-      await for (final event in _apiClient.generateStream(
+      final suggestions = await _apiClient.generate(
         lastText: _situation == 'just_matched'
             ? 'just_matched'
             : _conversationCtrl.text,
         situation: _situation,
         herInfo: _situation == 'just_matched' ? _herInfoCtrl.text : '',
         tone: _selectedTone,
-      )) {
-        if (!mounted) return;
-        final type = event['type']?.toString();
+      );
 
-        if (type == 'delta') {
-          buffer.write(event['text']?.toString() ?? '');
-          setState(() {
-            _streamedText = buffer.toString();
-          });
-        } else if (type == 'done') {
-          final fullReply = event['reply']?.toString() ?? buffer.toString();
-          final suggestions = _apiClient.parseReplyToSuggestions(fullReply);
-          if (event['credits_remaining'] is int) {
-            await AuthService.updateStoredCredits(
-              event['credits_remaining'] as int,
-            );
-            await AppStateScope.of(context).reloadFromStorage();
-          }
-
-          setState(() {
-            _suggestions = suggestions;
-            _isStreaming = false;
-          });
-
-          if (suggestions.isNotEmpty) {
-            _animationController.forward();
-          }
-          return;
-        } else if (type == 'error') {
-          final errorCode = event['error']?.toString();
-          if (errorCode == 'insufficient_credits' ||
-              errorCode == 'trial_expired') {
-            setState(() {
-              _isStreaming = false;
-            });
-            await _handleCreditError(
-              ApiException(
-                event['message']?.toString() ?? 'Credits required',
-                errorCode == 'trial_expired'
-                    ? ApiErrorCode.trialExpired
-                    : ApiErrorCode.insufficientCredits,
-              ),
-            );
-          } else {
-            setState(() {
-              _errorMessage = event['message']?.toString() ??
-                  'Oops! Something went wrong. Please try again.';
-              _isStreaming = false;
-            });
-          }
-          return;
-        }
-      }
-    } catch (e) {
       if (!mounted) return;
       setState(() {
-        _isStreaming = false;
+        _suggestions = suggestions;
+        _isLoading = false;
+      });
+
+      await AppStateScope.of(context).reloadFromStorage();
+
+      if (suggestions.isNotEmpty) {
+        _animationController.forward();
+      }
+    } on ApiException catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (_isCreditError(e)) {
+        await _handleCreditError(e);
+      } else {
+        setState(() {
+          _errorMessage = e.message.isNotEmpty
+              ? e.message
+              : 'Oops! Something went wrong. Please try again.';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
         _errorMessage = 'Oops! Something went wrong. Please try again.';
       });
     }
@@ -1096,7 +1064,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: (_isLoading || _isExtractingImage || _isStreaming)
+                  onPressed: (_isLoading || _isExtractingImage)
                       ? null
                       : _generateSuggestions,
                   style: ElevatedButton.styleFrom(
@@ -1114,7 +1082,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      if (_isLoading || _isStreaming) ...[
+                      if (_isLoading) ...[
                         const SizedBox(
                           width: 20,
                           height: 20,
@@ -1220,65 +1188,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                         'This might take a few seconds',
                         style: TextStyle(fontSize: 14, color: Colors.grey[500]),
                       ),
-                    ],
-                  ),
-                ),
-              ] else if (_isStreaming) ...[
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 15,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: theme.primaryColor.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.auto_awesome,
-                              color: theme.primaryColor,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Text(
-                            'Generating replies...',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      if (_streamedText.isNotEmpty)
-                        Text(
-                          _streamedText,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[700],
-                            height: 1.4,
-                          ),
-                        )
-                      else
-                        Text(
-                          'Starting up...',
-                          style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-                        ),
                     ],
                   ),
                 ),
@@ -1402,6 +1311,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       ],
     );
   }
+
 
   Color _getConfidenceColor(double confidence) {
     if (confidence >= 0.8) return Colors.green[600]!;
@@ -1741,3 +1651,4 @@ class _SuggestionCard extends StatelessWidget {
     );
   }
 }
+

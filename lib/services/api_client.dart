@@ -171,30 +171,6 @@ class ApiClient {
     }
   }
 
-  Stream<Map<String, dynamic>> generateStream({
-    required String lastText,
-    required String situation,
-    String herInfo = '',
-    required String tone,
-  }) async* {
-    final headers = await _getHeaders();
-    headers['Accept'] = 'text/event-stream';
-
-    final request = http.Request(
-      'POST',
-      Uri.parse('$baseUrl/api/generate-stream/'),
-    );
-    request.headers.addAll(headers);
-    request.body = jsonEncode({
-      'last_text': lastText,
-      'situation': situation,
-      'her_info': herInfo,
-      'tone': tone,
-    });
-
-    yield* _sendSseRequest(request);
-  }
-
   Stream<Map<String, dynamic>> extractFromImageStream(File imageFile) async* {
     final token = await AuthService.getToken();
 
@@ -358,22 +334,6 @@ class ApiClient {
         return ApiErrorCode.trialExpired;
       default:
         return ApiErrorCode.unknown;
-    }
-  }
-
-  Stream<Map<String, dynamic>> _sendSseRequest(http.Request request) async* {
-    final client = http.Client();
-    try {
-      final response = await client.send(request);
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw ApiException(
-          'Request failed with status ${response.statusCode}',
-          ApiErrorCode.server,
-        );
-      }
-      yield* _parseSseStream(response.stream);
-    } finally {
-      client.close();
     }
   }
 
