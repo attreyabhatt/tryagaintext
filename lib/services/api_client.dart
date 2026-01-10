@@ -171,6 +171,92 @@ class ApiClient {
     }
   }
 
+  Stream<Map<String, dynamic>> generateStream({
+    required String lastText,
+    required String situation,
+    String herInfo = '',
+    required String tone,
+  }) async* {
+    final headers = await _getHeaders();
+    headers['Accept'] = 'text/event-stream';
+
+    final request = http.Request(
+      'POST',
+      Uri.parse('$baseUrl/api/generate-stream/'),
+    );
+    request.headers.addAll(headers);
+    request.body = jsonEncode({
+      'last_text': lastText,
+      'situation': situation,
+      'her_info': herInfo,
+      'tone': tone,
+    });
+
+    yield* _sendSseRequest(request);
+  }
+
+  Stream<Map<String, dynamic>> extractFromImageStream(File imageFile) async* {
+    final token = await AuthService.getToken();
+
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/api/extract-image-stream/'),
+    );
+    request.headers['Accept'] = 'text/event-stream';
+    if (token != null) {
+      request.headers['Authorization'] = 'Token $token';
+    }
+
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'screenshot',
+        imageFile.path,
+        contentType: MediaType('image', 'jpeg'),
+      ),
+    );
+
+    final streamedResponse = await request.send();
+    if (streamedResponse.statusCode < 200 ||
+        streamedResponse.statusCode >= 300) {
+      throw ApiException(
+        'Request failed with status ${streamedResponse.statusCode}',
+        ApiErrorCode.server,
+      );
+    }
+    yield* _parseSseStream(streamedResponse.stream);
+  }
+
+  Stream<Map<String, dynamic>> analyzeProfileStream(File imageFile) async* {
+    final token = await AuthService.getToken();
+
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/api/analyze-profile-stream/'),
+    );
+    request.headers['Accept'] = 'text/event-stream';
+    if (token != null) {
+      request.headers['Authorization'] = 'Token $token';
+    }
+
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'profile_image',
+        imageFile.path,
+        contentType: MediaType('image', 'jpeg'),
+      ),
+    );
+
+    final streamedResponse = await request.send();
+    if (streamedResponse.statusCode < 200 ||
+        streamedResponse.statusCode >= 300) {
+      throw ApiException(
+        'Request failed with status ${streamedResponse.statusCode}',
+        ApiErrorCode.server,
+      );
+    }
+    yield* _parseSseStream(streamedResponse.stream);
+  }
+
   List<Suggestion> _parseReplyToSuggestions(String reply) {
     final suggestions = <Suggestion>[];
 
@@ -248,6 +334,10 @@ class ApiClient {
     }
   }
 
+  List<Suggestion> parseReplyToSuggestions(String reply) {
+    return _parseReplyToSuggestions(reply);
+  }
+
   Map<String, dynamic> _decodeJson(String body) {
     try {
       final decoded = jsonDecode(body);
@@ -268,6 +358,65 @@ class ApiClient {
         return ApiErrorCode.trialExpired;
       default:
         return ApiErrorCode.unknown;
+    }
+  }
+
+  Stream<Map<String, dynamic>> _sendSseRequest(http.Request request) async* {
+    final client = http.Client();
+    try {
+      final response = await client.send(request);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw ApiException(
+          'Request failed with status ${response.statusCode}',
+          ApiErrorCode.server,
+        );
+      }
+      yield* _parseSseStream(response.stream);
+    } finally {
+      client.close();
+    }
+  }
+
+  Stream<Map<String, dynamic>> _parseSseStream(
+    Stream<List<int>> byteStream,
+  ) async* {
+    final buffer = StringBuffer();
+    await for (final chunk in byteStream.transform(utf8.decoder)) {
+      buffer.write(chunk);
+      while (true) {
+        final data = buffer.toString();
+        final splitIndex = data.indexOf('\n\n');
+        if (splitIndex == -1) {
+          break;
+        }
+
+        final eventBlock = data.substring(0, splitIndex);
+        final remaining = data.substring(splitIndex + 2);
+        buffer.clear();
+        buffer.write(remaining);
+
+        final lines = eventBlock.split('\n');
+        final dataLines = <String>[];
+        for (final line in lines) {
+          if (line.startsWith('data:')) {
+            dataLines.add(line.substring(5).trimLeft());
+          }
+        }
+
+        if (dataLines.isEmpty) {
+          continue;
+        }
+
+        final payload = dataLines.join('\n');
+        try {
+          final decoded = jsonDecode(payload);
+          if (decoded is Map<String, dynamic>) {
+            yield decoded;
+          }
+        } catch (e) {
+          AppLogger.error('Failed to decode SSE payload', e is Exception ? e : null);
+        }
+      }
     }
   }
 }
