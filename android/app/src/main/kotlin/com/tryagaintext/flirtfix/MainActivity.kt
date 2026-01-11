@@ -1,4 +1,4 @@
-package com.example.tryagaintext
+package com.tryagaintext.flirtfix
 
 import io.flutter.embedding.android.FlutterActivity
 
