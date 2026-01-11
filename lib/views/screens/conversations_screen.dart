@@ -9,6 +9,7 @@ import '../../services/auth_service.dart';
 import '../../models/suggestion.dart';
 import 'login_screen.dart';
 import 'package:flirtfix/views/screens/pricing_screen.dart';
+import 'package:flirtfix/views/screens/report_issue_screen.dart';
 
 class ConversationsScreen extends StatefulWidget {
   const ConversationsScreen({super.key});
@@ -159,6 +160,13 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       });
       await AppStateScope.of(context).logout();
     }
+  }
+
+  Future<void> _navigateToReport() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ReportIssueScreen()),
+    );
   }
 
   Future<void> _generateSuggestions() async {
@@ -506,6 +514,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         username: username,
         onLogin: _navigateToAuth,
         onBuyCredits: _navigateToPricing,
+        onReportIssue: _navigateToReport,
         onLogout: _handleLogout,
         onTapCredits: _navigateToPricing,
       ),
@@ -1335,6 +1344,7 @@ class _ConversationsAppBar extends StatelessWidget
   final String username;
   final VoidCallback onLogin;
   final VoidCallback onBuyCredits;
+  final VoidCallback onReportIssue;
   final VoidCallback onLogout;
   final VoidCallback onTapCredits;
 
@@ -1344,6 +1354,7 @@ class _ConversationsAppBar extends StatelessWidget
     required this.username,
     required this.onLogin,
     required this.onBuyCredits,
+    required this.onReportIssue,
     required this.onLogout,
     required this.onTapCredits,
   });
@@ -1446,6 +1457,9 @@ class _ConversationsAppBar extends StatelessWidget
               case 'buy_credits':
                 onBuyCredits();
                 break;
+              case 'report':
+                onReportIssue();
+                break;
               case 'logout':
                 onLogout();
                 break;
@@ -1493,6 +1507,17 @@ class _ConversationsAppBar extends StatelessWidget
               ),
               const PopupMenuDivider(),
               const PopupMenuItem(
+                value: 'report',
+                child: Row(
+                  children: [
+                    Icon(Icons.report_outlined),
+                    SizedBox(width: 8),
+                    Text('Report an Issue'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem(
                 value: 'logout',
                 child: Row(
                   children: [
@@ -1503,6 +1528,17 @@ class _ConversationsAppBar extends StatelessWidget
                 ),
               ),
             ],
+            if (!isLoggedIn)
+              const PopupMenuItem(
+                value: 'report',
+                child: Row(
+                  children: [
+                    Icon(Icons.report_outlined),
+                    SizedBox(width: 8),
+                    Text('Report an Issue'),
+                  ],
+                ),
+              ),
           ],
           child: Container(
             margin: const EdgeInsets.only(right: 8),

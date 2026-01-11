@@ -171,6 +171,32 @@ class ApiClient {
     }
   }
 
+  Future<bool> reportIssue({
+    required String reason,
+    required String title,
+    required String subject,
+    required String email,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/report/'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'reason': reason,
+          'title': title,
+          'subject': subject,
+          'email': email,
+        }),
+      );
+
+      final data = _decodeJson(response.body);
+      return data['success'] == true;
+    } catch (e) {
+      AppLogger.error('Report issue error', e is Exception ? e : null);
+      return false;
+    }
+  }
+
   Stream<Map<String, dynamic>> extractFromImageStream(File imageFile) async* {
     final token = await AuthService.getToken();
 
