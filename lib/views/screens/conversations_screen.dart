@@ -65,8 +65,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             const SizedBox(height: 16),
             Text(
               _isTrialExpired
-                  ? 'Your free trial has expired. Sign up to get 6 free credits and continue using FlirtFix!'
-                  : 'You need credits to generate replies. Sign up now to get 6 free credits!',
+                  ? 'Your free trial has expired. Sign up to get free credits and continue using FlirtFix!'
+                  : 'You need credits to generate replies. Sign up now to get free credits!',
               textAlign: TextAlign.center,
             ),
           ],
@@ -331,7 +331,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             );
           } else {
             setState(() {
-              _errorMessage = event['message']?.toString() ??
+              _errorMessage =
+                  event['message']?.toString() ??
                   'Could not process screenshot. Please try again or paste text manually.';
               _isExtractingImage = false;
             });
@@ -438,7 +439,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         } else if (type == 'error') {
           setState(() {
             _isAnalyzingProfile = false;
-            _errorMessage = event['message']?.toString() ??
+            _errorMessage =
+                event['message']?.toString() ??
                 'Could not analyze profile. Please try again or add details manually.';
           });
           return;
@@ -778,14 +780,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                         value: 'Natural',
                         child: Text('Natural'),
                       ),
-                      DropdownMenuItem(
-                        value: 'Flirty',
-                        child: Text('Flirty'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'Funny',
-                        child: Text('Funny'),
-                      ),
+                      DropdownMenuItem(value: 'Flirty', child: Text('Flirty')),
+                      DropdownMenuItem(value: 'Funny', child: Text('Funny')),
                       DropdownMenuItem(
                         value: 'Serious',
                         child: Text('Serious'),
@@ -1326,7 +1322,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     );
   }
 
-
   Color _getConfidenceColor(double confidence) {
     if (confidence >= 0.8) return Colors.green[600]!;
     if (confidence >= 0.6) return Colors.orange[600]!;
@@ -1433,11 +1428,7 @@ class _ConversationsAppBar extends StatelessWidget
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.credit_card,
-                    size: 16,
-                    color: theme.primaryColor,
-                  ),
+                  Icon(Icons.credit_card, size: 16, color: theme.primaryColor),
                   const SizedBox(width: 4),
                   Text(
                     '$credits',
@@ -1668,11 +1659,7 @@ class _SuggestionCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Icon(
-                      Icons.touch_app,
-                      size: 16,
-                      color: Colors.grey[400],
-                    ),
+                    Icon(Icons.touch_app, size: 16, color: Colors.grey[400]),
                     const SizedBox(width: 6),
                     Text(
                       'Tap to copy',
@@ -1692,4 +1679,3 @@ class _SuggestionCard extends StatelessWidget {
     );
   }
 }
-
