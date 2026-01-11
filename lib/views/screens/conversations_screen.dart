@@ -159,6 +159,11 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         _suggestions = [];
       });
       await AppStateScope.of(context).logout();
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
     }
   }
 
