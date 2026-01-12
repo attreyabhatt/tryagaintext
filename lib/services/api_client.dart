@@ -197,6 +197,26 @@ class ApiClient {
     }
   }
 
+  Future<String?> requestPasswordReset({required String email}) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/password-reset/'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      );
+
+      final data = _decodeJson(response.body);
+      if (data['success'] == true) {
+        return null;
+      }
+
+      return data['error']?.toString() ?? 'Password reset failed';
+    } catch (e) {
+      AppLogger.error('Password reset error', e is Exception ? e : null);
+      return 'Network error. Please try again.';
+    }
+  }
+
   Stream<Map<String, dynamic>> extractFromImageStream(File imageFile) async* {
     final token = await AuthService.getToken();
 

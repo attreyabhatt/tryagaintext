@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../state/app_state.dart';
 import '../../services/auth_service.dart';
+import 'forgot_password_screen.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -33,10 +35,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (mounted) {
         if (response.success) {
-          // Login successful - navigate back or to main screen
-          Navigator.of(
-            context,
-          ).pop(true); // Return true to indicate successful login
+          await AppStateScope.of(context).reloadFromStorage();
+          if (!mounted) return;
+          Navigator.of(context).pop(true);
         } else {
           setState(() {
             _errorMessage = response.error ?? 'Login failed';
@@ -217,6 +218,29 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
 
+                    const SizedBox(height: 8),
+
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _isLoading
+                            ? null
+                            : () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const ForgotPasswordScreen(),
+                                  ),
+                                );
+                              },
+                        child: Text(
+                          'Forgot password?',
+                          style: TextStyle(color: theme.primaryColor),
+                        ),
+                      ),
+                    ),
+
                     const SizedBox(height: 24),
 
                     // Error Message
@@ -318,13 +342,20 @@ class _LoginScreenState extends State<LoginScreen> {
                     OutlinedButton(
                       onPressed: _isLoading
                           ? null
-                          : () {
-                              Navigator.push(
+                          : () async {
+                              final result = await Navigator.push<bool>(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => const SignupScreen(),
                                 ),
                               );
+                              if (!mounted) return;
+                              if (result == true) {
+                                await AppStateScope.of(context)
+                                    .reloadFromStorage();
+                                if (!mounted) return;
+                                Navigator.of(context).pop(true);
+                              }
                             },
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 18),
