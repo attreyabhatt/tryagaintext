@@ -1,5 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 import '../../models/pricing_plan.dart';
+import '../../services/api_client.dart';
+import '../../services/auth_service.dart';
 import '../../state/app_state.dart';
 import 'login_screen.dart';
 
@@ -15,13 +19,91 @@ class PricingScreen extends StatefulWidget {
 class _PricingScreenState extends State<PricingScreen> {
   PricingPlan? _selectedPlan;
   bool _isProcessing = false;
+  bool _isBillingAvailable = true;
+  bool _isLoadingProducts = true;
+  final InAppPurchase _inAppPurchase = InAppPurchase.instance;
+  StreamSubscription<List<PurchaseDetails>>? _purchaseSubscription;
+  final Map<String, ProductDetails> _productsById = {};
+  final ApiClient _apiClient = ApiClient();
 
   @override
   void initState() {
     super.initState();
+    _initializeBilling();
+  }
+
+  Future<void> _initializeBilling() async {
+    final available = await _inAppPurchase.isAvailable();
+    if (!available) {
+      if (mounted) {
+        setState(() {
+          _isBillingAvailable = false;
+          _isLoadingProducts = false;
+        });
+      }
+      return;
+    }
+
+    final productIds = PricingPlan.allPlans.map((plan) => plan.id).toSet();
+    final response = await _inAppPurchase.queryProductDetails(productIds);
+
+    if (mounted) {
+      setState(() {
+        _isBillingAvailable = available;
+        _isLoadingProducts = false;
+        _productsById.clear();
+        for (final product in response.productDetails) {
+          _productsById[product.id] = product;
+        }
+      });
+    }
+
+    _purchaseSubscription = _inAppPurchase.purchaseStream.listen(
+      _handlePurchaseUpdates,
+      onError: (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Purchase error: ${error.toString()}'),
+              backgroundColor: Colors.red[600],
+            ),
+          );
+        }
+      },
+    );
   }
 
   Future<void> _handlePurchase(PricingPlan plan) async {
+    if (!_isBillingAvailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Billing is not available on this device.'),
+          backgroundColor: Colors.red[600],
+        ),
+      );
+      return;
+    }
+
+    if (_isLoadingProducts) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Loading products. Please try again.'),
+          backgroundColor: Colors.orange[600],
+        ),
+      );
+      return;
+    }
+
+    if (!_productsById.containsKey(plan.id)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Product not available. Please try again later.'),
+          backgroundColor: Colors.red[600],
+        ),
+      );
+      return;
+    }
+
     final appState = AppStateScope.of(context);
     if (!appState.isLoggedIn) {
       // Show login dialog
@@ -66,6 +148,99 @@ class _PricingScreenState extends State<PricingScreen> {
     _processPurchase(plan);
   }
 
+  Future<void> _handlePurchaseUpdates(
+    List<PurchaseDetails> purchases,
+  ) async {
+    for (final purchase in purchases) {
+      switch (purchase.status) {
+        case PurchaseStatus.pending:
+          if (mounted) {
+            setState(() {
+              _isProcessing = true;
+            });
+          }
+          break;
+        case PurchaseStatus.error:
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  purchase.error?.message ?? 'Purchase failed. Please try again.',
+                ),
+                backgroundColor: Colors.red[600],
+              ),
+            );
+            setState(() {
+              _isProcessing = false;
+              _selectedPlan = null;
+            });
+          }
+          break;
+        case PurchaseStatus.purchased:
+        case PurchaseStatus.restored:
+          final ok = await _verifyAndDeliverPurchase(purchase);
+          if (ok && purchase.pendingCompletePurchase) {
+            await _inAppPurchase.completePurchase(purchase);
+          }
+          break;
+        case PurchaseStatus.canceled:
+          if (mounted) {
+            setState(() {
+              _isProcessing = false;
+              _selectedPlan = null;
+            });
+          }
+          break;
+      }
+    }
+  }
+
+  Future<bool> _verifyAndDeliverPurchase(
+    PurchaseDetails purchase,
+  ) async {
+    final product = _productsById[purchase.productID];
+    final creditsRemaining = await _apiClient.confirmGooglePlayPurchase(
+      productId: purchase.productID,
+      purchaseToken: purchase.verificationData.serverVerificationData,
+      orderId: purchase.purchaseID,
+      purchaseTime: purchase.transactionDate,
+      price: product?.rawPrice,
+      currency: product?.currencyCode,
+    );
+
+    if (!mounted) {
+      return false;
+    }
+
+    if (creditsRemaining != null) {
+      await AuthService.updateStoredCredits(creditsRemaining);
+      await AppStateScope.of(context).reloadFromStorage();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Purchase successful. Credits added!'),
+          backgroundColor: Colors.green[600],
+        ),
+      );
+      setState(() {
+        _isProcessing = false;
+        _selectedPlan = null;
+      });
+      return true;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Purchase verification failed.'),
+        backgroundColor: Colors.red[600],
+      ),
+    );
+    setState(() {
+      _isProcessing = false;
+      _selectedPlan = null;
+    });
+    return false;
+  }
+
   Future<void> _processPurchase(PricingPlan plan) async {
     setState(() {
       _selectedPlan = plan;
@@ -73,38 +248,19 @@ class _PricingScreenState extends State<PricingScreen> {
     });
 
     try {
-      // TODO: Implement Google Play Billing here
-      // For now, just show a coming soon message
-      await Future.delayed(const Duration(seconds: 1));
+      final product = _productsById[plan.id];
+      if (product == null) {
+        throw Exception('Product not found');
+      }
 
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: Row(
-              children: [
-                Icon(Icons.info_outline, color: Theme.of(context).primaryColor),
-                const SizedBox(width: 12),
-                const Text('Coming Soon'),
-              ],
-            ),
-            content: Text(
-              'Google Play billing integration is coming soon!\n\n'
-              'Selected: ${plan.name}\n'
-              'Credits: ${plan.credits}\n'
-              'Price: ${plan.priceString}',
-            ),
-            actions: [
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
+      final purchaseParam = PurchaseParam(productDetails: product);
+      final started = await _inAppPurchase.buyConsumable(
+        purchaseParam: purchaseParam,
+        autoConsume: true,
+      );
+
+      if (!started && mounted) {
+        throw Exception('Could not start purchase flow');
       }
     } catch (e) {
       if (mounted) {
@@ -560,5 +716,11 @@ class _PricingScreenState extends State<PricingScreen> {
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _purchaseSubscription?.cancel();
+    super.dispose();
   }
 }

@@ -197,6 +197,45 @@ class ApiClient {
     }
   }
 
+  Future<int?> confirmGooglePlayPurchase({
+    required String productId,
+    required String purchaseToken,
+    String? orderId,
+    String? purchaseTime,
+    double? price,
+    String? currency,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/google-play/purchase/'),
+        headers: headers,
+        body: jsonEncode({
+          'product_id': productId,
+          'purchase_token': purchaseToken,
+          'order_id': orderId,
+          'purchase_time': purchaseTime,
+          'price': price,
+          'currency': currency,
+        }),
+      );
+
+      final data = _decodeJson(response.body);
+      if (data['success'] == true) {
+        return data['credits_remaining'] as int?;
+      }
+
+      AppLogger.error(
+        'Google Play purchase failed',
+        Exception(data['error']?.toString() ?? 'unknown error'),
+      );
+      return null;
+    } catch (e) {
+      AppLogger.error('Google Play purchase error', e is Exception ? e : null);
+      return null;
+    }
+  }
+
   Future<String?> requestPasswordReset({required String email}) async {
     try {
       final response = await http.post(

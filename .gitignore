@@ -47,3 +47,4 @@ app.*.map.json
 # Release signing keys
 **/key.properties
 **/*.jks
+/assets/service-account-google-play.json

@@ -24,7 +24,7 @@ class PricingPlan {
   // Predefined plans
   static List<PricingPlan> get allPlans => [
     PricingPlan(
-      id: 'starter_pack',
+      id: 'starter_pack_v1',
       name: 'Starter Pack',
       credits: 25,
       price: 4.99,
@@ -37,7 +37,7 @@ class PricingPlan {
       ],
     ),
     PricingPlan(
-      id: 'pro_pack',
+      id: 'pro_pack_v1',
       name: 'Pro Pack',
       credits: 75,
       price: 9.99,
@@ -53,7 +53,7 @@ class PricingPlan {
       ],
     ),
     PricingPlan(
-      id: 'ultimate_pack',
+      id: 'ultimate_pack_v1',
       name: 'Ultimate Pack',
       credits: 200,
       price: 19.99,
