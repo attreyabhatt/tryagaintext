@@ -1,9 +1,20 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'state/app_state.dart';
 import 'views/screens/conversations_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+  PlatformDispatcher.instance.onError = (error, stack) {
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    return true;
+  };
   runApp(const MyApp());
 }
 
@@ -16,12 +27,14 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   late final AppState _appState;
+  late final FirebaseAnalytics _analytics;
 
   @override
   void initState() {
     super.initState();
     _appState = AppState();
     _appState.initialize();
+    _analytics = FirebaseAnalytics.instance;
   }
 
   @override
@@ -34,6 +47,7 @@ class _MyAppState extends State<MyApp> {
         theme: _buildLightTheme(),
         darkTheme: _buildDarkTheme(),
         themeMode: ThemeMode.light,
+        navigatorObservers: [FirebaseAnalyticsObserver(analytics: _analytics)],
         home: const SplashScreen(),
       ),
     );

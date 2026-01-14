@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "404871231104",
+    "project_id": "flirtfix-2f9ee",
+    "storage_bucket": "flirtfix-2f9ee.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:404871231104:android:d7edcc23dc37ffe8401865",
+        "android_client_info": {
+          "package_name": "com.tryagaintext.flirtfix"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDeqI774qKSuxny55DfOaeoM-kpGT180J4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
