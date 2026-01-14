@@ -189,8 +189,6 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // final theme = Theme.of(context);
-
     return Scaffold(
       backgroundColor: const Color(0xFFE91E63), // Use your original pink color
       body: Center(

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import '../../models/pricing_plan.dart';
 import '../../services/api_client.dart';
@@ -28,6 +29,7 @@ class _PricingScreenState extends State<PricingScreen>
   final ApiClient _apiClient = ApiClient();
   final Set<String> _handledPurchaseTokens = {};
   bool _didCompletePurchase = false;
+  bool _isRefreshingPurchases = false;
 
   @override
   void initState() {
@@ -80,10 +82,21 @@ class _PricingScreenState extends State<PricingScreen>
   }
 
   Future<void> _refreshPendingPurchases() async {
+    if (mounted) {
+      setState(() {
+        _isRefreshingPurchases = true;
+      });
+    }
     try {
       await _inAppPurchase.restorePurchases();
     } catch (_) {
       // Ignore restore failures; user can retry purchase.
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshingPurchases = false;
+        });
+      }
     }
   }
 
@@ -95,6 +108,7 @@ class _PricingScreenState extends State<PricingScreen>
   }
 
   Future<void> _handlePurchase(PricingPlan plan) async {
+    HapticFeedback.mediumImpact();
     if (!_isBillingAvailable) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -183,6 +197,7 @@ class _PricingScreenState extends State<PricingScreen>
           break;
         case PurchaseStatus.error:
           if (mounted) {
+            HapticFeedback.heavyImpact();
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Payment declined. Please try another card.'),
@@ -315,6 +330,7 @@ class _PricingScreenState extends State<PricingScreen>
       return;
     }
     _didCompletePurchase = true;
+    HapticFeedback.lightImpact();
     Navigator.pop(context, true);
   }
 
@@ -412,12 +428,11 @@ class _PricingScreenState extends State<PricingScreen>
                   children: [
                     const Icon(Icons.favorite, color: Colors.white, size: 48),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Never Run Out of Great Lines',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                      style: theme.textTheme.headlineSmall?.copyWith(
                         color: Colors.white,
+                        fontWeight: FontWeight.bold,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -453,9 +468,18 @@ class _PricingScreenState extends State<PricingScreen>
                       ),
                       const SizedBox(height: 12),
                       TextButton.icon(
-                        onPressed:
-                            _isProcessing ? null : _refreshPendingPurchases,
-                        icon: const Icon(Icons.refresh, size: 18),
+                        onPressed: _isProcessing
+                            ? null
+                            : () {
+                                HapticFeedback.selectionClick();
+                                _refreshPendingPurchases();
+                              },
+                        icon: AnimatedRotation(
+                          turns: _isRefreshingPurchases ? 1 : 0,
+                          duration: const Duration(milliseconds: 600),
+                          curve: Curves.easeInOut,
+                          child: const Icon(Icons.refresh, size: 18),
+                        ),
                         label: const Text('Refresh purchases'),
                         style: TextButton.styleFrom(
                           foregroundColor: Colors.white,
@@ -577,31 +601,35 @@ class _PricingScreenState extends State<PricingScreen>
     final isSelected = _selectedPlan?.id == plan.id;
     final isProcessing = _isProcessing && isSelected;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: plan.isPopular ? theme.primaryColor : Colors.grey[200]!,
-          width: plan.isPopular ? 2 : 1,
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      scale: isSelected ? 1.01 : 1.0,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: plan.isPopular ? theme.primaryColor : Colors.grey[200]!,
+            width: plan.isPopular ? 2 : 1,
+          ),
+          boxShadow: [
+            if (plan.isPopular)
+              BoxShadow(
+                color: theme.primaryColor.withValues(alpha: 0.2),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+              )
+            else
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+          ],
         ),
-        boxShadow: [
-          if (plan.isPopular)
-            BoxShadow(
-              color: theme.primaryColor.withValues(alpha: 0.2),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
-            )
-          else
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-        ],
-      ),
-      child: Stack(
-        children: [
+        child: Stack(
+          children: [
           // Popular Badge
           if (plan.isPopular)
             Positioned(
@@ -798,9 +826,10 @@ class _PricingScreenState extends State<PricingScreen>
                   ),
                 ),
               ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

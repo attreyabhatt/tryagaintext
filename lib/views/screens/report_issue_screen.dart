@@ -108,7 +108,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                   child: Column(
                     children: [
                       DropdownButtonFormField<String>(
-                        value: _reason,
+                        initialValue: _reason,
                         decoration: InputDecoration(
                           labelText: 'Reason',
                           prefixIcon: Icon(

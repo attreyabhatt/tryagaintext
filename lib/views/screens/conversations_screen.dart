@@ -188,6 +188,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       return;
     }
 
+    HapticFeedback.mediumImpact();
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -247,6 +248,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       );
 
       if (image == null) return;
+      HapticFeedback.selectionClick();
 
       setState(() {
         _isExtractingImage = true;
@@ -381,6 +383,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       );
 
       if (image == null) return;
+      HapticFeedback.selectionClick();
 
       setState(() {
         _isAnalyzingProfile = true;
@@ -493,6 +496,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   }
 
   Future<void> _copySuggestion(String message) async {
+    HapticFeedback.selectionClick();
     await Clipboard.setData(ClipboardData(text: message));
     if (!mounted) return;
 
@@ -714,7 +718,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     ButtonSegment(
                       value: 'stuck_after_reply',
                       label: Text(
-                        'Need Replyo',
+                        'Need Reply',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
