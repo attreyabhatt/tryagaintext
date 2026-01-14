@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 import '../../state/app_state.dart';
 import '../../utils/app_logger.dart';
 import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
+import '../../config/app_config.dart';
 import '../../models/suggestion.dart';
 import 'login_screen.dart';
 import 'package:flirtfix/views/screens/pricing_screen.dart';
 import 'package:flirtfix/views/screens/report_issue_screen.dart';
+import 'package:flirtfix/views/screens/profile_screen.dart';
 
 class ConversationsScreen extends StatefulWidget {
   const ConversationsScreen({super.key});
@@ -175,11 +178,25 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     }
   }
 
-  Future<void> _navigateToReport() async {
+  Future<void> _navigateToProfile() async {
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const ReportIssueScreen()),
+      MaterialPageRoute(builder: (context) => const ProfileScreen()),
     );
+  }
+
+  Future<void> _openPolicy(String path) async {
+    final uri = Uri.parse('${AppConfig.baseUrl}$path');
+    final launched = await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (!mounted) return;
+    if (!launched && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open link.')),
+      );
+    }
   }
 
   Future<void> _generateSuggestions() async {
@@ -533,7 +550,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         username: username,
         onLogin: _navigateToAuth,
         onBuyCredits: _navigateToPricing,
-        onReportIssue: _navigateToReport,
+        onOpenPolicy: _openPolicy,
+        onProfile: _navigateToProfile,
         onLogout: _handleLogout,
         onTapCredits: _navigateToPricing,
       ),
@@ -1356,7 +1374,8 @@ class _ConversationsAppBar extends StatelessWidget
   final String username;
   final VoidCallback onLogin;
   final VoidCallback onBuyCredits;
-  final VoidCallback onReportIssue;
+  final void Function(String) onOpenPolicy;
+  final VoidCallback onProfile;
   final VoidCallback onLogout;
   final VoidCallback onTapCredits;
 
@@ -1366,7 +1385,8 @@ class _ConversationsAppBar extends StatelessWidget
     required this.username,
     required this.onLogin,
     required this.onBuyCredits,
-    required this.onReportIssue,
+    required this.onOpenPolicy,
+    required this.onProfile,
     required this.onLogout,
     required this.onTapCredits,
   });
@@ -1465,8 +1485,20 @@ class _ConversationsAppBar extends StatelessWidget
               case 'buy_credits':
                 onBuyCredits();
                 break;
-              case 'report':
-                onReportIssue();
+              case 'privacy':
+                onOpenPolicy('/privacy-policy/');
+                break;
+              case 'terms':
+                onOpenPolicy('/terms/');
+                break;
+              case 'refund':
+                onOpenPolicy('/refund-policy/');
+                break;
+              case 'delete':
+                onOpenPolicy('/delete-account/');
+                break;
+              case 'profile':
+                onProfile();
                 break;
               case 'logout':
                 onLogout();
@@ -1487,13 +1519,22 @@ class _ConversationsAppBar extends StatelessWidget
               ),
             if (isLoggedIn) ...[
               PopupMenuItem(
-                enabled: false,
+                value: 'profile',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      username,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    Row(
+                      children: [
+                        const Icon(Icons.person, size: 16),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            username,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                     Text(
                       '$credits credits',
@@ -1513,40 +1554,7 @@ class _ConversationsAppBar extends StatelessWidget
                   ],
                 ),
               ),
-              const PopupMenuDivider(),
-              const PopupMenuItem(
-                value: 'report',
-                child: Row(
-                  children: [
-                    Icon(Icons.report_outlined),
-                    SizedBox(width: 8),
-                    Text('Report an Issue'),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              const PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout),
-                    SizedBox(width: 8),
-                    Text('Sign Out'),
-                  ],
-                ),
-              ),
             ],
-            if (!isLoggedIn)
-              const PopupMenuItem(
-                value: 'report',
-                child: Row(
-                  children: [
-                    Icon(Icons.report_outlined),
-                    SizedBox(width: 8),
-                    Text('Report an Issue'),
-                  ],
-                ),
-              ),
           ],
           child: Container(
             margin: const EdgeInsets.only(right: 8),

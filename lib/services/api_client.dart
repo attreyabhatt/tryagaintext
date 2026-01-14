@@ -197,6 +197,33 @@ class ApiClient {
     }
   }
 
+  Future<String?> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/change-password/'),
+        headers: headers,
+        body: jsonEncode({
+          'current_password': currentPassword,
+          'new_password': newPassword,
+        }),
+      );
+
+      final data = _decodeJson(response.body);
+      if (data['success'] == true) {
+        return null;
+      }
+
+      return data['error']?.toString() ?? 'Password update failed';
+    } catch (e) {
+      AppLogger.error('Change password error', e is Exception ? e : null);
+      return 'Network error. Please try again.';
+    }
+  }
+
   Future<int?> confirmGooglePlayPurchase({
     required String productId,
     required String purchaseToken,
