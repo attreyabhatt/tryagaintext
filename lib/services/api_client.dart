@@ -220,6 +220,10 @@ class ApiClient {
         }),
       );
 
+      AppLogger.debug(
+        'Google Play purchase response: ${response.statusCode} ${response.body}',
+      );
+
       final data = _decodeJson(response.body);
       if (data['success'] == true) {
         return data['credits_remaining'] as int?;

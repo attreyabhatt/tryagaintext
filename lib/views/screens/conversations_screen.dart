@@ -123,7 +123,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   }
 
   Future<void> _navigateToPricing() async {
-    await Navigator.push(
+    final purchased = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (context) => const PricingScreen()),
     );
@@ -131,6 +131,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     if (!mounted) return;
     // Refresh credits after returning from pricing
     await AppStateScope.of(context).reloadFromStorage();
+    if (purchased == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Purchase successful. Credits added!'),
+          backgroundColor: Colors.green[600],
+        ),
+      );
+    }
   }
 
   Future<void> _handleLogout() async {
@@ -706,7 +714,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     ButtonSegment(
                       value: 'stuck_after_reply',
                       label: Text(
-                        'Need Reply',
+                        'Need Replyo',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,

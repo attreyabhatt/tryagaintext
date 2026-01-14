@@ -16,7 +16,8 @@ class PricingScreen extends StatefulWidget {
   State<PricingScreen> createState() => _PricingScreenState();
 }
 
-class _PricingScreenState extends State<PricingScreen> {
+class _PricingScreenState extends State<PricingScreen>
+    with WidgetsBindingObserver {
   PricingPlan? _selectedPlan;
   bool _isProcessing = false;
   bool _isBillingAvailable = true;
@@ -25,10 +26,13 @@ class _PricingScreenState extends State<PricingScreen> {
   StreamSubscription<List<PurchaseDetails>>? _purchaseSubscription;
   final Map<String, ProductDetails> _productsById = {};
   final ApiClient _apiClient = ApiClient();
+  final Set<String> _handledPurchaseTokens = {};
+  bool _didCompletePurchase = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initializeBilling();
   }
 
@@ -71,6 +75,23 @@ class _PricingScreenState extends State<PricingScreen> {
         }
       },
     );
+
+    await _refreshPendingPurchases();
+  }
+
+  Future<void> _refreshPendingPurchases() async {
+    try {
+      await _inAppPurchase.restorePurchases();
+    } catch (_) {
+      // Ignore restore failures; user can retry purchase.
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshPendingPurchases();
+    }
   }
 
   Future<void> _handlePurchase(PricingPlan plan) async {
@@ -163,11 +184,35 @@ class _PricingScreenState extends State<PricingScreen> {
         case PurchaseStatus.error:
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  purchase.error?.message ?? 'Purchase failed. Please try again.',
+              const SnackBar(
+                content: Text('Payment declined. Please try another card.'),
+                backgroundColor: Colors.redAccent,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                backgroundColor: Colors.red[600],
+                title: const Text('Payment declined'),
+                content: const Text(
+                  'Your payment was declined. Please try another card or payment method.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Close'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _refreshPendingPurchases();
+                    },
+                    child: const Text('Try another card'),
+                  ),
+                ],
               ),
             );
             setState(() {
@@ -178,7 +223,10 @@ class _PricingScreenState extends State<PricingScreen> {
           break;
         case PurchaseStatus.purchased:
         case PurchaseStatus.restored:
-          final ok = await _verifyAndDeliverPurchase(purchase);
+          final ok = await _verifyAndDeliverPurchase(
+            purchase,
+            showFailure: purchase.status == PurchaseStatus.purchased,
+          );
           if (ok && purchase.pendingCompletePurchase) {
             await _inAppPurchase.completePurchase(purchase);
           }
@@ -197,7 +245,14 @@ class _PricingScreenState extends State<PricingScreen> {
 
   Future<bool> _verifyAndDeliverPurchase(
     PurchaseDetails purchase,
+    {required bool showFailure}
   ) async {
+    final previousCredits = AppStateScope.of(context).credits;
+    final tokenKey = purchase.verificationData.serverVerificationData;
+    if (_handledPurchaseTokens.contains(tokenKey)) {
+      return true;
+    }
+
     final product = _productsById[purchase.productID];
     final creditsRemaining = await _apiClient.confirmGooglePlayPurchase(
       productId: purchase.productID,
@@ -215,12 +270,8 @@ class _PricingScreenState extends State<PricingScreen> {
     if (creditsRemaining != null) {
       await AuthService.updateStoredCredits(creditsRemaining);
       await AppStateScope.of(context).reloadFromStorage();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Purchase successful. Credits added!'),
-          backgroundColor: Colors.green[600],
-        ),
-      );
+      _handledPurchaseTokens.add(tokenKey);
+      _handleSuccessfulPurchase();
       setState(() {
         _isProcessing = false;
         _selectedPlan = null;
@@ -228,17 +279,43 @@ class _PricingScreenState extends State<PricingScreen> {
       return true;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Purchase verification failed.'),
-        backgroundColor: Colors.red[600],
-      ),
-    );
+    await AppStateScope.of(context).refreshUserData();
+    if (!mounted) {
+      return false;
+    }
+
+    final updatedCredits = AppStateScope.of(context).credits;
+    if (updatedCredits > previousCredits) {
+      _handledPurchaseTokens.add(tokenKey);
+      _handleSuccessfulPurchase();
+      setState(() {
+        _isProcessing = false;
+        _selectedPlan = null;
+      });
+      return true;
+    }
+
+    if (showFailure) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Purchase verification failed.'),
+          backgroundColor: Colors.red[600],
+        ),
+      );
+    }
     setState(() {
       _isProcessing = false;
       _selectedPlan = null;
     });
     return false;
+  }
+
+  void _handleSuccessfulPurchase() {
+    if (_didCompletePurchase) {
+      return;
+    }
+    _didCompletePurchase = true;
+    Navigator.pop(context, true);
   }
 
   Future<void> _processPurchase(PricingPlan plan) async {
@@ -372,6 +449,16 @@ class _PricingScreenState extends State<PricingScreen> {
                               ),
                             ),
                           ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextButton.icon(
+                        onPressed:
+                            _isProcessing ? null : _refreshPendingPurchases,
+                        icon: const Icon(Icons.refresh, size: 18),
+                        label: const Text('Refresh purchases'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.white,
                         ),
                       ),
                     ] else ...[
@@ -720,6 +807,7 @@ class _PricingScreenState extends State<PricingScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _purchaseSubscription?.cancel();
     super.dispose();
   }
