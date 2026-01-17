@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import '../config/app_config.dart';
 import '../models/generate_response.dart';
+import '../models/payment_history.dart';
 import '../models/suggestion.dart';
 import '../utils/app_logger.dart';
 import 'auth_service.dart';
@@ -284,6 +285,28 @@ class ApiClient {
     } catch (e) {
       AppLogger.error('Password reset error', e is Exception ? e : null);
       return 'Network error. Please try again.';
+    }
+  }
+
+  Future<List<PaymentHistory>> getPaymentHistory() async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/payment-history/'),
+        headers: headers,
+      );
+
+      final data = _decodeJson(response.body);
+      if (data['success'] == true && data['purchases'] is List) {
+        return (data['purchases'] as List)
+            .map((item) => PaymentHistory.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+
+      return [];
+    } catch (e) {
+      AppLogger.error('Payment history error', e is Exception ? e : null);
+      return [];
     }
   }
 

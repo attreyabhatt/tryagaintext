@@ -187,15 +187,12 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
   Future<void> _openPolicy(String path) async {
     final uri = Uri.parse('${AppConfig.baseUrl}$path');
-    final launched = await launchUrl(
-      uri,
-      mode: LaunchMode.externalApplication,
-    );
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!mounted) return;
     if (!launched && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open link.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Could not open link.')));
     }
   }
 

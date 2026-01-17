@@ -2,10 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/pricing_plan.dart';
 import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
 import '../../state/app_state.dart';
+import '../../utils/app_logger.dart';
 import 'login_screen.dart';
 
 class PricingScreen extends StatefulWidget {
@@ -31,11 +33,59 @@ class _PricingScreenState extends State<PricingScreen>
   bool _didCompletePurchase = false;
   bool _isRefreshingPurchases = false;
 
+  static const String _handledTokensKey = 'handled_purchase_tokens';
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _initializeBilling();
+    _loadHandledTokens().then((_) {
+      _initializeBilling();
+    });
+  }
+
+  Future<void> _loadHandledTokens() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final tokens = prefs.getStringList(_handledTokensKey) ?? [];
+      _handledPurchaseTokens.addAll(tokens);
+    } catch (e) {
+      // Ignore errors loading tokens
+    }
+  }
+
+  Future<void> _saveHandledToken(String token) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _handledPurchaseTokens.add(token);
+      await prefs.setStringList(
+        _handledTokensKey,
+        _handledPurchaseTokens.toList(),
+      );
+      AppLogger.debug('Saved purchase token: ${token.substring(0, 20)}... (Total: ${_handledPurchaseTokens.length})');
+    } catch (e) {
+      AppLogger.error('Failed to save purchase token', e is Exception ? e : null);
+    }
+  }
+
+  // For debugging: Clear all handled purchase tokens
+  Future<void> _clearHandledTokens() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_handledTokensKey);
+      _handledPurchaseTokens.clear();
+      AppLogger.debug('Cleared all handled purchase tokens');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cleared purchase cache. Old purchases will be reprocessed.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      AppLogger.error('Failed to clear tokens', e is Exception ? e : null);
+    }
   }
 
   Future<void> _initializeBilling() async {
@@ -53,6 +103,28 @@ class _PricingScreenState extends State<PricingScreen>
     final productIds = PricingPlan.allPlans.map((plan) => plan.id).toSet();
     final response = await _inAppPurchase.queryProductDetails(productIds);
 
+    // Set up purchase stream listener FIRST before any other operations
+    // This listener will automatically receive any pending purchases from Google Play
+    AppLogger.debug('Setting up purchase stream listener...');
+    _purchaseSubscription = _inAppPurchase.purchaseStream.listen(
+      (purchases) {
+        AppLogger.debug('Purchase stream fired with ${purchases.length} purchases');
+        _handlePurchaseUpdates(purchases);
+      },
+      onError: (error) {
+        AppLogger.error('Purchase stream error: $error');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Purchase error: ${error.toString()}'),
+              backgroundColor: Colors.red[600],
+            ),
+          );
+        }
+      },
+    );
+    AppLogger.debug('Purchase stream listener active');
+
     if (mounted) {
       setState(() {
         _isBillingAvailable = available;
@@ -64,20 +136,7 @@ class _PricingScreenState extends State<PricingScreen>
       });
     }
 
-    _purchaseSubscription = _inAppPurchase.purchaseStream.listen(
-      _handlePurchaseUpdates,
-      onError: (error) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Purchase error: ${error.toString()}'),
-              backgroundColor: Colors.red[600],
-            ),
-          );
-        }
-      },
-    );
-
+    // Now check for any pending purchases
     await _refreshPendingPurchases();
   }
 
@@ -88,9 +147,20 @@ class _PricingScreenState extends State<PricingScreen>
       });
     }
     try {
+      AppLogger.debug('Checking for pending purchases...');
+
+      // The purchase stream should automatically deliver pending purchases
+      // when we first subscribe to it. Calling restorePurchases() will
+      // re-trigger delivery of any unacknowledged purchases.
       await _inAppPurchase.restorePurchases();
-    } catch (_) {
-      // Ignore restore failures; user can retry purchase.
+      AppLogger.debug('Restore purchases call completed');
+
+      // Give time for the purchase stream to process any pending purchases
+      await Future.delayed(const Duration(milliseconds: 1000));
+
+      AppLogger.debug('Pending purchase check completed');
+    } catch (e) {
+      AppLogger.error('Failed to check pending purchases', e is Exception ? e : null);
     } finally {
       if (mounted) {
         setState(() {
@@ -186,9 +256,19 @@ class _PricingScreenState extends State<PricingScreen>
   Future<void> _handlePurchaseUpdates(
     List<PurchaseDetails> purchases,
   ) async {
+    AppLogger.debug('Purchase update received: ${purchases.length} purchases');
+
     for (final purchase in purchases) {
+      AppLogger.debug(
+        'Processing purchase: ${purchase.productID}, '
+        'status: ${purchase.status}, '
+        'pending: ${purchase.pendingCompletePurchase}, '
+        'token: ${purchase.verificationData.serverVerificationData.substring(0, 20)}...'
+      );
+
       switch (purchase.status) {
         case PurchaseStatus.pending:
+          AppLogger.debug('Purchase pending: ${purchase.productID}');
           if (mounted) {
             setState(() {
               _isProcessing = true;
@@ -238,13 +318,22 @@ class _PricingScreenState extends State<PricingScreen>
           break;
         case PurchaseStatus.purchased:
         case PurchaseStatus.restored:
-          final ok = await _verifyAndDeliverPurchase(
+          AppLogger.debug('Purchase ${purchase.status}: ${purchase.productID}');
+
+          // CRITICAL FIX: Always complete purchase IMMEDIATELY to prevent Google Play account lock
+          // This must happen FIRST, before any async operations that could fail or timeout
+          // Google Play requires acknowledgement within 3 days or auto-refunds
+          if (purchase.pendingCompletePurchase) {
+            AppLogger.debug('Immediately completing purchase to unlock Google Play account: ${purchase.productID}');
+            await _inAppPurchase.completePurchase(purchase);
+            AppLogger.debug('Purchase completed with Google Play: ${purchase.productID}');
+          }
+
+          // Now verify and deliver credits (can be done after completion)
+          await _verifyAndDeliverPurchase(
             purchase,
             showFailure: purchase.status == PurchaseStatus.purchased,
           );
-          if (ok && purchase.pendingCompletePurchase) {
-            await _inAppPurchase.completePurchase(purchase);
-          }
           break;
         case PurchaseStatus.canceled:
           if (mounted) {
@@ -262,9 +351,19 @@ class _PricingScreenState extends State<PricingScreen>
     PurchaseDetails purchase,
     {required bool showFailure}
   ) async {
+    if (!mounted) return false;
+
     final previousCredits = AppStateScope.of(context).credits;
     final tokenKey = purchase.verificationData.serverVerificationData;
+    final wasProcessing = _isProcessing;
+
+    AppLogger.debug('Verifying purchase: ${purchase.productID}, token: ${tokenKey.substring(0, 20)}...');
+
+    // Check if we've already handled this purchase token
     if (_handledPurchaseTokens.contains(tokenKey)) {
+      AppLogger.debug('Purchase token already handled, skipping verification: ${purchase.productID}');
+      // Purchase already handled, don't process again
+      // But we should still complete it if needed to remove from Google Play queue
       return true;
     }
 
@@ -284,33 +383,45 @@ class _PricingScreenState extends State<PricingScreen>
 
     if (creditsRemaining != null) {
       await AuthService.updateStoredCredits(creditsRemaining);
+      if (!mounted) return false;
+
       await AppStateScope.of(context).reloadFromStorage();
-      _handledPurchaseTokens.add(tokenKey);
-      _handleSuccessfulPurchase();
-      setState(() {
-        _isProcessing = false;
-        _selectedPlan = null;
-      });
+      await _saveHandledToken(tokenKey);
+
+      // A delayed purchase is one where user wasn't actively processing
+      _handleSuccessfulPurchase(isDelayed: !wasProcessing);
+
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+          _selectedPlan = null;
+        });
+      }
       return true;
     }
 
+    if (!mounted) return false;
     await AppStateScope.of(context).refreshUserData();
+
     if (!mounted) {
       return false;
     }
 
     final updatedCredits = AppStateScope.of(context).credits;
     if (updatedCredits > previousCredits) {
-      _handledPurchaseTokens.add(tokenKey);
-      _handleSuccessfulPurchase();
-      setState(() {
-        _isProcessing = false;
-        _selectedPlan = null;
-      });
+      await _saveHandledToken(tokenKey);
+      _handleSuccessfulPurchase(isDelayed: !wasProcessing);
+
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+          _selectedPlan = null;
+        });
+      }
       return true;
     }
 
-    if (showFailure) {
+    if (showFailure && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Purchase verification failed.'),
@@ -318,20 +429,50 @@ class _PricingScreenState extends State<PricingScreen>
         ),
       );
     }
-    setState(() {
-      _isProcessing = false;
-      _selectedPlan = null;
-    });
+
+    if (mounted) {
+      setState(() {
+        _isProcessing = false;
+        _selectedPlan = null;
+      });
+    }
     return false;
   }
 
-  void _handleSuccessfulPurchase() {
+  void _handleSuccessfulPurchase({bool isDelayed = false}) {
     if (_didCompletePurchase) {
       return;
     }
     _didCompletePurchase = true;
+
     HapticFeedback.lightImpact();
-    Navigator.pop(context, true);
+
+    // If this is a delayed purchase (not actively processing), just show snackbar
+    if (isDelayed) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Your previous purchase was approved! You now have ${AppStateScope.of(context).credits} credits',
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green[600],
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } else {
+      // Active purchase - pop the screen with success
+      Navigator.pop(context, true);
+    }
   }
 
   Future<void> _processPurchase(PricingPlan plan) async {
@@ -347,9 +488,10 @@ class _PricingScreenState extends State<PricingScreen>
       }
 
       final purchaseParam = PurchaseParam(productDetails: product);
+      // Don't auto-consume - we'll consume manually after backend verification
       final started = await _inAppPurchase.buyConsumable(
         purchaseParam: purchaseParam,
-        autoConsume: true,
+        autoConsume: false,
       );
 
       if (!started && mounted) {
@@ -467,22 +609,25 @@ class _PricingScreenState extends State<PricingScreen>
                         ),
                       ),
                       const SizedBox(height: 12),
-                      TextButton.icon(
-                        onPressed: _isProcessing
-                            ? null
-                            : () {
-                                HapticFeedback.selectionClick();
-                                _refreshPendingPurchases();
-                              },
-                        icon: AnimatedRotation(
-                          turns: _isRefreshingPurchases ? 1 : 0,
-                          duration: const Duration(milliseconds: 600),
-                          curve: Curves.easeInOut,
-                          child: const Icon(Icons.refresh, size: 18),
-                        ),
-                        label: const Text('Refresh purchases'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.white,
+                      GestureDetector(
+                        onLongPress: _clearHandledTokens,
+                        child: TextButton.icon(
+                          onPressed: _isProcessing
+                              ? null
+                              : () {
+                                  HapticFeedback.selectionClick();
+                                  _refreshPendingPurchases();
+                                },
+                          icon: AnimatedRotation(
+                            turns: _isRefreshingPurchases ? 1 : 0,
+                            duration: const Duration(milliseconds: 600),
+                            curve: Curves.easeInOut,
+                            child: const Icon(Icons.refresh, size: 18),
+                          ),
+                          label: const Text('Refresh purchases'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.white,
+                          ),
                         ),
                       ),
                     ] else ...[
