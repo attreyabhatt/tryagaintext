@@ -345,18 +345,20 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: _isLoading
                           ? null
                           : () async {
-                              final result = await Navigator.push<bool>(
-                                context,
+                              // Capture references before async gap
+                              final appState = AppStateScope.of(context);
+                              final navigator = Navigator.of(context);
+
+                              final result = await navigator.push<bool>(
                                 MaterialPageRoute(
                                   builder: (context) => const SignupScreen(),
                                 ),
                               );
                               if (!mounted) return;
                               if (result == true) {
-                                await AppStateScope.of(context)
-                                    .reloadFromStorage();
+                                await appState.reloadFromStorage();
                                 if (!mounted) return;
-                                Navigator.of(context).pop(true);
+                                navigator.pop(true);
                               }
                             },
                       style: OutlinedButton.styleFrom(

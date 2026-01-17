@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../config/app_config.dart';
 import '../../models/payment_history.dart';
 import '../../services/api_client.dart';
 import '../../state/app_state.dart';
 import 'change_password_screen.dart';
-import 'forgot_password_screen.dart';
 import 'pricing_screen.dart';
 import 'report_issue_screen.dart';
 

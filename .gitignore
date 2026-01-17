@@ -48,3 +48,7 @@ app.*.map.json
 **/key.properties
 **/*.jks
 /assets/service-account-google-play.json
+
+# Claude Code related
+.claude/
+CLAUDE.md

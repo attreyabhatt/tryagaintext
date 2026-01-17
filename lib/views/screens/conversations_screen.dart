@@ -11,7 +11,6 @@ import '../../config/app_config.dart';
 import '../../models/suggestion.dart';
 import 'login_screen.dart';
 import 'package:flirtfix/views/screens/pricing_screen.dart';
-import 'package:flirtfix/views/screens/report_issue_screen.dart';
 import 'package:flirtfix/views/screens/profile_screen.dart';
 
 class ConversationsScreen extends StatefulWidget {
@@ -134,6 +133,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     if (!mounted) return;
     // Refresh credits after returning from pricing
     await AppStateScope.of(context).reloadFromStorage();
+    if (!mounted) return;
     if (purchased == true) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -310,7 +310,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             await AuthService.updateStoredCredits(
               event['credits_remaining'] as int,
             );
-            await AppStateScope.of(context).reloadFromStorage();
+            if (mounted) {
+              await AppStateScope.of(context).reloadFromStorage();
+            }
           }
 
           setState(() {
@@ -321,22 +323,24 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
           _animationController.reset();
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text('Screenshot processed successfully!'),
-                ],
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text('Screenshot processed successfully!'),
+                  ],
+                ),
+                backgroundColor: Colors.green[600],
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              backgroundColor: Colors.green[600],
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          );
+            );
+          }
           return;
         } else if (type == 'error') {
           final errorCode = event['error']?.toString();
