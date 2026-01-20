@@ -30,6 +30,7 @@ class ApiClient {
     required String situation,
     String herInfo = '',
     required String tone,
+    String customInstructions = '',
   }) async {
     try {
       final headers = await _getHeaders();
@@ -42,6 +43,7 @@ class ApiClient {
           'situation': situation,
           'her_info': herInfo,
           'tone': tone,
+          'custom_instructions': customInstructions,
         }),
       );
 

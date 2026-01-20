@@ -41,6 +41,13 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
   bool _isAnalyzingProfile = false;
 
+  // Uploaded image files for preview
+  File? _uploadedConversationImage;
+  File? _uploadedProfileImage;
+
+  // Custom instructions controller
+  final _customInstructionsCtrl = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -217,6 +224,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         situation: _situation,
         herInfo: _situation == 'just_matched' ? _herInfoCtrl.text : '',
         tone: _selectedTone,
+        customInstructions: _situation != 'just_matched'
+            ? _customInstructionsCtrl.text
+            : '',
       );
 
       if (!mounted) return;
@@ -264,12 +274,13 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       if (image == null) return;
       HapticFeedback.selectionClick();
 
+      final file = File(image.path);
+
       setState(() {
         _isExtractingImage = true;
         _errorMessage = null;
+        _uploadedConversationImage = file;
       });
-
-      final file = File(image.path);
       if (!await file.exists()) {
         throw Exception('Selected file does not exist');
       }
@@ -384,12 +395,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       if (image == null) return;
       HapticFeedback.selectionClick();
 
+      final file = File(image.path);
+
       setState(() {
         _isAnalyzingProfile = true;
         _errorMessage = null;
+        _uploadedProfileImage = file;
       });
 
-      final file = File(image.path);
       if (!await file.exists()) {
         throw Exception('Selected file does not exist');
       }
@@ -910,6 +923,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                               onPressed: () {
                                 setState(() {
                                   _herInfoCtrl.clear();
+                                  _uploadedProfileImage = null;
                                   _suggestions = [];
                                   _animationController.reset();
                                 });
@@ -923,142 +937,263 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 _buildSectionTitle('Your conversation', Icons.forum),
                 const SizedBox(height: 16),
 
-                // Upload or paste options
+                // Upload screenshot button
                 Container(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: Colors.grey[200]!, width: 1),
                   ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: _isExtractingImage ? null : _uploadScreenshot,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 16,
-                              horizontal: 20,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _isExtractingImage
-                                  ? Colors.grey[100]
-                                  : theme.primaryColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: _isExtractingImage
-                                    ? Colors.grey[300]!
-                                    : theme.primaryColor.withValues(alpha: 0.3),
-                                width: 1.5,
+                  child: GestureDetector(
+                    onTap: _isExtractingImage ? null : _uploadScreenshot,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 14,
+                        horizontal: 16,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _isExtractingImage
+                            ? Colors.grey[100]
+                            : theme.primaryColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _isExtractingImage
+                              ? Colors.grey[300]!
+                              : theme.primaryColor.withValues(alpha: 0.3),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (_isExtractingImage) ...[
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: theme.primaryColor,
                               ),
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                if (_isExtractingImage) ...[
-                                  SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: theme.primaryColor,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  const Text(
-                                    'Processing...',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ] else ...[
-                                  Icon(
-                                    Icons.photo_library,
-                                    color: theme.primaryColor,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    'Upload Screenshot',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: theme.primaryColor,
-                                    ),
-                                  ),
-                                ],
-                              ],
+                            const SizedBox(width: 12),
+                            const Text(
+                              'Processing...',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey,
+                              ),
                             ),
-                          ),
-                        ),
+                          ] else ...[
+                            Icon(Icons.photo_camera, color: theme.primaryColor),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Upload Conversation Screenshot',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: theme.primaryColor,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                      const SizedBox(width: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          'OR',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
 
                 const SizedBox(height: 16),
 
+                // Show image preview with progress
+                if (_isExtractingImage &&
+                    _uploadedConversationImage != null) ...[
+                  // Processing state with image and progress bar
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 15,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(16),
+                          ),
+                          child: Image.file(
+                            _uploadedConversationImage!,
+                            height: 150,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            children: [
+                              LinearProgressIndicator(
+                                backgroundColor: Colors.grey[200],
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  theme.primaryColor,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Extracting conversation...',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else if (_uploadedConversationImage != null &&
+                    _conversationCtrl.text.isNotEmpty) ...[
+                  // Completed state - show image preview
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 15,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.file(
+                            _uploadedConversationImage!,
+                            height: 180,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _uploadedConversationImage = null;
+                                _conversationCtrl.clear();
+                                _suggestions = [];
+                                _animationController.reset();
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.6),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 8,
+                          left: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withValues(alpha: 0.9),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.check_circle,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Extracted',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 16),
+
+                // Custom instructions field (only for Need Reply and Left on Read)
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 15,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[200]!, width: 1),
                   ),
                   child: TextField(
-                    controller: _conversationCtrl,
-                    minLines: 6,
-                    maxLines: 10,
-                    style: const TextStyle(fontSize: 16),
+                    controller: _customInstructionsCtrl,
+                    maxLines: 1,
+                    style: const TextStyle(fontSize: 14),
                     decoration: InputDecoration(
-                      hintText: _situation == 'stuck_after_reply'
-                          ? "You: How was your weekend?\nThem: Pretty good, went hiking!\nYou: That sounds amazing! Where did you go?"
-                          : "You: Want to grab coffee this Thursday?\nThem: (seen 2 hours ago)",
-                      hintStyle: TextStyle(color: Colors.grey[400]),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
+                      hintText:
+                          'Custom instructions (optional): e.g., "be more flirty" or "mention coffee"',
+                      hintStyle: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: 13,
                       ),
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.all(20),
-                      suffixIcon: _conversationCtrl.text.isNotEmpty
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.edit_note,
+                        color: Colors.grey[400],
+                        size: 20,
+                      ),
+                      suffixIcon: _customInstructionsCtrl.text.isNotEmpty
                           ? IconButton(
-                              icon: Icon(Icons.clear, color: Colors.grey[400]),
+                              icon: Icon(
+                                Icons.clear,
+                                color: Colors.grey[400],
+                                size: 18,
+                              ),
                               onPressed: () {
                                 setState(() {
-                                  _conversationCtrl.clear();
-                                  _suggestions = [];
-                                  _animationController.reset();
+                                  _customInstructionsCtrl.clear();
                                 });
                               },
                             )
                           : null,
                     ),
+                    onChanged: (value) {
+                      setState(() {});
+                    },
                   ),
                 ),
               ],
