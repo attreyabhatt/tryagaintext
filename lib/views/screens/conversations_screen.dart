@@ -322,25 +322,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           });
 
           _animationController.reset();
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Row(
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.white),
-                    SizedBox(width: 8),
-                    Text('Screenshot processed successfully!'),
-                  ],
-                ),
-                backgroundColor: Colors.green[600],
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            );
-          }
           return;
         } else if (type == 'error') {
           final errorCode = event['error']?.toString();
@@ -447,23 +428,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           });
 
           _animationController.reset();
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text('Profile analyzed successfully!'),
-                ],
-              ),
-              backgroundColor: Colors.green[600],
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          );
           return;
         } else if (type == 'error') {
           setState(() {
@@ -889,7 +853,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                             Icon(Icons.photo_camera, color: theme.primaryColor),
                             const SizedBox(width: 12),
                             Text(
-                              'Upload Profile Screenshot',
+                              'Upload Profile/Photo Screenshot',
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 color: theme.primaryColor,
