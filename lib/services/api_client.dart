@@ -374,6 +374,77 @@ class ApiClient {
     yield* _parseSseStream(streamedResponse.stream);
   }
 
+  /// Generate openers directly from a profile image (no extraction step)
+  Future<List<Suggestion>> generateOpenersFromImage(
+    File imageFile, {
+    String customInstructions = '',
+  }) async {
+    try {
+      final token = await AuthService.getToken();
+
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/api/generate-openers-from-image/'),
+      );
+
+      if (token != null) {
+        request.headers['Authorization'] = 'Token $token';
+      }
+
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'profile_image',
+          imageFile.path,
+          contentType: MediaType('image', 'jpeg'),
+        ),
+      );
+
+      if (customInstructions.isNotEmpty) {
+        request.fields['custom_instructions'] = customInstructions;
+      }
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      final data = _decodeJson(response.body);
+
+      if (data['success'] == false) {
+        if (data['error'] == 'insufficient_credits') {
+          throw ApiException(
+            data['message'] ?? 'No credits remaining',
+            ApiErrorCode.insufficientCredits,
+          );
+        }
+        if (data['error'] == 'trial_expired') {
+          throw ApiException(
+            data['message'] ?? 'Trial expired',
+            ApiErrorCode.trialExpired,
+          );
+        }
+        throw ApiException(
+          data['message'] ?? 'Failed to generate openers',
+          ApiErrorCode.server,
+        );
+      }
+
+      // Update stored credits if available
+      if (data['credits_remaining'] != null) {
+        await AuthService.updateStoredCredits(data['credits_remaining']);
+      }
+
+      // Parse reply into suggestions
+      return _parseReplyToSuggestions(data['reply'] ?? '');
+    } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
+      AppLogger.error('Generate openers from image error', e is Exception ? e : null);
+      throw ApiException(
+        'Failed to generate openers from image',
+        ApiErrorCode.server,
+      );
+    }
+  }
+
   List<Suggestion> _parseReplyToSuggestions(String reply) {
     final suggestions = <Suggestion>[];
 

@@ -45,8 +45,6 @@ class _MyAppState extends State<MyApp> {
         debugShowCheckedModeBanner: false,
         title: 'FlirtFix',
         theme: _buildLightTheme(),
-        darkTheme: _buildDarkTheme(),
-        themeMode: ThemeMode.light,
         navigatorObservers: [FirebaseAnalyticsObserver(analytics: _analytics)],
         home: const SplashScreen(),
       ),
@@ -57,15 +55,15 @@ class _MyAppState extends State<MyApp> {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      colorSchemeSeed: const Color(0xFFE91E63), // Dating app pink/red
+      colorSchemeSeed: const Color(0xFFD32F2F), // Bold red
       scaffoldBackgroundColor: const Color(0xFFFAFAFA),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         systemOverlayStyle: SystemUiOverlayStyle.dark,
-        iconTheme: IconThemeData(color: Colors.black87),
+        iconTheme: IconThemeData(color: Color(0xFF1A1A1A)),
         titleTextStyle: TextStyle(
-          color: Colors.black87,
+          color: Color(0xFF1A1A1A),
           fontSize: 20,
           fontWeight: FontWeight.w600,
         ),
@@ -73,7 +71,7 @@ class _MyAppState extends State<MyApp> {
       cardTheme: CardThemeData(
         color: Colors.white,
         elevation: 0,
-        shadowColor: Colors.black.withValues(alpha: 0.1),
+        shadowColor: Colors.black.withValues(alpha: 0.08),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -99,64 +97,7 @@ class _MyAppState extends State<MyApp> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFE91E63), width: 2),
-        ),
-        contentPadding: const EdgeInsets.all(20),
-      ),
-      snackBarTheme: SnackBarThemeData(
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
-
-  ThemeData _buildDarkTheme() {
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      colorSchemeSeed: const Color(0xFFFF6B9D), // Lighter pink for dark mode
-      scaffoldBackgroundColor: const Color(0xFF121212),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        systemOverlayStyle: SystemUiOverlayStyle.light,
-        iconTheme: IconThemeData(color: Colors.white),
-        titleTextStyle: TextStyle(
-          color: Colors.white,
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      cardTheme: CardThemeData(
-        color: const Color(0xFF1E1E1E),
-        elevation: 0,
-        shadowColor: Colors.black.withValues(alpha: 0.1),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-        ),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: const Color(0xFF1E1E1E),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.grey.shade800),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFFF6B9D), width: 2),
+          borderSide: const BorderSide(color: Color(0xFFD32F2F), width: 2),
         ),
         contentPadding: const EdgeInsets.all(20),
       ),
@@ -181,92 +122,152 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeIn;
+  late Animation<double> _scale;
+
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+
+    _fadeIn = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+
+    _scale = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+    );
+
+    _controller.forward();
     _initializeApp();
   }
 
-  Future<void> _initializeApp() async {
-    // Add a small delay to show splash screen
-    await Future.delayed(const Duration(milliseconds: 1500));
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
-    // Check authentication status and navigate accordingly
+  Future<void> _initializeApp() async {
+    await Future.delayed(const Duration(milliseconds: 1800));
+
     if (mounted) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const ConversationsScreen()),
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const ConversationsScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          transitionDuration: const Duration(milliseconds: 300),
+        ),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFE91E63), // Use your original pink color
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // App Logo
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(32),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
+      backgroundColor: colorScheme.surfaceContainerLow,
+      body: SafeArea(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            return Opacity(
+              opacity: _fadeIn.value,
+              child: Transform.scale(
+                scale: _scale.value,
+                child: child,
               ),
-              child: const Icon(
-                Icons.favorite,
-                color: Color(0xFFE91E63), // Use your original pink color
-                size: 64,
+            );
+          },
+          child: SizedBox(
+            width: double.infinity,
+            child: Column(
+              children: [
+              const Spacer(flex: 3),
+
+              // Logo with Material elevation
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: colorScheme.primary,
+                  borderRadius: BorderRadius.circular(32),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colorScheme.primary.withValues(alpha: 0.4),
+                      blurRadius: 32,
+                      offset: const Offset(0, 12),
+                      spreadRadius: 0,
+                    ),
+                    BoxShadow(
+                      color: colorScheme.primary.withValues(alpha: 0.2),
+                      blurRadius: 64,
+                      offset: const Offset(0, 24),
+                      spreadRadius: 0,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.favorite_rounded,
+                  color: colorScheme.onPrimary,
+                  size: 56,
+                ),
               ),
+
+              const SizedBox(height: 32),
+
+              // App name
+              Text(
+                'FlirtFix',
+                style: TextStyle(
+                  fontSize: 36,
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.onSurface,
+                  letterSpacing: -1,
+                  height: 1.1,
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // Tagline
+              Text(
+                'Your dating conversation wingman',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: colorScheme.onSurfaceVariant,
+                  letterSpacing: 0.15,
+                ),
+              ),
+
+              const Spacer(flex: 3),
+
+              // Loading indicator at bottom
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: colorScheme.primary,
+                ),
+              ),
+
+              const SizedBox(height: 48),
+              ],
             ),
-
-            const SizedBox(height: 32),
-
-            // App Name
-            const Text(
-              'FlirtFix',
-              style: TextStyle(
-                fontSize: 36,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                letterSpacing: -0.5,
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // Tagline
-            const Text(
-              'Your dating conversation wingman',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.white70,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-
-            const SizedBox(height: 48),
-
-            // Loading indicator
-            const SizedBox(
-              width: 32,
-              height: 32,
-              child: CircularProgressIndicator(
-                strokeWidth: 3,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
