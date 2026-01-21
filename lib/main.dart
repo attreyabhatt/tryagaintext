@@ -198,30 +198,32 @@ class _SplashScreenState extends State<SplashScreen>
 
               // Logo with Material elevation
               Container(
-                width: 120,
-                height: 120,
+                width: 140,
+                height: 140,
                 decoration: BoxDecoration(
-                  color: colorScheme.primary,
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(32),
                   boxShadow: [
                     BoxShadow(
-                      color: colorScheme.primary.withValues(alpha: 0.4),
+                      color: colorScheme.primary.withValues(alpha: 0.25),
                       blurRadius: 32,
                       offset: const Offset(0, 12),
                       spreadRadius: 0,
                     ),
                     BoxShadow(
-                      color: colorScheme.primary.withValues(alpha: 0.2),
+                      color: colorScheme.primary.withValues(alpha: 0.12),
                       blurRadius: 64,
                       offset: const Offset(0, 24),
                       spreadRadius: 0,
                     ),
                   ],
                 ),
-                child: Icon(
-                  Icons.favorite_rounded,
-                  color: colorScheme.onPrimary,
-                  size: 56,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Image.asset(
+                    'assets/images/icons/appstore.png',
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
 
