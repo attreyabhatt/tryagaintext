@@ -343,7 +343,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Icon(Icons.credit_card, color: theme.primaryColor),
                   const SizedBox(width: 12),
                   Text(
-                    '${appState.credits} credits',
+                    appState.isSubscribed
+                        ? 'Subscription active'
+                        : '${appState.credits} credits',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,

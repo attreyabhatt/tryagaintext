@@ -4,7 +4,9 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../state/app_state.dart';
 import '../../services/api_client.dart';
+import '../../services/auth_service.dart';
 import '../../models/suggestion.dart';
+import '../../utils/app_logger.dart';
 import 'login_screen.dart';
 import 'package:flirtfix/views/screens/pricing_screen.dart';
 import 'package:flirtfix/views/screens/profile_screen.dart';
@@ -63,45 +65,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     });
   }
 
-  Future<void> _showAuthDialog() async {
-    final result = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        final colorScheme = Theme.of(context).colorScheme;
-        return AlertDialog(
-          icon: Icon(
-            Icons.credit_card_off_outlined,
-            size: 48,
-            color: colorScheme.error,
-          ),
-          title: const Text('Credits Required'),
-          content: Text(
-            _isTrialExpired
-                ? 'Your free trial has expired. Sign up to get free credits and continue using FlirtFix!'
-                : 'You need credits to generate replies. Sign up now to get free credits!',
-            textAlign: TextAlign.center,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Maybe Later'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Sign Up'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (!mounted) return;
-    if (result == true) {
-      _navigateToAuth();
-    }
-  }
-
   Future<void> _navigateToAuth() async {
     final result = await Navigator.push<bool>(
       context,
@@ -119,7 +82,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               children: [
                 const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 8),
-                Text('Welcome back! You have ${appState.credits} credits'),
+                const Text('Welcome back!'),
               ],
             ),
             backgroundColor: Theme.of(context).colorScheme.primary,
@@ -141,7 +104,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     if (purchased == true) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Purchase successful. Credits added!'),
+          content: const Text('Subscription activated!'),
           backgroundColor: Theme.of(context).colorScheme.primary,
         ),
       );
@@ -168,11 +131,13 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       return;
     }
 
+    await _logDebugState();
     HapticFeedback.mediumImpact();
     setState(() {
       _isLoading = true;
       _errorMessage = null;
       _suggestions = [];
+      _isTrialExpired = false; // reset flag on new attempt
     });
 
     try {
@@ -199,6 +164,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       setState(() {
         _suggestions = suggestions;
         _isLoading = false;
+        _isTrialExpired = false; // clear any prior trial-expired banner on success
       });
 
       await AppStateScope.of(context).reloadFromStorage();
@@ -297,13 +263,25 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         e.code == ApiErrorCode.trialExpired;
   }
 
+  Future<void> _logDebugState() async {
+    final token = await AuthService.getToken();
+    final guestId = await AuthService.getOrCreateGuestId();
+    final appState = AppStateScope.of(context);
+    AppLogger.debug(
+      'Generate tapped | isLoggedIn=${appState.isLoggedIn} | isSubscribed=${appState.isSubscribed} '
+      '| tokenPresent=${token != null && token.isNotEmpty} | tokenLen=${token?.length ?? 0} '
+      '| guestId=$guestId | baseUrl=${_apiClient.baseUrl}',
+    );
+  }
+
   Future<void> _handleCreditError(ApiException e) async {
     if (e.code == ApiErrorCode.trialExpired) {
-      setState(() {
-        _isTrialExpired = true;
-      });
+      if (mounted) {
+        setState(() {
+          _isTrialExpired = true;
+        });
+      }
     }
-    await _showAuthDialog();
   }
 
   void _copySuggestion(String message) {
@@ -331,6 +309,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     final appState = AppStateScope.of(context);
     final isLoggedIn = appState.isLoggedIn;
     final credits = appState.credits;
+    final isSubscribed = appState.isSubscribed;
     final username = appState.user?.username ?? '';
 
     return Scaffold(
@@ -341,7 +320,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Warning banners
-            _buildWarningBanners(colorScheme, isLoggedIn, credits),
+            _buildWarningBanners(colorScheme, isLoggedIn, credits, isSubscribed),
 
             const SizedBox(height: 8),
 
@@ -489,7 +468,11 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     ColorScheme colorScheme,
     bool isLoggedIn,
     int credits,
+    bool isSubscribed,
   ) {
+    if (isSubscribed) {
+      return const SizedBox.shrink();
+    }
     return Column(
       children: [
         // Trial expired banner
@@ -498,7 +481,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             colorScheme: colorScheme,
             icon: Icons.timer_off_outlined,
             title: 'Free trial expired',
-            subtitle: 'Sign up to get 3 more free credits',
+            subtitle: 'Sign up to keep using FlirtFix',
             buttonText: 'Sign Up',
             onPressed: _navigateToAuth,
             type: BannerType.warning,
@@ -509,9 +492,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           _buildBanner(
             colorScheme: colorScheme,
             icon: Icons.credit_card_off_outlined,
-            title: 'Out of credits',
-            subtitle: 'Purchase credits to continue',
-            buttonText: 'Buy Now',
+            title: 'Start your subscription',
+            subtitle: 'Unlimited replies with FlirtFix Unlimited',
+            buttonText: 'Subscribe',
             onPressed: _navigateToPricing,
             type: BannerType.error,
           ),
@@ -521,8 +504,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           _buildBanner(
             colorScheme: colorScheme,
             icon: Icons.battery_2_bar,
-            title: 'Low credits',
-            subtitle: 'You have $credits credits remaining',
+            title: 'Limited free actions left',
+            subtitle: 'Unlock unlimited with a subscription',
             type: BannerType.info,
           ),
       ],

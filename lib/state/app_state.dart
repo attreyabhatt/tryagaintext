@@ -6,11 +6,19 @@ import '../utils/app_logger.dart';
 class AppState extends ChangeNotifier {
   User? _user;
   int _credits = 0;
+  bool _isSubscribed = false;
+  String? _subscriptionExpiry;
+  int? _subscriberWeeklyRemaining;
+  int? _subscriberWeeklyLimit;
   bool _isLoggedIn = false;
   bool _initialized = false;
 
   User? get user => _user;
   int get credits => _credits;
+  bool get isSubscribed => _isSubscribed;
+  String? get subscriptionExpiry => _subscriptionExpiry;
+  int? get subscriberWeeklyRemaining => _subscriberWeeklyRemaining;
+  int? get subscriberWeeklyLimit => _subscriberWeeklyLimit;
   bool get isLoggedIn => _isLoggedIn;
   bool get initialized => _initialized;
 
@@ -27,6 +35,10 @@ class AppState extends ChangeNotifier {
     _isLoggedIn = await AuthService.isLoggedIn();
     _user = await AuthService.getStoredUser();
     _credits = await AuthService.getStoredCredits();
+    _isSubscribed = await AuthService.getStoredSubscriptionStatus();
+    _subscriptionExpiry = await AuthService.getStoredSubscriptionExpiry();
+    _subscriberWeeklyRemaining = await AuthService.getStoredSubscriberWeeklyRemaining();
+    _subscriberWeeklyLimit = await AuthService.getStoredSubscriberWeeklyLimit();
     notifyListeners();
   }
 
@@ -46,6 +58,10 @@ class AppState extends ChangeNotifier {
     await AuthService.logout();
     _user = null;
     _credits = 0;
+    _isSubscribed = false;
+    _subscriptionExpiry = null;
+    _subscriberWeeklyRemaining = null;
+    _subscriberWeeklyLimit = null;
     _isLoggedIn = false;
     notifyListeners();
   }

@@ -39,8 +39,13 @@ class _PricingScreenState extends State<PricingScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _loadHandledTokens().then((_) {
-      _initializeBilling();
+    _loadHandledTokens().then((_) async {
+      await _initializeBilling();
+      // Refresh subscription status on entry
+      await _apiClient.refreshSubscriptionStatus();
+      if (mounted) {
+        await AppStateScope.of(context).reloadFromStorage();
+      }
     });
   }
 
@@ -220,7 +225,7 @@ class _PricingScreenState extends State<PricingScreen>
           ),
           title: const Text('Sign In Required'),
           content: const Text(
-            'Please sign in to purchase credits. Your credits will be saved to your account.',
+            'Please sign in to start your subscription and link it to your account.',
           ),
           actions: [
             TextButton(
@@ -353,7 +358,6 @@ class _PricingScreenState extends State<PricingScreen>
   ) async {
     if (!mounted) return false;
 
-    final previousCredits = AppStateScope.of(context).credits;
     final tokenKey = purchase.verificationData.serverVerificationData;
     final wasProcessing = _isProcessing;
 
@@ -367,48 +371,15 @@ class _PricingScreenState extends State<PricingScreen>
       return true;
     }
 
-    final product = _productsById[purchase.productID];
-    final creditsRemaining = await _apiClient.confirmGooglePlayPurchase(
+    final success = await _apiClient.confirmGooglePlaySubscription(
       productId: purchase.productID,
       purchaseToken: purchase.verificationData.serverVerificationData,
-      orderId: purchase.purchaseID,
-      purchaseTime: purchase.transactionDate,
-      price: product?.rawPrice,
-      currency: product?.currencyCode,
     );
 
-    if (!mounted) {
-      return false;
-    }
-
-    if (creditsRemaining != null) {
-      await AuthService.updateStoredCredits(creditsRemaining);
-      if (!mounted) return false;
-
-      await AppStateScope.of(context).reloadFromStorage();
-      await _saveHandledToken(tokenKey);
-
-      // A delayed purchase is one where user wasn't actively processing
-      _handleSuccessfulPurchase(isDelayed: !wasProcessing);
-
-      if (mounted) {
-        setState(() {
-          _isProcessing = false;
-          _selectedPlan = null;
-        });
-      }
-      return true;
-    }
-
     if (!mounted) return false;
-    await AppStateScope.of(context).refreshUserData();
+    await AppStateScope.of(context).reloadFromStorage();
 
-    if (!mounted) {
-      return false;
-    }
-
-    final updatedCredits = AppStateScope.of(context).credits;
-    if (updatedCredits > previousCredits) {
+    if (success) {
       await _saveHandledToken(tokenKey);
       _handleSuccessfulPurchase(isDelayed: !wasProcessing);
 
@@ -458,7 +429,7 @@ class _PricingScreenState extends State<PricingScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Your previous purchase was approved! You now have ${AppStateScope.of(context).credits} credits',
+                    'Your previous purchase was approved and your subscription is active.',
                   ),
                 ),
               ],
@@ -488,10 +459,8 @@ class _PricingScreenState extends State<PricingScreen>
       }
 
       final purchaseParam = PurchaseParam(productDetails: product);
-      // Don't auto-consume - we'll consume manually after backend verification
-      final started = await _inAppPurchase.buyConsumable(
+      final started = await _inAppPurchase.buyNonConsumable(
         purchaseParam: purchaseParam,
-        autoConsume: false,
       );
 
       if (!started && mounted) {
@@ -534,7 +503,7 @@ class _PricingScreenState extends State<PricingScreen>
               )
             : null,
         title: const Text(
-          'Get More Credits',
+          'Go Unlimited',
           style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
@@ -568,10 +537,10 @@ class _PricingScreenState extends State<PricingScreen>
                 ),
                 child: Column(
                   children: [
-                    const Icon(Icons.favorite, color: Colors.white, size: 48),
+                    const Icon(Icons.all_inclusive, color: Colors.white, size: 48),
                     const SizedBox(height: 16),
                     Text(
-                      'Never Run Out of Great Lines',
+                      'Unlock FlirtFix Unlimited',
                       style: theme.textTheme.headlineSmall?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -580,35 +549,6 @@ class _PricingScreenState extends State<PricingScreen>
                     ),
                     const SizedBox(height: 8),
                     if (appState.isLoggedIn) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.credit_card,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Current: ${appState.credits} credits',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
                       GestureDetector(
                         onLongPress: _clearHandledTokens,
                         child: TextButton.icon(
@@ -632,7 +572,7 @@ class _PricingScreenState extends State<PricingScreen>
                       ),
                     ] else ...[
                       const Text(
-                        'Sign in to save your credits',
+                        'Sign in to manage your subscription',
                         style: TextStyle(color: Colors.white70, fontSize: 14),
                       ),
                     ],
@@ -669,18 +609,18 @@ class _PricingScreenState extends State<PricingScreen>
                     ),
                     const SizedBox(height: 16),
                     _buildFeatureItem(
-                      Icons.auto_awesome,
-                      'AI-powered smart replies',
+                      Icons.flash_on,
+                      'Unlimited AI replies & regens',
                     ),
                     _buildFeatureItem(
-                      Icons.image,
-                      'Screenshot text extraction',
+                      Icons.image_search,
+                      'Fast OCR from screenshots',
                     ),
                     _buildFeatureItem(
-                      Icons.all_inclusive,
-                      'Credits never expire',
+                      Icons.chat_bubble_outline,
+                      'Tailored openers from images',
                     ),
-                    _buildFeatureItem(Icons.security, 'Secure & private'),
+                    _buildFeatureItem(Icons.verified, 'Priority access & updates'),
                   ],
                 ),
               ),
@@ -700,7 +640,7 @@ class _PricingScreenState extends State<PricingScreen>
 
               // Disclaimer
               Text(
-                'One-time purchase - Credits never expire - Secure payment via Google Play',
+                'Weekly subscription · Cancel anytime in Google Play · Fair-use applies',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey[600],
@@ -859,13 +799,14 @@ class _PricingScreenState extends State<PricingScreen>
                             color: theme.primaryColor,
                           ),
                         ),
-                        Text(
-                          '${(plan.pricePerCredit * 100).toStringAsFixed(0)}c per credit',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
+                        if (plan.billingPeriod != null)
+                          Text(
+                            plan.billingPeriod!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ],
@@ -873,34 +814,17 @@ class _PricingScreenState extends State<PricingScreen>
 
                 const SizedBox(height: 20),
 
-                // Credits Count
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: theme.primaryColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
+                if (plan.tagline != null) ...[
+                  Text(
+                    plan.tagline!,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[800],
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.credit_card,
-                        color: theme.primaryColor,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        '${plan.credits} Credits',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: theme.primaryColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 16),
+                  const SizedBox(height: 12),
+                ],
 
                 // Features
                 ...plan.features.map(
@@ -960,7 +884,7 @@ class _PricingScreenState extends State<PricingScreen>
                               const Icon(Icons.shopping_cart, size: 20),
                               const SizedBox(width: 8),
                               Text(
-                                'Buy ${plan.name}',
+                                'Subscribe to ${plan.name}',
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,

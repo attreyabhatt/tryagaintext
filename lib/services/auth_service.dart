@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
@@ -13,6 +14,11 @@ class AuthService {
   static const String tokenKey = 'auth_token';
   static const String userKey = 'user_data';
   static const String creditsKey = 'chat_credits';
+  static const String guestIdKey = 'guest_id';
+  static const String subscriptionKey = 'is_subscribed';
+  static const String subscriptionExpiryKey = 'subscription_expiry';
+  static const String subscriberWeeklyRemainingKey = 'subscriber_weekly_remaining';
+  static const String subscriberWeeklyLimitKey = 'subscriber_weekly_limit';
 
   // Store auth token
   static Future<void> _storeToken(String token) async {
@@ -21,7 +27,14 @@ class AuthService {
   }
 
   // Store user data
-  static Future<void> _storeUser(User user, int credits) async {
+  static Future<void> _storeUser(
+    User user,
+    int credits, {
+    bool? isSubscribed,
+    String? subscriptionExpiry,
+    int? subscriberWeeklyRemaining,
+    int? subscriberWeeklyLimit,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       userKey,
@@ -32,6 +45,18 @@ class AuthService {
       }),
     );
     await prefs.setInt(creditsKey, credits);
+    if (isSubscribed != null) {
+      await prefs.setBool(subscriptionKey, isSubscribed);
+    }
+    if (subscriptionExpiry != null) {
+      await prefs.setString(subscriptionExpiryKey, subscriptionExpiry);
+    }
+    if (subscriberWeeklyRemaining != null) {
+      await prefs.setInt(subscriberWeeklyRemainingKey, subscriberWeeklyRemaining);
+    }
+    if (subscriberWeeklyLimit != null) {
+      await prefs.setInt(subscriberWeeklyLimitKey, subscriberWeeklyLimit);
+    }
   }
 
   // Get stored token
@@ -57,6 +82,26 @@ class AuthService {
     return prefs.getInt(creditsKey) ?? 0;
   }
 
+  static Future<bool> getStoredSubscriptionStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(subscriptionKey) ?? false;
+  }
+
+  static Future<String?> getStoredSubscriptionExpiry() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(subscriptionExpiryKey);
+  }
+
+  static Future<int?> getStoredSubscriberWeeklyRemaining() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(subscriberWeeklyRemainingKey);
+  }
+
+  static Future<int?> getStoredSubscriberWeeklyLimit() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(subscriberWeeklyLimitKey);
+  }
+
   // Update stored credits
   static Future<void> updateStoredCredits(int credits) async {
     final prefs = await SharedPreferences.getInstance();
@@ -69,6 +114,11 @@ class AuthService {
     await prefs.remove(tokenKey);
     await prefs.remove(userKey);
     await prefs.remove(creditsKey);
+    await prefs.remove(subscriptionKey);
+    await prefs.remove(subscriptionExpiryKey);
+    await prefs.remove(subscriberWeeklyRemainingKey);
+    await prefs.remove(subscriberWeeklyLimitKey);
+    await prefs.remove(guestIdKey);
   }
 
   // Check if user is logged in
@@ -101,7 +151,14 @@ class AuthService {
           authResponse.token != null &&
           authResponse.user != null) {
         await _storeToken(authResponse.token!);
-        await _storeUser(authResponse.user!, authResponse.chatCredits ?? 0);
+        await _storeUser(
+          authResponse.user!,
+          authResponse.chatCredits ?? 0,
+          isSubscribed: authResponse.isSubscribed,
+          subscriptionExpiry: authResponse.subscriptionExpiry,
+          subscriberWeeklyRemaining: authResponse.subscriberWeeklyRemaining,
+          subscriberWeeklyLimit: authResponse.subscriberWeeklyLimit,
+        );
       }
 
       return authResponse;
@@ -133,7 +190,14 @@ class AuthService {
           authResponse.token != null &&
           authResponse.user != null) {
         await _storeToken(authResponse.token!);
-        await _storeUser(authResponse.user!, authResponse.chatCredits ?? 0);
+        await _storeUser(
+          authResponse.user!,
+          authResponse.chatCredits ?? 0,
+          isSubscribed: authResponse.isSubscribed,
+          subscriptionExpiry: authResponse.subscriptionExpiry,
+          subscriberWeeklyRemaining: authResponse.subscriberWeeklyRemaining,
+          subscriberWeeklyLimit: authResponse.subscriberWeeklyLimit,
+        );
       }
 
       return authResponse;
@@ -169,6 +233,10 @@ class AuthService {
         await _storeUser(
           profileResponse.user!,
           profileResponse.chatCredits ?? 0,
+          isSubscribed: profileResponse.isSubscribed,
+          subscriptionExpiry: profileResponse.subscriptionExpiry,
+          subscriberWeeklyRemaining: profileResponse.subscriberWeeklyRemaining,
+          subscriberWeeklyLimit: profileResponse.subscriberWeeklyLimit,
         );
       }
 
@@ -191,5 +259,34 @@ class AuthService {
   static Future<bool> refreshUserData() async {
     final profileResponse = await getProfile();
     return profileResponse.success;
+  }
+
+  static Future<String> getOrCreateGuestId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final existing = prefs.getString(guestIdKey);
+    if (existing != null && existing.isNotEmpty) {
+      return existing;
+    }
+    final rand = Random.secure();
+    final bytes = List<int>.generate(16, (_) => rand.nextInt(256));
+    final id = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    await prefs.setString(guestIdKey, id);
+    return id;
+  }
+
+  static Future<void> updateSubscriptionFromPayload(Map<String, dynamic> json) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (json.containsKey('is_subscribed')) {
+      await prefs.setBool(subscriptionKey, json['is_subscribed'] == true);
+    }
+    if (json['subscription_expiry'] != null) {
+      await prefs.setString(subscriptionExpiryKey, json['subscription_expiry'].toString());
+    }
+    if (json['subscriber_weekly_remaining'] != null) {
+      await prefs.setInt(subscriberWeeklyRemainingKey, json['subscriber_weekly_remaining'] as int);
+    }
+    if (json['subscriber_weekly_limit'] != null) {
+      await prefs.setInt(subscriberWeeklyLimitKey, json['subscriber_weekly_limit'] as int);
+    }
   }
 }

@@ -21,6 +21,8 @@ class ApiClient {
     if (token != null) {
       headers['Authorization'] = 'Token $token';
     }
+    final guestId = await AuthService.getOrCreateGuestId();
+    headers['X-Guest-Id'] = guestId;
 
     return headers;
   }
@@ -47,7 +49,13 @@ class ApiClient {
         }),
       );
 
+      AppLogger.debug(
+        'POST $baseUrl/api/generate/ -> ${response.statusCode} '
+        '${response.body.substring(0, response.body.length > 300 ? 300 : response.body.length)}',
+      );
+
       final data = _decodeJson(response.body);
+      await AuthService.updateSubscriptionFromPayload(data);
       final generateResponse = GenerateResponse.fromJson(data);
 
       if (!generateResponse.success) {
@@ -78,6 +86,7 @@ class ApiClient {
   Future<String> extractFromImage(File imageFile) async {
     try {
       final token = await AuthService.getToken();
+      final guestId = await AuthService.getOrCreateGuestId();
 
       var request = http.MultipartRequest(
         'POST',
@@ -87,6 +96,7 @@ class ApiClient {
       if (token != null) {
         request.headers['Authorization'] = 'Token $token';
       }
+      request.headers['X-Guest-Id'] = guestId;
 
       request.files.add(
         await http.MultipartFile.fromPath(
@@ -98,7 +108,13 @@ class ApiClient {
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
+      AppLogger.debug(
+        'POST $baseUrl/api/generate-openers-from-image/ -> ${response.statusCode} '
+        '${response.body.substring(0, response.body.length > 300 ? 300 : response.body.length)}',
+      );
       final data = _decodeJson(response.body);
+      await AuthService.updateSubscriptionFromPayload(data);
+      await AuthService.updateSubscriptionFromPayload(data);
 
       if (data['error'] == 'insufficient_credits') {
         throw ApiException(
@@ -135,6 +151,7 @@ class ApiClient {
   Future<String> analyzeProfile(File imageFile) async {
     try {
       final token = await AuthService.getToken();
+      final guestId = await AuthService.getOrCreateGuestId();
 
       var request = http.MultipartRequest(
         'POST',
@@ -144,6 +161,7 @@ class ApiClient {
       if (token != null) {
         request.headers['Authorization'] = 'Token $token';
       }
+      request.headers['X-Guest-Id'] = guestId;
 
       request.files.add(
         await http.MultipartFile.fromPath(
@@ -156,6 +174,7 @@ class ApiClient {
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
       final data = _decodeJson(response.body);
+      await AuthService.updateSubscriptionFromPayload(data);
 
       if (data['success'] == false) {
         throw ApiException(
@@ -290,6 +309,59 @@ class ApiClient {
     }
   }
 
+  Future<bool> confirmGooglePlaySubscription({
+    required String productId,
+    required String purchaseToken,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/google-play/verify-subscription/'),
+        headers: headers,
+        body: jsonEncode({
+          'product_id': productId,
+          'purchase_token': purchaseToken,
+        }),
+      );
+
+      AppLogger.debug(
+        'Google Play subscription response: ${response.statusCode} ${response.body}',
+      );
+
+      final data = _decodeJson(response.body);
+      await AuthService.updateSubscriptionFromPayload(data);
+
+      if (data['success'] == true && data['is_subscribed'] == true) {
+        return true;
+      }
+
+      AppLogger.error(
+        'Google Play subscription failed',
+        Exception(data['error']?.toString() ?? 'unknown error'),
+      );
+      return false;
+    } catch (e) {
+      AppLogger.error('Google Play subscription error', e is Exception ? e : null);
+      return false;
+    }
+  }
+
+  Future<bool> refreshSubscriptionStatus() async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/profile/'),
+        headers: headers,
+      );
+      final data = _decodeJson(response.body);
+      await AuthService.updateSubscriptionFromPayload(data);
+      return data['is_subscribed'] == true;
+    } catch (e) {
+      AppLogger.error('Refresh subscription status error', e is Exception ? e : null);
+      return false;
+    }
+  }
+
   Future<List<PaymentHistory>> getPaymentHistory() async {
     try {
       final headers = await _getHeaders();
@@ -314,6 +386,7 @@ class ApiClient {
 
   Stream<Map<String, dynamic>> extractFromImageStream(File imageFile) async* {
     final token = await AuthService.getToken();
+    final guestId = await AuthService.getOrCreateGuestId();
 
     final request = http.MultipartRequest(
       'POST',
@@ -323,6 +396,7 @@ class ApiClient {
     if (token != null) {
       request.headers['Authorization'] = 'Token $token';
     }
+    request.headers['X-Guest-Id'] = guestId;
 
     request.files.add(
       await http.MultipartFile.fromPath(
@@ -345,6 +419,7 @@ class ApiClient {
 
   Stream<Map<String, dynamic>> analyzeProfileStream(File imageFile) async* {
     final token = await AuthService.getToken();
+    final guestId = await AuthService.getOrCreateGuestId();
 
     final request = http.MultipartRequest(
       'POST',
@@ -354,6 +429,7 @@ class ApiClient {
     if (token != null) {
       request.headers['Authorization'] = 'Token $token';
     }
+    request.headers['X-Guest-Id'] = guestId;
 
     request.files.add(
       await http.MultipartFile.fromPath(
@@ -381,6 +457,7 @@ class ApiClient {
   }) async {
     try {
       final token = await AuthService.getToken();
+      final guestId = await AuthService.getOrCreateGuestId();
 
       var request = http.MultipartRequest(
         'POST',
@@ -390,6 +467,7 @@ class ApiClient {
       if (token != null) {
         request.headers['Authorization'] = 'Token $token';
       }
+      request.headers['X-Guest-Id'] = guestId;
 
       request.files.add(
         await http.MultipartFile.fromPath(
@@ -544,6 +622,10 @@ class ApiClient {
         return ApiErrorCode.insufficientCredits;
       case 'trial_expired':
         return ApiErrorCode.trialExpired;
+      case 'subscription_required':
+        return ApiErrorCode.insufficientCredits;
+      case 'fair_use_exceeded':
+        return ApiErrorCode.server;
       default:
         return ApiErrorCode.unknown;
     }
