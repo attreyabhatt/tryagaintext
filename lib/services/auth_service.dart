@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
+import 'package:android_id/android_id.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
 import '../models/auth_response.dart';
@@ -19,6 +21,7 @@ class AuthService {
   static const String subscriptionExpiryKey = 'subscription_expiry';
   static const String subscriberWeeklyRemainingKey = 'subscriber_weekly_remaining';
   static const String subscriberWeeklyLimitKey = 'subscriber_weekly_limit';
+  static const String justSignedUpKey = 'just_signed_up';
 
   // Store auth token
   static Future<void> _storeToken(String token) async {
@@ -119,6 +122,7 @@ class AuthService {
     await prefs.remove(subscriberWeeklyRemainingKey);
     await prefs.remove(subscriberWeeklyLimitKey);
     await prefs.remove(guestIdKey);
+    await prefs.remove(justSignedUpKey);
   }
 
   // Check if user is logged in
@@ -261,9 +265,36 @@ class AuthService {
     return profileResponse.success;
   }
 
+  static Future<void> markJustSignedUp() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(justSignedUpKey, true);
+  }
+
+  static Future<bool> consumeJustSignedUp() async {
+    final prefs = await SharedPreferences.getInstance();
+    final flag = prefs.getBool(justSignedUpKey) ?? false;
+    if (flag) {
+      await prefs.remove(justSignedUpKey);
+    }
+    return flag;
+  }
+
   static Future<String> getOrCreateGuestId() async {
     final prefs = await SharedPreferences.getInstance();
     final existing = prefs.getString(guestIdKey);
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      try {
+        final androidId = await const AndroidId().getId();
+        if (androidId != null && androidId.isNotEmpty) {
+          if (existing != androidId) {
+            await prefs.setString(guestIdKey, androidId);
+          }
+          return androidId;
+        }
+      } catch (e) {
+        AppLogger.error('Android ID lookup failed', e is Exception ? e : null);
+      }
+    }
     if (existing != null && existing.isNotEmpty) {
       return existing;
     }

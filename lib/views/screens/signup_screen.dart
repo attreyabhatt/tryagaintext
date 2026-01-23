@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 
@@ -10,7 +11,6 @@ class SignupScreen extends StatefulWidget {
 
 class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -36,15 +36,17 @@ class _SignupScreenState extends State<SignupScreen> {
 
     try {
       final response = await AuthService.register(
-        username: _usernameController.text.trim(),
+        username: _emailController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
 
       if (mounted) {
         if (response.success) {
-          // Show success dialog
-          _showSuccessDialog(response.chatCredits ?? 6);
+          await AuthService.markJustSignedUp();
+          if (mounted) {
+            Navigator.of(context).pop(true);
+          }
         } else {
           setState(() {
             _errorMessage = response.error ?? 'Registration failed';
@@ -64,94 +66,6 @@ class _SignupScreenState extends State<SignupScreen> {
         });
       }
     }
-  }
-
-  void _showSuccessDialog(int credits) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.green[100],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(Icons.check_circle, color: Colors.green[600]),
-            ),
-            const SizedBox(width: 12),
-            const Text('Welcome!'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Account created successfully!',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.credit_card,
-                    color: Theme.of(context).primaryColor,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '$credits Free Credits',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).primaryColor,
-                          ),
-                        ),
-                        const Text(
-                          'Ready to use right away!',
-                          style: TextStyle(fontSize: 14, color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // Close dialog
-              Navigator.of(
-                context,
-              ).pop(true); // Return to previous screen with success
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).primaryColor,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text('Get Started'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -199,22 +113,12 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  RichText(
+                  Text(
+                    kIsWeb
+                        ? 'Get 3 free credits to start using FlirtFix'
+                        : 'Sign up to continue using FlirtFix',
                     textAlign: TextAlign.center,
-                    text: TextSpan(
-                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                      children: [
-                        const TextSpan(text: 'Get '),
-                        TextSpan(
-                          text: '3 free credits',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: theme.primaryColor,
-                          ),
-                        ),
-                        const TextSpan(text: ' to start using FlirtFix'),
-                      ],
-                    ),
+                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -227,25 +131,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Username Field
-                    _buildTextField(
-                      controller: _usernameController,
-                      label: 'Username',
-                      hint: 'Choose a username',
-                      icon: Icons.person,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter a username';
-                        }
-                        if (value.trim().length < 3) {
-                          return 'Username must be at least 3 characters';
-                        }
-                        return null;
-                      },
-                    ),
-
-                    const SizedBox(height: 16),
-
                     // Email Field
                     _buildTextField(
                       controller: _emailController,
@@ -488,7 +373,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   void dispose() {
-    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();

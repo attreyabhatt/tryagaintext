@@ -115,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Username Field
+                    // Email Field
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -131,8 +131,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: TextFormField(
                         controller: _usernameController,
                         decoration: InputDecoration(
-                          labelText: 'Username',
-                          hintText: 'Enter your username',
+                          labelText: 'Email',
+                          hintText: 'Enter your email',
                           prefixIcon: Container(
                             margin: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
@@ -140,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
-                              Icons.person,
+                              Icons.email,
                               color: theme.primaryColor,
                             ),
                           ),
@@ -154,7 +154,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return 'Please enter your username';
+                            return 'Please enter your email';
                           }
                           return null;
                         },

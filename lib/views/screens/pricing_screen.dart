@@ -488,23 +488,27 @@ class _PricingScreenState extends State<PricingScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final plans = PricingPlan.allPlans;
     final appState = AppStateScope.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: widget.showCloseButton
             ? IconButton(
-                icon: const Icon(Icons.close, color: Colors.black87),
+                icon: Icon(Icons.close, color: colorScheme.onSurface),
                 onPressed: () => Navigator.pop(context),
               )
             : null,
-        title: const Text(
-          'Go Unlimited',
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+        title: Text(
+          'FlirtFix Unlimited',
+          style: theme.textTheme.titleLarge?.copyWith(
+            color: colorScheme.onSurface,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         centerTitle: true,
       ),
@@ -518,40 +522,51 @@ class _PricingScreenState extends State<PricingScreen>
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      theme.primaryColor,
-                      theme.primaryColor.withValues(alpha: 0.8),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(28),
                   boxShadow: [
                     BoxShadow(
-                      color: theme.primaryColor.withValues(alpha: 0.3),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
+                      color: colorScheme.primary.withValues(alpha: 0.18),
+                      blurRadius: 24,
+                      offset: const Offset(0, 12),
                     ),
                   ],
                 ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.all_inclusive, color: Colors.white, size: 48),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(
+                        Icons.all_inclusive,
+                        color: colorScheme.onPrimary,
+                        size: 28,
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     Text(
-                      'Unlock FlirtFix Unlimited',
+                      'Unlimited replies & openers',
                       style: theme.textTheme.headlineSmall?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onPrimaryContainer,
+                        fontWeight: FontWeight.w800,
                       ),
-                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
+                    Text(
+                      'Get unlimited smart replies, openers, and regenerations every week.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onPrimaryContainer.withValues(alpha: 0.85),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     if (appState.isLoggedIn) ...[
                       GestureDetector(
                         onLongPress: _clearHandledTokens,
-                        child: TextButton.icon(
+                        child: FilledButton.tonalIcon(
                           onPressed: _isProcessing
                               ? null
                               : () {
@@ -564,16 +579,21 @@ class _PricingScreenState extends State<PricingScreen>
                             curve: Curves.easeInOut,
                             child: const Icon(Icons.refresh, size: 18),
                           ),
-                          label: const Text('Refresh purchases'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: Colors.white,
+                          label: Text(
+                            _isRefreshingPurchases ? 'Refreshing...' : 'Refresh purchases',
+                          ),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: colorScheme.onPrimaryContainer.withValues(alpha: 0.08),
+                            foregroundColor: colorScheme.onPrimaryContainer,
                           ),
                         ),
                       ),
                     ] else ...[
-                      const Text(
+                      Text(
                         'Sign in to manage your subscription',
-                        style: TextStyle(color: Colors.white70, fontSize: 14),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onPrimaryContainer.withValues(alpha: 0.75),
+                        ),
                       ),
                     ],
                   ],
@@ -586,13 +606,13 @@ class _PricingScreenState extends State<PricingScreen>
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  color: colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
+                      color: colorScheme.shadow.withValues(alpha: 0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
                     ),
                   ],
                 ),
@@ -604,23 +624,30 @@ class _PricingScreenState extends State<PricingScreen>
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
+                        color: colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 16),
                     _buildFeatureItem(
                       Icons.flash_on,
-                      'Unlimited AI replies & regens',
+                      'Unlimited AI replies & regenerations',
+                      colorScheme,
                     ),
                     _buildFeatureItem(
                       Icons.image_search,
                       'Fast OCR from screenshots',
+                      colorScheme,
                     ),
                     _buildFeatureItem(
                       Icons.chat_bubble_outline,
                       'Tailored openers from images',
+                      colorScheme,
                     ),
-                    _buildFeatureItem(Icons.verified, 'Priority access & updates'),
+                    _buildFeatureItem(
+                      Icons.verified,
+                      'Priority access & updates',
+                      colorScheme,
+                    ),
                   ],
                 ),
               ),
@@ -640,10 +667,10 @@ class _PricingScreenState extends State<PricingScreen>
 
               // Disclaimer
               Text(
-                'Weekly subscription · Cancel anytime in Google Play · Fair-use applies',
+                'Weekly subscription - Cancel anytime in Google Play - Fair-use applies',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey[600],
+                  color: colorScheme.onSurfaceVariant,
                   height: 1.5,
                 ),
                 textAlign: TextAlign.center,
@@ -657,7 +684,11 @@ class _PricingScreenState extends State<PricingScreen>
     );
   }
 
-  Widget _buildFeatureItem(IconData icon, String text) {
+  Widget _buildFeatureItem(
+    IconData icon,
+    String text,
+    ColorScheme colorScheme,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -665,16 +696,16 @@ class _PricingScreenState extends State<PricingScreen>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+              color: colorScheme.primaryContainer,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: Theme.of(context).primaryColor, size: 20),
+            child: Icon(icon, color: colorScheme.primary, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(fontSize: 15, color: Colors.black87),
+              style: TextStyle(fontSize: 15, color: colorScheme.onSurface),
             ),
           ),
         ],
@@ -683,8 +714,14 @@ class _PricingScreenState extends State<PricingScreen>
   }
 
   Widget _buildPricingCard(PricingPlan plan, ThemeData theme) {
+    final colorScheme = theme.colorScheme;
     final isSelected = _selectedPlan?.id == plan.id;
     final isProcessing = _isProcessing && isSelected;
+    final surfaceColor = isSelected
+        ? colorScheme.secondaryContainer
+        : (plan.isPopular ? colorScheme.primaryContainer : colorScheme.surface);
+    final borderColor =
+        plan.isPopular ? colorScheme.primary : colorScheme.outlineVariant;
 
     return AnimatedScale(
       duration: const Duration(milliseconds: 180),
@@ -692,25 +729,20 @@ class _PricingScreenState extends State<PricingScreen>
       scale: isSelected ? 1.01 : 1.0,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          color: surfaceColor,
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: plan.isPopular ? theme.primaryColor : Colors.grey[200]!,
-            width: plan.isPopular ? 2 : 1,
+            color: borderColor,
+            width: plan.isPopular ? 1.5 : 1,
           ),
           boxShadow: [
-            if (plan.isPopular)
-              BoxShadow(
-                color: theme.primaryColor.withValues(alpha: 0.2),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              )
-            else
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
+            BoxShadow(
+              color: colorScheme.shadow.withValues(
+                alpha: plan.isPopular ? 0.18 : 0.08,
               ),
+              blurRadius: plan.isPopular ? 20 : 12,
+              offset: const Offset(0, 8),
+            ),
           ],
         ),
         child: Stack(
@@ -726,7 +758,7 @@ class _PricingScreenState extends State<PricingScreen>
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: theme.primaryColor,
+                  color: colorScheme.primary,
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(12),
                     bottomRight: Radius.circular(12),
@@ -750,65 +782,47 @@ class _PricingScreenState extends State<PricingScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Plan Name and Savings
-                Row(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            plan.name,
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey[800],
-                            ),
-                          ),
-                          if (plan.savingsText != null) ...[
-                            const SizedBox(height: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.green[50],
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                plan.savingsText!,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.green[700],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          plan.priceString,
+                    if (plan.savingsText != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorScheme.tertiaryContainer,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          plan.savingsText!,
                           style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: theme.primaryColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onTertiaryContainer,
                           ),
                         ),
-                        if (plan.billingPeriod != null)
-                          Text(
-                            plan.billingPeriod!,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                      ],
+                      ),
+                    if (plan.savingsText != null) const SizedBox(height: 8),
+                    Text(
+                      plan.priceString,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
+                      ),
                     ),
+                    if (plan.billingPeriod != null)
+                      Text(
+                        plan.billingPeriod!,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                   ],
                 ),
 
@@ -820,7 +834,7 @@ class _PricingScreenState extends State<PricingScreen>
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: Colors.grey[800],
+                      color: colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -834,7 +848,7 @@ class _PricingScreenState extends State<PricingScreen>
                       children: [
                         Icon(
                           Icons.check_circle,
-                          color: Colors.green[600],
+                          color: colorScheme.primary,
                           size: 20,
                         ),
                         const SizedBox(width: 8),
@@ -843,7 +857,7 @@ class _PricingScreenState extends State<PricingScreen>
                             feature,
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.grey[700],
+                              color: colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -857,35 +871,33 @@ class _PricingScreenState extends State<PricingScreen>
                 // Purchase Button
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
+                  child: FilledButton(
                     onPressed: isProcessing ? null : () => _handlePurchase(plan),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          plan.isPopular ? theme.primaryColor : Colors.grey[800],
-                      foregroundColor: Colors.white,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      elevation: 0,
                     ),
                     child: isProcessing
-                        ? const SizedBox(
+                        ? SizedBox(
                             height: 20,
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                              color: colorScheme.onPrimary,
                             ),
                           )
                         : Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.shopping_cart, size: 20),
-                              const SizedBox(width: 8),
+                            children: const [
+                              Icon(Icons.shopping_cart, size: 20),
+                              SizedBox(width: 8),
                               Text(
-                                'Subscribe to ${plan.name}',
-                                style: const TextStyle(
+                                'Start subscription',
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                 ),

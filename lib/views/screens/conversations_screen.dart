@@ -8,6 +8,7 @@ import '../../services/auth_service.dart';
 import '../../models/suggestion.dart';
 import '../../utils/app_logger.dart';
 import 'login_screen.dart';
+import 'signup_screen.dart';
 import 'package:flirtfix/views/screens/pricing_screen.dart';
 import 'package:flirtfix/views/screens/profile_screen.dart';
 
@@ -20,6 +21,10 @@ class ConversationsScreen extends StatefulWidget {
 
 class _ConversationsScreenState extends State<ConversationsScreen>
     with TickerProviderStateMixin {
+  static const TextStyle _primaryButtonTextStyle = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w600,
+  );
   String _situation = 'stuck_after_reply';
   final String _selectedTone = 'Natural';
   final _conversationCtrl = TextEditingController();
@@ -62,6 +67,10 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       _suggestions = [];
       _errorMessage = null;
       _animationController.reset();
+      final controller = _situation == 'just_matched'
+          ? _newMatchCustomInstructionsCtrl
+          : _customInstructionsCtrl;
+      _refreshSelectedTags(controller);
     });
   }
 
@@ -76,13 +85,18 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       final appState = AppStateScope.of(context);
       await appState.reloadFromStorage();
       if (mounted) {
+        final justSignedUp = await AuthService.consumeJustSignedUp();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
                 const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 8),
-                const Text('Welcome back!'),
+                Text(
+                  justSignedUp
+                      ? 'Account created. You have been signed in'
+                      : 'Welcome back!',
+                ),
               ],
             ),
             backgroundColor: Theme.of(context).colorScheme.primary,
@@ -284,6 +298,33 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     }
   }
 
+  Future<void> _navigateToSignup() async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (context) => const SignupScreen()),
+    );
+
+    if (!mounted) return;
+    if (result == true) {
+      final appState = AppStateScope.of(context);
+      await appState.reloadFromStorage();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                const Text('Account created. You have been signed in'),
+              ],
+            ),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+          ),
+        );
+      }
+    }
+  }
+
   void _copySuggestion(String message) {
     Clipboard.setData(ClipboardData(text: message));
     HapticFeedback.lightImpact();
@@ -311,9 +352,10 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     final credits = appState.credits;
     final isSubscribed = appState.isSubscribed;
     final username = appState.user?.username ?? '';
+    const double sectionSpacing = 20;
 
     return Scaffold(
-      appBar: _buildAppBar(colorScheme, isLoggedIn, credits, username),
+      appBar: _buildAppBar(colorScheme, isLoggedIn, credits, isSubscribed, username),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Column(
@@ -327,27 +369,27 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             // Tab bar for situation selection
             _buildTabBar(colorScheme),
 
-            const SizedBox(height: 16),
+            SizedBox(height: sectionSpacing),
 
             // Input section
             _buildInputSection(colorScheme),
 
-            const SizedBox(height: 16),
+            SizedBox(height: sectionSpacing),
 
             // Custom instructions section
             _buildCustomInstructionsSection(colorScheme),
 
-            const SizedBox(height: 16),
+            SizedBox(height: sectionSpacing),
 
             // Generate button
             _buildGenerateButton(colorScheme),
 
-            const SizedBox(height: 24),
+            SizedBox(height: sectionSpacing),
 
             // Results section
             _buildResultsSection(colorScheme),
 
-            const SizedBox(height: 24),
+            SizedBox(height: sectionSpacing),
           ],
         ),
       ),
@@ -358,23 +400,18 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     ColorScheme colorScheme,
     bool isLoggedIn,
     int credits,
+    bool isSubscribed,
     String username,
   ) {
     return AppBar(
       titleSpacing: 16,
       title: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              Icons.favorite,
-              color: colorScheme.onPrimaryContainer,
-              size: 20,
-            ),
+          Image.asset(
+            'assets/images/icons/appstore_transparent.png',
+            width: 36,
+            height: 36,
+            fit: BoxFit.contain,
           ),
           const SizedBox(width: 12),
           Column(
@@ -401,7 +438,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         ],
       ),
       actions: [
-        if (isLoggedIn) ...[
+        if (isLoggedIn && !isSubscribed) ...[
           // Credits badge
           GestureDetector(
             onTap: () {
@@ -480,10 +517,10 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           _buildBanner(
             colorScheme: colorScheme,
             icon: Icons.timer_off_outlined,
-            title: 'Free trial expired',
+            title: 'Limit reached',
             subtitle: 'Sign up to keep using FlirtFix',
             buttonText: 'Sign Up',
-            onPressed: _navigateToAuth,
+            onPressed: _navigateToSignup,
             type: BannerType.warning,
           ),
 
@@ -499,15 +536,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             type: BannerType.error,
           ),
 
-        // Low credits banner
-        if (isLoggedIn && credits > 0 && credits <= 2)
-          _buildBanner(
-            colorScheme: colorScheme,
-            icon: Icons.battery_2_bar,
-            title: 'Limited free actions left',
-            subtitle: 'Unlock unlimited with a subscription',
-            type: BannerType.info,
-          ),
       ],
     );
   }
@@ -657,18 +685,44 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     'Be vulnerable',
   ];
 
-  void _addTagToInstructions(String tag) {
+  final Set<String> _selectedInstructionTags = {};
+
+  List<String> _splitInstructionTokens(String text) {
+    return text
+        .split(',')
+        .map((entry) => entry.trim())
+        .where((entry) => entry.isNotEmpty)
+        .toList();
+  }
+
+  void _refreshSelectedTags(TextEditingController controller) {
+    final tokens = _splitInstructionTokens(controller.text);
+    _selectedInstructionTags
+      ..clear()
+      ..addAll(tokens.where(_instructionTags.contains));
+  }
+
+  void _toggleTagInInstructions(String tag) {
     final controller = _situation == 'just_matched'
         ? _newMatchCustomInstructionsCtrl
         : _customInstructionsCtrl;
 
-    final currentText = controller.text.trim();
-    if (currentText.isEmpty) {
-      controller.text = tag;
+    final tokens = _splitInstructionTokens(controller.text);
+    if (tokens.contains(tag)) {
+      tokens.removeWhere((entry) => entry == tag);
     } else {
-      controller.text = '$currentText, $tag';
+      tokens.add(tag);
     }
-    setState(() {});
+
+    final updated = tokens.join(', ');
+    controller.value = controller.value.copyWith(
+      text: updated,
+      selection: TextSelection.collapsed(offset: updated.length),
+    );
+
+    setState(() {
+      _refreshSelectedTags(controller);
+    });
   }
 
   Widget _buildCustomInstructionsSection(ColorScheme colorScheme) {
@@ -721,7 +775,11 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                   )
                 : null,
           ),
-          onChanged: (_) => setState(() {}),
+          onChanged: (_) {
+            setState(() {
+              _refreshSelectedTags(controller);
+            });
+          },
         ),
         // Only show tags on Need Reply tab
         if (_situation != 'just_matched') ...[
@@ -730,26 +788,32 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             spacing: 8,
             runSpacing: 8,
             children: _instructionTags.map((tag) {
-              return InkWell(
-                onTap: () => _addTagToInstructions(tag),
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: colorScheme.outline.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Text(
-                    tag,
-                    style: TextStyle(
-                      color: colorScheme.onSurfaceVariant,
-                      fontSize: 13,
-                    ),
-                  ),
+              final isSelected = _selectedInstructionTags.contains(tag);
+              return InputChip(
+                label: Text(tag),
+                selected: isSelected,
+                showCheckmark: false,
+                onSelected: (_) => _toggleTagInInstructions(tag),
+                onDeleted: isSelected ? () => _toggleTagInInstructions(tag) : null,
+                deleteIcon: const Icon(Icons.close, size: 16),
+                deleteIconColor: colorScheme.onPrimary,
+                selectedColor: colorScheme.primary,
+                backgroundColor: colorScheme.surfaceContainerHighest,
+                side: BorderSide(
+                  color: isSelected
+                      ? colorScheme.primary
+                      : colorScheme.outline.withValues(alpha: 0.3),
                 ),
+                labelStyle: TextStyle(
+                  color: isSelected
+                      ? colorScheme.onPrimary
+                      : colorScheme.onSurfaceVariant,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+                labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               );
             }).toList(),
           ),
@@ -789,10 +853,12 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
             // Upload button (only show if no image uploaded)
             if (_uploadedProfileImage == null)
-              FilledButton.tonal(
+              FilledButton(
                 onPressed: _uploadProfileImage,
                 style: FilledButton.styleFrom(
                   minimumSize: const Size(double.infinity, 48),
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
                 ),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -923,17 +989,19 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             const SizedBox(height: 12),
 
             // Upload button
-            FilledButton.tonal(
+            FilledButton(
               onPressed: _isExtractingImage ? null : _uploadScreenshot,
               style: FilledButton.styleFrom(
                 minimumSize: const Size(double.infinity, 48),
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.photo_camera_outlined, size: 20),
-                  SizedBox(width: 8),
-                  Text('Upload Conversation Screenshot'),
+                  const Icon(Icons.photo_camera_outlined, size: 20),
+                  const SizedBox(width: 8),
+                  const Text('Upload Conversation Screenshot'),
                 ],
               ),
             ),
@@ -1089,6 +1157,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
+        textStyle: _primaryButtonTextStyle,
       ),
       child: _isLoading
           ? Row(
@@ -1103,10 +1172,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Text(
-                  'Crafting replies...',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
+                const Text('Crafting replies...', style: _primaryButtonTextStyle),
               ],
             )
           : Row(
@@ -1118,7 +1184,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                   _suggestions.isNotEmpty
                       ? 'Regenerate'
                       : (_situation == 'just_matched' ? 'Get Smart Openers' : 'Get Smart Replies'),
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  style: _primaryButtonTextStyle,
                 ),
               ],
             ),

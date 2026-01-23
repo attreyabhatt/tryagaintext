@@ -29,7 +29,7 @@ class PricingPlan {
   static List<PricingPlan> get allPlans => [
     PricingPlan(
       id: 'flirtfix_unlimited_weekly_v1',
-      name: 'FlirtFix Unlimited Weekly',
+      name: 'Weekly',
       price: 6.99,
       priceString: '\$6.99/week',
       billingPeriod: 'Billed weekly · Cancel anytime',

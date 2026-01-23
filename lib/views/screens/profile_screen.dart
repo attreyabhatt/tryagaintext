@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../config/app_config.dart';
-import '../../models/payment_history.dart';
-import '../../services/api_client.dart';
 import '../../state/app_state.dart';
 import 'change_password_screen.dart';
 import 'pricing_screen.dart';
@@ -16,161 +14,11 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final ApiClient _apiClient = ApiClient();
-  List<PaymentHistory> _paymentHistory = [];
-  bool _isLoadingHistory = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadPaymentHistory();
-  }
-
-  Future<void> _loadPaymentHistory() async {
-    setState(() {
-      _isLoadingHistory = true;
-    });
-
-    final history = await _apiClient.getPaymentHistory();
-
-    if (mounted) {
-      setState(() {
-        _paymentHistory = history;
-        _isLoadingHistory = false;
-      });
-    }
-  }
-
   Future<void> _signOut() async {
     await AppStateScope.of(context).logout();
     if (mounted) {
       Navigator.pop(context);
     }
-  }
-
-  Widget _buildPaymentItem(PaymentHistory purchase, ThemeData theme) {
-    final statusColor = switch (purchase.status) {
-      PaymentStatus.completed => Colors.green,
-      PaymentStatus.pending => Colors.orange,
-      PaymentStatus.failed => Colors.red,
-    };
-
-    final statusIcon = switch (purchase.status) {
-      PaymentStatus.completed => Icons.check_circle,
-      PaymentStatus.pending => Icons.access_time,
-      PaymentStatus.failed => Icons.cancel,
-    };
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(statusIcon, color: statusColor, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${purchase.creditsPurchased} credits',
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
-                Text(
-                  _formatDate(purchase.timestamp),
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '\$${purchase.amountPaid}',
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-              Text(
-                purchase.status.displayName,
-                style: TextStyle(fontSize: 12, color: statusColor),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final diff = now.difference(date);
-
-    if (diff.inDays == 0) {
-      return 'Today';
-    } else if (diff.inDays == 1) {
-      return 'Yesterday';
-    } else if (diff.inDays < 7) {
-      return '${diff.inDays} days ago';
-    } else {
-      return '${date.day}/${date.month}/${date.year}';
-    }
-  }
-
-  void _showAllPayments(BuildContext context, ThemeData theme) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        expand: false,
-        builder: (context, scrollController) => Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  const Text(
-                    'All Payments',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: ListView.separated(
-                controller: scrollController,
-                padding: const EdgeInsets.all(16),
-                itemCount: _paymentHistory.length,
-                separatorBuilder: (_, __) => const Divider(),
-                itemBuilder: (context, index) {
-                  return _buildPaymentItem(_paymentHistory[index], theme);
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Future<void> _openPolicy(String path) async {
@@ -192,6 +40,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final theme = Theme.of(context);
     final appState = AppStateScope.of(context);
     final user = appState.user;
+    final email = user?.email ?? '';
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -307,7 +156,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          user?.username ?? 'Guest',
+                          email.isNotEmpty ? email : 'Guest',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -315,7 +164,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          user?.email ?? 'Not signed in',
+                          email.isNotEmpty ? 'Signed in' : 'Not signed in',
                           style: TextStyle(color: Colors.grey[600]),
                         ),
                       ],
@@ -340,18 +189,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.credit_card, color: theme.primaryColor),
+                  Icon(Icons.workspace_premium, color: theme.primaryColor),
                   const SizedBox(width: 12),
-                  Text(
-                    appState.isSubscribed
-                        ? 'Subscription active'
-                        : '${appState.credits} credits',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Subscription',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          appState.isSubscribed
+                              ? 'Active'
+                              : 'Not active',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ],
                     ),
                   ),
-                  const Spacer(),
                   TextButton(
                     onPressed: () async {
                       await Navigator.push(
@@ -361,66 +221,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       );
                     },
-                    child: const Text('Buy more'),
+                    child: Text(appState.isSubscribed ? 'Manage' : 'Subscribe'),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.receipt_long, color: theme.primaryColor),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Payment History',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const Spacer(),
-                      if (_isLoadingHistory)
-                        const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  if (_paymentHistory.isEmpty && !_isLoadingHistory)
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Text(
-                          'No purchases yet',
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
-                      ),
-                    )
-                  else
-                    ..._paymentHistory.take(5).map((purchase) => _buildPaymentItem(purchase, theme)),
-                  if (_paymentHistory.length > 5)
-                    TextButton(
-                      onPressed: () => _showAllPayments(context, theme),
-                      child: Text('View all (${_paymentHistory.length})'),
-                    ),
                 ],
               ),
             ),
