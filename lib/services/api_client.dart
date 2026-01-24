@@ -539,6 +539,8 @@ class ApiClient {
           if (item is Map<String, dynamic>) {
             final message = item['message']?.toString();
             final confidenceScore = item['confidence_score'];
+            final whyItWorks = item['why_it_works']?.toString();
+            final imageUrl = item['image_url']?.toString();
 
             if (message != null && message.trim().isNotEmpty) {
               double confidence = 0.8;
@@ -547,7 +549,16 @@ class ApiClient {
               }
 
               suggestions.add(
-                Suggestion(message: message.trim(), confidence: confidence),
+                Suggestion(
+                  message: message.trim(),
+                  confidence: confidence,
+                  whyItWorks: whyItWorks?.trim().isNotEmpty == true
+                      ? whyItWorks?.trim()
+                      : null,
+                  imageUrl: imageUrl?.trim().isNotEmpty == true
+                      ? imageUrl?.trim()
+                      : null,
+                ),
               );
             }
           }
@@ -628,6 +639,58 @@ class ApiClient {
         return ApiErrorCode.server;
       default:
         return ApiErrorCode.unknown;
+    }
+  }
+
+  Future<List<Suggestion>> getRecommendedOpeners({int count = 3}) async {
+    try {
+      final token = await AuthService.getToken();
+      final guestId = await AuthService.getOrCreateGuestId();
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/recommended-openers/'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Token $token',
+          'X-Guest-Id': guestId,
+        },
+        body: jsonEncode({'count': count}),
+      );
+
+      final data = _decodeJson(response.body);
+
+      if (data['success'] == false) {
+        final code = _mapErrorCode(data['error']?.toString());
+        throw ApiException(
+          data['message'] ?? 'Failed to load recommended openers',
+          code,
+        );
+      }
+
+      await AuthService.updateSubscriptionFromPayload(data);
+
+      if (data['credits_remaining'] != null) {
+        await AuthService.updateStoredCredits(data['credits_remaining']);
+      }
+
+      final openers = data['openers'];
+      if (openers is List) {
+        return openers
+            .whereType<Map<String, dynamic>>()
+            .map((item) => Suggestion.fromJson(item))
+            .toList();
+      }
+
+      return <Suggestion>[];
+    } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
+      AppLogger.error('Recommended openers error', e is Exception ? e : null);
+      throw ApiException(
+        'Failed to load recommended openers',
+        ApiErrorCode.server,
+      );
     }
   }
 

@@ -21,6 +21,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await AppStateScope.of(context).refreshUserData();
+    });
+  }
+
   Future<void> _openPolicy(String path) async {
     final uri = Uri.parse('${AppConfig.baseUrl}$path');
     final launched = await launchUrl(
