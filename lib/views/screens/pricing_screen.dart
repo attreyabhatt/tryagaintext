@@ -5,7 +5,6 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/pricing_plan.dart';
 import '../../services/api_client.dart';
-import '../../services/auth_service.dart';
 import '../../state/app_state.dart';
 import '../../utils/app_logger.dart';
 import 'login_screen.dart';

@@ -92,15 +92,16 @@ class _SignupScreenState extends State<SignupScreen> {
               Column(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: theme.primaryColor,
+                      color: Colors.transparent,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Icon(
-                      Icons.favorite,
-                      color: Colors.white,
-                      size: 40,
+                    child: Image.asset(
+                      'assets/images/icons/appstore_transparent.png',
+                      width: 96,
+                      height: 96,
+                      fit: BoxFit.contain,
                     ),
                   ),
                   const SizedBox(height: 24),

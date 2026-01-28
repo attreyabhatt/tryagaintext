@@ -10,6 +10,11 @@ class AppState extends ChangeNotifier {
   String? _subscriptionExpiry;
   int? _subscriberWeeklyRemaining;
   int? _subscriberWeeklyLimit;
+  // Daily limits (new)
+  int? _dailyOpenersRemaining;
+  int? _dailyOpenersLimit;
+  int? _dailyRepliesRemaining;
+  int? _dailyRepliesLimit;
   bool _isLoggedIn = false;
   bool _initialized = false;
 
@@ -19,6 +24,11 @@ class AppState extends ChangeNotifier {
   String? get subscriptionExpiry => _subscriptionExpiry;
   int? get subscriberWeeklyRemaining => _subscriberWeeklyRemaining;
   int? get subscriberWeeklyLimit => _subscriberWeeklyLimit;
+  // Daily limit getters
+  int? get dailyOpenersRemaining => _dailyOpenersRemaining;
+  int? get dailyOpenersLimit => _dailyOpenersLimit;
+  int? get dailyRepliesRemaining => _dailyRepliesRemaining;
+  int? get dailyRepliesLimit => _dailyRepliesLimit;
   bool get isLoggedIn => _isLoggedIn;
   bool get initialized => _initialized;
 
@@ -39,6 +49,11 @@ class AppState extends ChangeNotifier {
     _subscriptionExpiry = await AuthService.getStoredSubscriptionExpiry();
     _subscriberWeeklyRemaining = await AuthService.getStoredSubscriberWeeklyRemaining();
     _subscriberWeeklyLimit = await AuthService.getStoredSubscriberWeeklyLimit();
+    // Load daily limits
+    _dailyOpenersRemaining = await AuthService.getStoredDailyOpenersRemaining();
+    _dailyOpenersLimit = await AuthService.getStoredDailyOpenersLimit();
+    _dailyRepliesRemaining = await AuthService.getStoredDailyRepliesRemaining();
+    _dailyRepliesLimit = await AuthService.getStoredDailyRepliesLimit();
     notifyListeners();
   }
 
@@ -62,6 +77,10 @@ class AppState extends ChangeNotifier {
     _subscriptionExpiry = null;
     _subscriberWeeklyRemaining = null;
     _subscriberWeeklyLimit = null;
+    _dailyOpenersRemaining = null;
+    _dailyOpenersLimit = null;
+    _dailyRepliesRemaining = null;
+    _dailyRepliesLimit = null;
     _isLoggedIn = false;
     notifyListeners();
   }

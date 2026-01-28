@@ -16,6 +16,11 @@ import 'login_screen.dart';
 import 'signup_screen.dart';
 import 'package:flirtfix/views/screens/pricing_screen.dart';
 import 'package:flirtfix/views/screens/profile_screen.dart';
+import '../widgets/thinking_indicator.dart';
+
+const _smartReplyAccent = Color(0xFF4C9A4A);
+const _smartReplyAccentSoft = Color(0xFFE6F4E7);
+const _smartReplyCardShadow = Color(0x14000000);
 
 class ConversationsScreen extends StatefulWidget {
   const ConversationsScreen({super.key});
@@ -30,6 +35,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     fontSize: 16,
     fontWeight: FontWeight.w600,
   );
+  static const bool _enableNewMatchCustomInstructions = false;
   static const String _ratingPromptShownKey = 'rating_prompt_shown';
   static const String _newMatchModeKey = 'new_match_mode';
   static const String _handledTokensKey = 'handled_purchase_tokens';
@@ -42,6 +48,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   List<Suggestion> _suggestions = [];
   bool _isLoading = false;
   bool _isExtractingImage = false;
+  bool _showBottomGradient = true;
   String? _errorMessage;
   final ImagePicker _picker = ImagePicker();
   late AnimationController _animationController;
@@ -49,6 +56,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   late TabController _tabController;
 
   bool _isTrialExpired = false;
+  bool _isFairUseExceeded = false;
   final _apiClient = ApiClient();
   final InAppPurchase _inAppPurchase = InAppPurchase.instance;
   File? _uploadedConversationImage;
@@ -77,6 +85,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     );
     _tabController = TabController(length: 2, vsync: this, initialIndex: 1);
     _tabController.addListener(_onTabChanged);
+    _scrollController.addListener(_onScroll);
     _loadNewMatchModePreference();
     _setupPurchaseListener();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -89,6 +98,21 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     if (state == AppLifecycleState.resumed) {
       _refreshSubscriptionStatus();
       _refreshPendingPurchases();
+    }
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+
+    // Check if we're near the bottom (within 50 pixels)
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.offset;
+    final isNearBottom = maxScroll - currentScroll <= 50;
+
+    if (isNearBottom != !_showBottomGradient) {
+      setState(() {
+        _showBottomGradient = !isNearBottom;
+      });
     }
   }
 
@@ -246,6 +270,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       _suggestions = [];
       _errorMessage = null;
       _isTrialExpired = false;
+      _isFairUseExceeded = false;
       _animationController.reset();
       _generateRequestId++;
     });
@@ -272,10 +297,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         _uploadedConversationImage = null;
         _isExtractingImage = false;
       }
-      final controller = _situation == 'just_matched'
-          ? _newMatchCustomInstructionsCtrl
-          : _customInstructionsCtrl;
-      _refreshSelectedTags(controller);
     });
     if (_situation == 'just_matched' && _newMatchMode == NewMatchMode.recommended) {
       _loadRecommendedOpeners();
@@ -290,6 +311,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       _errorMessage = null;
       _suggestions = [];
       _isTrialExpired = false;
+      _isFairUseExceeded = false;
     });
 
     try {
@@ -391,6 +413,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   }
 
   Future<void> _generateSuggestions() async {
+    final appState = AppStateScope.of(context);
+    if (_situation != 'just_matched' &&
+        appState.isLoggedIn &&
+        !appState.isSubscribed &&
+        appState.credits == 0) {
+      await _navigateToPricing();
+      return;
+    }
     // For New Match tab, require a profile image
     if (_situation == 'just_matched' &&
         _newMatchMode == NewMatchMode.ai &&
@@ -415,6 +445,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       _errorMessage = null;
       _suggestions = [];
       _isTrialExpired = false; // reset flag on new attempt
+      _isFairUseExceeded = false;
     });
 
     try {
@@ -427,7 +458,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         // Use the new image-based opener generation endpoint
         suggestions = await _apiClient.generateOpenersFromImage(
           _uploadedProfileImage!,
-          customInstructions: _newMatchCustomInstructionsCtrl.text,
+          customInstructions: _enableNewMatchCustomInstructions
+              ? _newMatchCustomInstructionsCtrl.text
+              : '',
         );
       }
     } else {
@@ -451,6 +484,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         _suggestions = suggestions;
         _isLoading = false;
         _isTrialExpired = false; // clear any prior trial-expired banner on success
+        _isFairUseExceeded = false;
       });
 
       await AppStateScope.of(context).reloadFromStorage();
@@ -546,7 +580,22 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
   bool _isCreditError(ApiException e) {
     return e.code == ApiErrorCode.insufficientCredits ||
-        e.code == ApiErrorCode.trialExpired;
+        e.code == ApiErrorCode.trialExpired ||
+        e.code == ApiErrorCode.fairUseExceeded;
+  }
+
+  String _getTimeUntilMidnightUtc() {
+    final now = DateTime.now().toUtc();
+    final midnight = DateTime.utc(now.year, now.month, now.day + 1);
+    final difference = midnight.difference(now);
+
+    final hours = difference.inHours;
+    final minutes = difference.inMinutes % 60;
+
+    if (hours > 0) {
+      return '${hours}h ${minutes}m';
+    }
+    return '${minutes}m';
   }
 
   void _startNewSession() {
@@ -554,6 +603,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       _suggestions = [];
       _errorMessage = null;
       _isTrialExpired = false;
+      _isFairUseExceeded = false;
       _animationController.reset();
       if (_situation == 'just_matched') {
         _uploadedProfileImage = null;
@@ -619,6 +669,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       if (mounted) {
         setState(() {
           _isTrialExpired = true;
+        });
+      }
+      return;
+    }
+    if (e.code == ApiErrorCode.fairUseExceeded) {
+      if (mounted) {
+        setState(() {
+          _isFairUseExceeded = true;
         });
       }
       return;
@@ -712,60 +770,95 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     final isSubscribed = appState.isSubscribed;
     final username = appState.user?.username ?? '';
     const double sectionSpacing = 20;
-    final showCustomInstructions =
-        !(_situation == 'just_matched' && _newMatchMode == NewMatchMode.recommended);
+    final showCustomInstructions = _situation != 'just_matched' ||
+        (_enableNewMatchCustomInstructions && _newMatchMode == NewMatchMode.ai);
     final isRecommendedNewMatch =
         _situation == 'just_matched' && _newMatchMode == NewMatchMode.recommended;
+    final isAiNewMatch =
+        _situation == 'just_matched' && _newMatchMode == NewMatchMode.ai;
+    final showGenerateRow = !isAiNewMatch || _uploadedProfileImage != null;
 
     return Scaffold(
       appBar: _buildAppBar(colorScheme, isLoggedIn, credits, isSubscribed, username),
-      body: SingleChildScrollView(
-        controller: _scrollController,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Warning banners
-            _buildWarningBanners(colorScheme, isLoggedIn, credits, isSubscribed),
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            controller: _scrollController,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Warning banners
+                _buildWarningBanners(colorScheme, isLoggedIn, credits, isSubscribed),
 
-            const SizedBox(height: 8),
+                const SizedBox(height: 8),
 
-            // Tab bar for situation selection
-            _buildTabBar(colorScheme),
+                // Tab bar for situation selection
+                _buildTabBar(colorScheme),
 
-            SizedBox(height: sectionSpacing),
-
-            if (_situation == 'just_matched') ...[
-              _buildNewMatchToggle(colorScheme),
-              SizedBox(height: sectionSpacing),
-            ],
-
-            // Input section
-            _buildInputSection(colorScheme),
-
-            SizedBox(height: sectionSpacing),
-
-            // Custom instructions section
-            if (showCustomInstructions) ...[
-              _buildCustomInstructionsSection(colorScheme),
-              SizedBox(height: sectionSpacing),
-            ],
-
-            if (isRecommendedNewMatch) ...[
-              _buildResultsSection(colorScheme),
-              if (!_isLoading && !_isExtractingImage) ...[
                 SizedBox(height: sectionSpacing),
-                _buildGenerateRow(colorScheme),
-              ],
-            ] else ...[
-              _buildGenerateRow(colorScheme),
-              SizedBox(height: sectionSpacing),
-              _buildResultsSection(colorScheme),
-            ],
 
-            SizedBox(height: sectionSpacing),
-          ],
-        ),
+                if (_situation == 'just_matched') ...[
+                  _buildNewMatchToggle(colorScheme),
+                  SizedBox(height: sectionSpacing),
+                ],
+
+                // Input section
+                _buildInputSection(colorScheme),
+
+                SizedBox(height: sectionSpacing),
+
+                // Custom instructions section
+                if (showCustomInstructions) ...[
+                  _buildCustomInstructionsSection(colorScheme),
+                  SizedBox(height: sectionSpacing),
+                ],
+
+                if (isRecommendedNewMatch) ...[
+                  _buildResultsSection(colorScheme),
+                  if (!_isLoading && !_isExtractingImage) ...[
+                    SizedBox(height: sectionSpacing),
+                    _buildGenerateRow(colorScheme),
+                  ],
+                ] else ...[
+                  if (showGenerateRow) ...[
+                    _buildGenerateRow(colorScheme),
+                    SizedBox(height: sectionSpacing),
+                  ],
+                  _buildResultsSection(colorScheme),
+                ],
+
+                SizedBox(height: sectionSpacing),
+              ],
+            ),
+          ),
+          // Bottom gradient indicator
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: IgnorePointer(
+              child: AnimatedOpacity(
+                opacity: _showBottomGradient ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 200),
+                child: Container(
+                  height: 60,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        colorScheme.surface.withValues(alpha: 0.0),
+                        colorScheme.surface.withValues(alpha: 0.9),
+                        colorScheme.surface,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -881,6 +974,24 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     int credits,
     bool isSubscribed,
   ) {
+    // Fair use exceeded banner for subscribers
+    if (isSubscribed && _isFairUseExceeded) {
+      final isOpenerTab = _situation == 'just_matched';
+      final limitType = isOpenerTab ? 'opener' : 'reply';
+      final resetTime = _getTimeUntilMidnightUtc();
+      return Column(
+        children: [
+          _buildBanner(
+            colorScheme: colorScheme,
+            icon: Icons.hourglass_empty_outlined,
+            title: 'Daily $limitType limit reached',
+            subtitle: 'Resets in $resetTime',
+            type: BannerType.warning,
+          ),
+        ],
+      );
+    }
+
     if (isSubscribed) {
       return const SizedBox.shrink();
     }
@@ -1050,58 +1161,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     }
   }
 
-  // Suggestion tags for custom instructions
-  static const List<String> _instructionTags = [
-    'Ask her out',
-    'She left me on read',
-    'Change topics',
-    'Make it romantic',
-    'Make her laugh',
-    'Get her number',
-    'Flirt with her',
-    'Be vulnerable',
-  ];
-
-  final Set<String> _selectedInstructionTags = {};
-
-  List<String> _splitInstructionTokens(String text) {
-    return text
-        .split(',')
-        .map((entry) => entry.trim())
-        .where((entry) => entry.isNotEmpty)
-        .toList();
-  }
-
-  void _refreshSelectedTags(TextEditingController controller) {
-    final tokens = _splitInstructionTokens(controller.text);
-    _selectedInstructionTags
-      ..clear()
-      ..addAll(tokens.where(_instructionTags.contains));
-  }
-
-  void _toggleTagInInstructions(String tag) {
-    final controller = _situation == 'just_matched'
-        ? _newMatchCustomInstructionsCtrl
-        : _customInstructionsCtrl;
-
-    final tokens = _splitInstructionTokens(controller.text);
-    if (tokens.contains(tag)) {
-      tokens.removeWhere((entry) => entry == tag);
-    } else {
-      tokens.add(tag);
-    }
-
-    final updated = tokens.join(', ');
-    controller.value = controller.value.copyWith(
-      text: updated,
-      selection: TextSelection.collapsed(offset: updated.length),
-    );
-
-    setState(() {
-      _refreshSelectedTags(controller);
-    });
-  }
-
   Widget _buildCustomInstructionsSection(ColorScheme colorScheme) {
     final controller = _situation == 'just_matched'
         ? _newMatchCustomInstructionsCtrl
@@ -1110,29 +1169,50 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(
-              Icons.edit_note,
-              size: 18,
-              color: colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Custom Instructions',
-              style: TextStyle(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Icon(
+                Icons.edit_note,
+                size: 18,
                 color: colorScheme.onSurfaceVariant,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Text(
+                'Custom Instructions',
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '(optional)',
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
           maxLines: 2,
           minLines: 2,
+          maxLength: 250,
+          buildCounter: (
+            BuildContext context, {
+            required int currentLength,
+            required bool isFocused,
+            int? maxLength,
+          }) {
+            return null;
+          },
           decoration: InputDecoration(
             hintText: _situation == 'just_matched'
                 ? 'e.g., "mention her dog", "write a poem", "comment on her bio"'
@@ -1152,49 +1232,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                   )
                 : null,
           ),
-          onChanged: (_) {
-            setState(() {
-              _refreshSelectedTags(controller);
-            });
-          },
+          onChanged: (_) => setState(() {}),
         ),
-        // Only show tags on Need Reply tab
-        if (_situation != 'just_matched') ...[
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _instructionTags.map((tag) {
-              final isSelected = _selectedInstructionTags.contains(tag);
-              return InputChip(
-                label: Text(tag),
-                selected: isSelected,
-                showCheckmark: false,
-                onSelected: (_) => _toggleTagInInstructions(tag),
-                onDeleted: isSelected ? () => _toggleTagInInstructions(tag) : null,
-                deleteIcon: const Icon(Icons.close, size: 16),
-                deleteIconColor: colorScheme.onPrimary,
-                selectedColor: colorScheme.primary,
-                backgroundColor: colorScheme.surfaceContainerHighest,
-                side: BorderSide(
-                  color: isSelected
-                      ? colorScheme.primary
-                      : colorScheme.outline.withValues(alpha: 0.3),
-                ),
-                labelStyle: TextStyle(
-                  color: isSelected
-                      ? colorScheme.onPrimary
-                      : colorScheme.onSurfaceVariant,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-                labelPadding: const EdgeInsets.symmetric(horizontal: 6),
-                visualDensity: VisualDensity.compact,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              );
-            }).toList(),
-          ),
-        ],
       ],
     );
   }
@@ -1249,6 +1288,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Pick the most interesting photo or bio section',
+              style: TextStyle(
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                fontSize: 12,
+              ),
             ),
             const SizedBox(height: 12),
 
@@ -1338,6 +1385,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                         setState(() {
                           _uploadedProfileImage = null;
                           _suggestions = [];
+                          _errorMessage = null;
                           _animationController.reset();
                         });
                       },
@@ -1436,28 +1484,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Row(
-                        children: [
-                          SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: colorScheme.primary,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Flexible(
-                            child: Text(
-                              'Extracting conversation...',
-                              style: TextStyle(
-                                color: colorScheme.onSurfaceVariant,
-                                fontSize: 13,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
+                      child: ThinkingIndicatorCompact(
+                        messages: extractionMessages,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -1562,11 +1591,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   Widget _buildGenerateButton(ColorScheme colorScheme) {
     final isRecommended =
         _situation == 'just_matched' && _newMatchMode == NewMatchMode.recommended;
-    final label = isRecommended
+    final label = (isRecommended || _suggestions.isNotEmpty)
         ? 'Regenerate'
-        : (_suggestions.isNotEmpty
-            ? 'Regenerate'
-            : (_situation == 'just_matched' ? 'Get Smart Openers' : 'Get Smart Replies'));
+        : (_situation == 'just_matched' ? 'Get Smart Openers' : 'Get Smart Replies');
     return FilledButton(
       onPressed: (_isLoading || _isExtractingImage) ? null : _generateSuggestions,
       style: FilledButton.styleFrom(
@@ -1756,12 +1783,12 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
+                  color: _smartReplyAccentSoft,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   Icons.check_circle,
-                  color: colorScheme.onPrimaryContainer,
+                  color: _smartReplyAccent,
                   size: 20,
                 ),
               ),
@@ -1787,6 +1814,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               onTap: () => _copySuggestion(suggestion.message),
             );
           }),
+          const SizedBox(height: 32),
         ],
       ),
     );
@@ -1798,6 +1826,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     _purchaseSubscription?.cancel();
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _conversationCtrl.dispose();
     _customInstructionsCtrl.dispose();
@@ -1827,12 +1856,17 @@ class _SuggestionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 0,
+      elevation: 4,
+      shadowColor: _smartReplyCardShadow,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
       margin: const EdgeInsets.only(bottom: 12),
-      color: colorScheme.surfaceContainerLow,
+      color: Colors.white,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -1846,13 +1880,13 @@ class _SuggestionCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(8),
+                      color: _smartReplyAccentSoft,
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                       '#${index + 1}',
                       style: TextStyle(
-                        color: colorScheme.onPrimaryContainer,
+                        color: _smartReplyAccent,
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),

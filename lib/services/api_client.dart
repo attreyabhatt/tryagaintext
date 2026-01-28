@@ -384,39 +384,6 @@ class ApiClient {
     }
   }
 
-  Stream<Map<String, dynamic>> extractFromImageStream(File imageFile) async* {
-    final token = await AuthService.getToken();
-    final guestId = await AuthService.getOrCreateGuestId();
-
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse('$baseUrl/api/extract-image-stream/'),
-    );
-    request.headers['Accept'] = 'text/event-stream';
-    if (token != null) {
-      request.headers['Authorization'] = 'Token $token';
-    }
-    request.headers['X-Guest-Id'] = guestId;
-
-    request.files.add(
-      await http.MultipartFile.fromPath(
-        'screenshot',
-        imageFile.path,
-        contentType: MediaType('image', 'jpeg'),
-      ),
-    );
-
-    final streamedResponse = await request.send();
-    if (streamedResponse.statusCode < 200 ||
-        streamedResponse.statusCode >= 300) {
-      throw ApiException(
-        'Request failed with status ${streamedResponse.statusCode}',
-        ApiErrorCode.server,
-      );
-    }
-    yield* _parseSseStream(streamedResponse.stream);
-  }
-
   Stream<Map<String, dynamic>> analyzeProfileStream(File imageFile) async* {
     final token = await AuthService.getToken();
     final guestId = await AuthService.getOrCreateGuestId();
@@ -636,7 +603,7 @@ class ApiClient {
       case 'subscription_required':
         return ApiErrorCode.insufficientCredits;
       case 'fair_use_exceeded':
-        return ApiErrorCode.server;
+        return ApiErrorCode.fairUseExceeded;
       default:
         return ApiErrorCode.unknown;
     }
@@ -751,6 +718,7 @@ class ApiException implements Exception {
 enum ApiErrorCode {
   insufficientCredits,
   trialExpired,
+  fairUseExceeded,
   network,
   server,
   unknown,

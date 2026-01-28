@@ -136,13 +136,15 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
     );
 
-    _fadeIn = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _fadeIn = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
-    _scale = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
-    );
+    _scale = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
     _controller.forward();
     _initializeApp();
@@ -184,89 +186,86 @@ class _SplashScreenState extends State<SplashScreen>
           builder: (context, child) {
             return Opacity(
               opacity: _fadeIn.value,
-              child: Transform.scale(
-                scale: _scale.value,
-                child: child,
-              ),
+              child: Transform.scale(scale: _scale.value, child: child),
             );
           },
           child: SizedBox(
             width: double.infinity,
             child: Column(
               children: [
-              const Spacer(flex: 3),
+                const Spacer(flex: 3),
 
-              // Logo with Material elevation
-              Container(
-                width: 140,
-                height: 140,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(32),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colorScheme.primary.withValues(alpha: 0.25),
-                      blurRadius: 32,
-                      offset: const Offset(0, 12),
-                      spreadRadius: 0,
+                // Logo with Material elevation
+                Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(32),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colorScheme.primary.withValues(alpha: 0.25),
+                        blurRadius: 32,
+                        offset: const Offset(0, 12),
+                        spreadRadius: 0,
+                      ),
+                      BoxShadow(
+                        color: colorScheme.primary.withValues(alpha: 0.12),
+                        blurRadius: 64,
+                        offset: const Offset(0, 24),
+                        spreadRadius: 0,
+                      ),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Image.asset(
+                      'assets/images/icons/appstore.png',
+                      fit: BoxFit.contain,
                     ),
-                    BoxShadow(
-                      color: colorScheme.primary.withValues(alpha: 0.12),
-                      blurRadius: 64,
-                      offset: const Offset(0, 24),
-                      spreadRadius: 0,
-                    ),
-                  ],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Image.asset(
-                    'assets/images/icons/appstore.png',
-                    fit: BoxFit.contain,
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 32),
+                const SizedBox(height: 32),
 
-              // App name
-              Text(
-                'FlirtFix',
-                style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.w700,
-                  color: colorScheme.onSurface,
-                  letterSpacing: -1,
-                  height: 1.1,
+                // App name
+                Text(
+                  'FlirtFix',
+                  style: TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.onSurface,
+                    letterSpacing: -1,
+                    height: 1.1,
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
 
-              // Tagline
-              Text(
-                'Your dating conversation wingman',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  color: colorScheme.onSurfaceVariant,
-                  letterSpacing: 0.15,
+                // Tagline
+                Text(
+                  'Your dating conversation wingman',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    color: colorScheme.onSurfaceVariant,
+                    letterSpacing: 0.15,
+                  ),
                 ),
-              ),
 
-              const Spacer(flex: 3),
+                const Spacer(flex: 3),
 
-              // Loading indicator at bottom
-              SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  color: colorScheme.primary,
+                // Loading indicator at bottom
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: colorScheme.primary,
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 48),
+                const SizedBox(height: 48),
               ],
             ),
           ),

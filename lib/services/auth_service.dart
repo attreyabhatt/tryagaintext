@@ -21,6 +21,11 @@ class AuthService {
   static const String subscriptionExpiryKey = 'subscription_expiry';
   static const String subscriberWeeklyRemainingKey = 'subscriber_weekly_remaining';
   static const String subscriberWeeklyLimitKey = 'subscriber_weekly_limit';
+  // Daily limits (new)
+  static const String dailyOpenersRemainingKey = 'daily_openers_remaining';
+  static const String dailyOpenersLimitKey = 'daily_openers_limit';
+  static const String dailyRepliesRemainingKey = 'daily_replies_remaining';
+  static const String dailyRepliesLimitKey = 'daily_replies_limit';
   static const String justSignedUpKey = 'just_signed_up';
 
   // Store auth token
@@ -105,6 +110,27 @@ class AuthService {
     return prefs.getInt(subscriberWeeklyLimitKey);
   }
 
+  // Daily limit getters
+  static Future<int?> getStoredDailyOpenersRemaining() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(dailyOpenersRemainingKey);
+  }
+
+  static Future<int?> getStoredDailyOpenersLimit() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(dailyOpenersLimitKey);
+  }
+
+  static Future<int?> getStoredDailyRepliesRemaining() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(dailyRepliesRemainingKey);
+  }
+
+  static Future<int?> getStoredDailyRepliesLimit() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(dailyRepliesLimitKey);
+  }
+
   // Update stored credits
   static Future<void> updateStoredCredits(int credits) async {
     final prefs = await SharedPreferences.getInstance();
@@ -121,6 +147,10 @@ class AuthService {
     await prefs.remove(subscriptionExpiryKey);
     await prefs.remove(subscriberWeeklyRemainingKey);
     await prefs.remove(subscriberWeeklyLimitKey);
+    await prefs.remove(dailyOpenersRemainingKey);
+    await prefs.remove(dailyOpenersLimitKey);
+    await prefs.remove(dailyRepliesRemainingKey);
+    await prefs.remove(dailyRepliesLimitKey);
     await prefs.remove(guestIdKey);
     await prefs.remove(justSignedUpKey);
   }
@@ -313,11 +343,25 @@ class AuthService {
     if (json['subscription_expiry'] != null) {
       await prefs.setString(subscriptionExpiryKey, json['subscription_expiry'].toString());
     }
+    // Legacy weekly fields
     if (json['subscriber_weekly_remaining'] != null) {
       await prefs.setInt(subscriberWeeklyRemainingKey, json['subscriber_weekly_remaining'] as int);
     }
     if (json['subscriber_weekly_limit'] != null) {
       await prefs.setInt(subscriberWeeklyLimitKey, json['subscriber_weekly_limit'] as int);
+    }
+    // New daily fields
+    if (json['daily_openers_remaining'] != null) {
+      await prefs.setInt(dailyOpenersRemainingKey, json['daily_openers_remaining'] as int);
+    }
+    if (json['daily_openers_limit'] != null) {
+      await prefs.setInt(dailyOpenersLimitKey, json['daily_openers_limit'] as int);
+    }
+    if (json['daily_replies_remaining'] != null) {
+      await prefs.setInt(dailyRepliesRemainingKey, json['daily_replies_remaining'] as int);
+    }
+    if (json['daily_replies_limit'] != null) {
+      await prefs.setInt(dailyRepliesLimitKey, json['daily_replies_limit'] as int);
     }
   }
 }
