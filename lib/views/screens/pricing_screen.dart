@@ -8,11 +8,17 @@ import '../../services/api_client.dart';
 import '../../state/app_state.dart';
 import '../../utils/app_logger.dart';
 import 'login_screen.dart';
+import 'signup_screen.dart';
 
 class PricingScreen extends StatefulWidget {
   final bool showCloseButton;
+  final bool guestConversionMode;
 
-  const PricingScreen({super.key, this.showCloseButton = true});
+  const PricingScreen({
+    super.key,
+    this.showCloseButton = true,
+    this.guestConversionMode = false,
+  });
 
   @override
   State<PricingScreen> createState() => _PricingScreenState();
@@ -215,7 +221,22 @@ class _PricingScreenState extends State<PricingScreen>
 
     final appState = AppStateScope.of(context);
     if (!appState.isLoggedIn) {
-      // Show login dialog
+      // In guest conversion mode, skip dialog and go directly to signup
+      if (widget.guestConversionMode) {
+        final loginResult = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(builder: (context) => const SignupScreen()),
+        );
+
+        if (loginResult == true && mounted) {
+          await appState.reloadFromStorage();
+          // Automatically trigger purchase after successful signup
+          _processPurchase(plan);
+        }
+        return;
+      }
+
+      // Original flow: Show login dialog for non-guest conversion
       final result = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
@@ -891,12 +912,19 @@ class _PricingScreenState extends State<PricingScreen>
                           )
                         : Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
-                              Icon(Icons.shopping_cart, size: 20),
-                              SizedBox(width: 8),
+                            children: [
+                              Icon(
+                                widget.guestConversionMode && !AppStateScope.of(context).isLoggedIn
+                                    ? Icons.person_add
+                                    : Icons.shopping_cart,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
                               Text(
-                                'Start subscription',
-                                style: TextStyle(
+                                widget.guestConversionMode && !AppStateScope.of(context).isLoggedIn
+                                    ? 'Sign Up'
+                                    : 'Start subscription',
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                 ),

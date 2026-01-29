@@ -947,6 +947,39 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         ],
       ),
       actions: [
+        if (!isLoggedIn) ...[
+          // "Go Pro" button for guest users
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PricingScreen(
+                    showCloseButton: true,
+                    guestConversionMode: true,
+                  ),
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                'Go Pro',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
         if (isLoggedIn && !isSubscribed) ...[
           // Credits badge
           GestureDetector(
