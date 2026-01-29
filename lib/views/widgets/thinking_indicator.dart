@@ -111,10 +111,12 @@ class _ThinkingIndicatorState extends State<ThinkingIndicator>
 
   void _fadeToNextMessage() async {
     // Fade out
+    if (!mounted) return;
     setState(() => _messageOpacity = 0.0);
     await Future.delayed(const Duration(milliseconds: 200));
 
     // Change message
+    if (!mounted) return;
     setState(() {
       _currentMessageIndex =
           (_currentMessageIndex + 1) % widget.messages.length;
@@ -122,6 +124,7 @@ class _ThinkingIndicatorState extends State<ThinkingIndicator>
 
     // Fade in
     await Future.delayed(const Duration(milliseconds: 50));
+    if (!mounted) return;
     setState(() => _messageOpacity = 1.0);
   }
 
@@ -257,13 +260,16 @@ class _ThinkingIndicatorCompactState extends State<ThinkingIndicatorCompact>
   }
 
   void _fadeToNextMessage() async {
+    if (!mounted) return;
     setState(() => _messageOpacity = 0.0);
     await Future.delayed(const Duration(milliseconds: 200));
+    if (!mounted) return;
     setState(() {
       _currentMessageIndex =
           (_currentMessageIndex + 1) % widget.messages.length;
     });
     await Future.delayed(const Duration(milliseconds: 50));
+    if (!mounted) return;
     setState(() => _messageOpacity = 1.0);
   }
 

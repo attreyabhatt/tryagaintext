@@ -39,6 +39,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   static const String _ratingPromptShownKey = 'rating_prompt_shown';
   static const String _newMatchModeKey = 'new_match_mode';
   static const String _handledTokensKey = 'handled_purchase_tokens';
+  static const String _trialExpiredKey = 'guest_trial_expired';
   String _situation = 'stuck_after_reply';
   final String _selectedTone = 'Natural';
   final _conversationCtrl = TextEditingController();
@@ -56,7 +57,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   late TabController _tabController;
 
   bool _isTrialExpired = false;
-  bool _isFairUseExceeded = false;
+  bool _isOpenerLimitExceeded = false;
+  bool _isReplyLimitExceeded = false;
   final _apiClient = ApiClient();
   final InAppPurchase _inAppPurchase = InAppPurchase.instance;
   File? _uploadedConversationImage;
@@ -87,6 +89,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     _tabController.addListener(_onTabChanged);
     _scrollController.addListener(_onScroll);
     _loadNewMatchModePreference();
+    _loadTrialExpiredState();
     _setupPurchaseListener();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshSubscriptionStatus();
@@ -135,6 +138,15 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       _newMatchMode = saved == NewMatchMode.recommended.name
           ? NewMatchMode.recommended
           : NewMatchMode.ai;
+    });
+  }
+
+  Future<void> _loadTrialExpiredState() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isExpired = prefs.getBool(_trialExpiredKey) ?? false;
+    if (!mounted) return;
+    setState(() {
+      _isTrialExpired = isExpired;
     });
   }
 
@@ -270,7 +282,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       _suggestions = [];
       _errorMessage = null;
       _isTrialExpired = false;
-      _isFairUseExceeded = false;
+      _isOpenerLimitExceeded = false;
+      _isReplyLimitExceeded = false;
+      _isLoading = false;
       _animationController.reset();
       _generateRequestId++;
     });
@@ -288,6 +302,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       _situation = _tabController.index == 0 ? 'just_matched' : 'stuck_after_reply';
       _suggestions = [];
       _errorMessage = null;
+      _isLoading = false;
       _animationController.reset();
       _generateRequestId++;
       if (previousSituation == 'just_matched' && _situation != 'just_matched') {
@@ -311,7 +326,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       _errorMessage = null;
       _suggestions = [];
       _isTrialExpired = false;
-      _isFairUseExceeded = false;
+      _isOpenerLimitExceeded = false;
+      _isReplyLimitExceeded = false;
     });
 
     try {
@@ -359,9 +375,17 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
     if (!mounted) return;
     if (result == true) {
+      // Clear trial expired state when user logs in
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_trialExpiredKey);
+
+      if (!mounted) return;
       final appState = AppStateScope.of(context);
       await appState.reloadFromStorage();
       if (mounted) {
+        setState(() {
+          _isTrialExpired = false;
+        });
         final justSignedUp = await AuthService.consumeJustSignedUp();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -445,7 +469,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       _errorMessage = null;
       _suggestions = [];
       _isTrialExpired = false; // reset flag on new attempt
-      _isFairUseExceeded = false;
+      _isOpenerLimitExceeded = false;
+      _isReplyLimitExceeded = false;
     });
 
     try {
@@ -484,7 +509,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         _suggestions = suggestions;
         _isLoading = false;
         _isTrialExpired = false; // clear any prior trial-expired banner on success
-        _isFairUseExceeded = false;
+        _isOpenerLimitExceeded = false;
+        _isReplyLimitExceeded = false;
       });
 
       await AppStateScope.of(context).reloadFromStorage();
@@ -603,7 +629,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       _suggestions = [];
       _errorMessage = null;
       _isTrialExpired = false;
-      _isFairUseExceeded = false;
+      _isOpenerLimitExceeded = false;
+      _isReplyLimitExceeded = false;
       _animationController.reset();
       if (_situation == 'just_matched') {
         _uploadedProfileImage = null;
@@ -666,6 +693,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
   Future<void> _handleCreditError(ApiException e) async {
     if (e.code == ApiErrorCode.trialExpired) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_trialExpiredKey, true);
       if (mounted) {
         setState(() {
           _isTrialExpired = true;
@@ -676,7 +705,12 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     if (e.code == ApiErrorCode.fairUseExceeded) {
       if (mounted) {
         setState(() {
-          _isFairUseExceeded = true;
+          // Set the appropriate limit flag based on current tab
+          if (_situation == 'just_matched') {
+            _isOpenerLimitExceeded = true;
+          } else {
+            _isReplyLimitExceeded = true;
+          }
         });
       }
       return;
@@ -701,9 +735,17 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
     if (!mounted) return;
     if (result == true) {
+      // Clear trial expired state when user signs up
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_trialExpiredKey);
+
+      if (!mounted) return;
       final appState = AppStateScope.of(context);
       await appState.reloadFromStorage();
       if (mounted) {
+      setState(() {
+        _isTrialExpired = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -815,11 +857,11 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 ],
 
                 if (isRecommendedNewMatch) ...[
-                  _buildResultsSection(colorScheme),
                   if (!_isLoading && !_isExtractingImage) ...[
-                    SizedBox(height: sectionSpacing),
                     _buildGenerateRow(colorScheme),
+                    SizedBox(height: sectionSpacing),
                   ],
+                  _buildResultsSection(colorScheme),
                 ] else ...[
                   if (showGenerateRow) ...[
                     _buildGenerateRow(colorScheme),
@@ -975,21 +1017,25 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     bool isSubscribed,
   ) {
     // Fair use exceeded banner for subscribers
-    if (isSubscribed && _isFairUseExceeded) {
+    if (isSubscribed) {
       final isOpenerTab = _situation == 'just_matched';
-      final limitType = isOpenerTab ? 'opener' : 'reply';
-      final resetTime = _getTimeUntilMidnightUtc();
-      return Column(
-        children: [
-          _buildBanner(
-            colorScheme: colorScheme,
-            icon: Icons.hourglass_empty_outlined,
-            title: 'Daily $limitType limit reached',
-            subtitle: 'Resets in $resetTime',
-            type: BannerType.warning,
-          ),
-        ],
-      );
+      final isLimitExceeded = isOpenerTab ? _isOpenerLimitExceeded : _isReplyLimitExceeded;
+
+      if (isLimitExceeded) {
+        final limitType = isOpenerTab ? 'opener' : 'reply';
+        final resetTime = _getTimeUntilMidnightUtc();
+        return Column(
+          children: [
+            _buildBanner(
+              colorScheme: colorScheme,
+              icon: Icons.hourglass_empty_outlined,
+              title: 'Daily $limitType limit reached',
+              subtitle: 'Resets in $resetTime',
+              type: BannerType.warning,
+            ),
+          ],
+        );
+      }
     }
 
     if (isSubscribed) {
@@ -1100,52 +1146,76 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   }
 
   Widget _buildTabBar(ColorScheme colorScheme) {
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: TabBar(
-        controller: _tabController,
-        indicatorSize: TabBarIndicatorSize.tab,
-        dividerColor: Colors.transparent,
-        indicator: BoxDecoration(
-          color: colorScheme.primary,
-          borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onHorizontalDragEnd: (details) {
+        // Minimum velocity threshold to detect intentional swipe (500px/s)
+        const double minVelocity = 500.0;
+        final velocity = details.primaryVelocity ?? 0;
+
+        // Ignore slow drags
+        if (velocity.abs() < minVelocity) return;
+
+        // Prevent switching during tab animation
+        if (_tabController.indexIsChanging) return;
+
+        // Swipe right: go to previous tab (New Match)
+        if (velocity > 0 && _tabController.index == 1) {
+          HapticFeedback.selectionClick();
+          _tabController.animateTo(0);
+        }
+        // Swipe left: go to next tab (Need Reply)
+        else if (velocity < 0 && _tabController.index == 0) {
+          HapticFeedback.selectionClick();
+          _tabController.animateTo(1);
+        }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(16),
         ),
-        indicatorPadding: const EdgeInsets.all(4),
-        labelColor: colorScheme.onPrimary,
-        unselectedLabelColor: colorScheme.onSurfaceVariant,
-        labelStyle: const TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 15,
-        ),
-        unselectedLabelStyle: const TextStyle(
-          fontWeight: FontWeight.w500,
-          fontSize: 15,
-        ),
-        tabs: [
-          Tab(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.favorite_outline, size: 20),
-                const SizedBox(width: 8),
-                const Text('New Match'),
-              ],
-            ),
+        child: TabBar(
+          controller: _tabController,
+          indicatorSize: TabBarIndicatorSize.tab,
+          dividerColor: Colors.transparent,
+          indicator: BoxDecoration(
+            color: colorScheme.primary,
+            borderRadius: BorderRadius.circular(12),
           ),
-          Tab(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.chat_bubble_outline, size: 20),
-                const SizedBox(width: 8),
-                const Text('Need Reply'),
-              ],
-            ),
+          indicatorPadding: const EdgeInsets.all(4),
+          labelColor: colorScheme.onPrimary,
+          unselectedLabelColor: colorScheme.onSurfaceVariant,
+          labelStyle: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
           ),
-        ],
+          unselectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w500,
+            fontSize: 15,
+          ),
+          tabs: [
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.favorite_outline, size: 20),
+                  const SizedBox(width: 8),
+                  const Text('New Match'),
+                ],
+              ),
+            ),
+            Tab(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.chat_bubble_outline, size: 20),
+                  const SizedBox(width: 8),
+                  const Text('Need Reply'),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

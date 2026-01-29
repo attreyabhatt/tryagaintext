@@ -109,7 +109,7 @@ class ApiClient {
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
       AppLogger.debug(
-        'POST $baseUrl/api/generate-openers-from-image/ -> ${response.statusCode} '
+        'POST $baseUrl/api/extract-image/ -> ${response.statusCode} '
         '${response.body.substring(0, response.body.length > 300 ? 300 : response.body.length)}',
       );
       final data = _decodeJson(response.body);
@@ -465,13 +465,22 @@ class ApiClient {
             ApiErrorCode.trialExpired,
           );
         }
+        if (data['error'] == 'fair_use_exceeded') {
+          throw ApiException(
+            data['message'] ?? 'Daily limit reached',
+            ApiErrorCode.fairUseExceeded,
+          );
+        }
         throw ApiException(
           data['message'] ?? 'Failed to generate openers',
           ApiErrorCode.server,
         );
       }
 
-      // Update stored credits if available
+      // Update subscription info (including credits and daily limits)
+      await AuthService.updateSubscriptionFromPayload(data);
+
+      // Update stored credits if available (backwards compatibility)
       if (data['credits_remaining'] != null) {
         await AuthService.updateStoredCredits(data['credits_remaining']);
       }
