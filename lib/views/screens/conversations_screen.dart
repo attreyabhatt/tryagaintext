@@ -885,9 +885,12 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         isSubscribed,
         username,
       ),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.opaque,
+        child: Stack(
+          children: [
+            SingleChildScrollView(
             controller: _scrollController,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Column(
@@ -999,6 +1002,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             ),
           ),
         ],
+      ),
       ),
     );
   }
