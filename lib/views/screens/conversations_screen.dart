@@ -40,11 +40,13 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   static const String _newMatchModeKey = 'new_match_mode';
   static const String _handledTokensKey = 'handled_purchase_tokens';
   static const String _trialExpiredKey = 'guest_trial_expired';
+  static const String _keepItShortKey = 'keep_it_short_need_reply';
   String _situation = 'stuck_after_reply';
   final String _selectedTone = 'Natural';
   final _conversationCtrl = TextEditingController();
   final _customInstructionsCtrl = TextEditingController();
   final _newMatchCustomInstructionsCtrl = TextEditingController();
+  bool _keepItShort = false;
   final ScrollController _scrollController = ScrollController();
   List<Suggestion> _suggestions = [];
   bool _isLoading = false;
@@ -90,6 +92,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     _scrollController.addListener(_onScroll);
     _loadNewMatchModePreference();
     _loadTrialExpiredState();
+    _loadKeepItShortPreference();
     _setupPurchaseListener();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshSubscriptionStatus();
@@ -147,6 +150,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     if (!mounted) return;
     setState(() {
       _isTrialExpired = isExpired;
+    });
+  }
+
+  Future<void> _loadKeepItShortPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _keepItShort = prefs.getBool(_keepItShortKey) ?? false;
     });
   }
 
@@ -273,6 +284,11 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   Future<void> _saveNewMatchModePreference(NewMatchMode mode) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_newMatchModeKey, mode.name);
+  }
+
+  Future<void> _saveKeepItShortPreference(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_keepItShortKey, value);
   }
 
   void _setNewMatchMode(NewMatchMode mode) {
@@ -436,6 +452,20 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     );
   }
 
+  String _getCombinedCustomInstructions() {
+    String instructions = _customInstructionsCtrl.text.trim();
+
+    if (_keepItShort && _situation != 'just_matched') {
+      if (instructions.isEmpty) {
+        instructions = "Keep it Short";
+      } else {
+        instructions = "$instructions. Keep it Short";
+      }
+    }
+
+    return instructions;
+  }
+
   Future<void> _generateSuggestions() async {
     final appState = AppStateScope.of(context);
     if (_situation != 'just_matched' &&
@@ -495,7 +525,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           situation: _situation,
           herInfo: '',
           tone: _selectedTone,
-          customInstructions: _customInstructionsCtrl.text,
+          customInstructions: _getCombinedCustomInstructions(),
         );
       }
 
@@ -870,7 +900,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                   _buildResultsSection(colorScheme),
                 ],
 
-                SizedBox(height: sectionSpacing),
+                const SizedBox(height: 80),
               ],
             ),
           ),
@@ -1340,7 +1370,48 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           ),
           onChanged: (_) => setState(() {}),
         ),
+        if (_situation != 'just_matched')
+          _buildKeepItShortToggle(colorScheme),
       ],
+    );
+  }
+
+  Widget _buildKeepItShortToggle(ColorScheme colorScheme) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.short_text,
+                size: 18,
+                color: colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Keep it short',
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          Switch(
+            value: _keepItShort,
+            onChanged: (value) {
+              setState(() {
+                _keepItShort = value;
+              });
+              _saveKeepItShortPreference(value);
+            },
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ],
+      ),
     );
   }
 
