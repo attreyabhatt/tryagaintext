@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
-import '../../config/app_config.dart';
 import '../../state/app_state.dart';
 import 'change_password_screen.dart';
+import 'delete_account_screen.dart';
+import 'policy_viewer_screen.dart';
 import 'pricing_screen.dart';
 import 'report_issue_screen.dart';
 
@@ -30,18 +30,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  Future<void> _openPolicy(String path) async {
-    final uri = Uri.parse('${AppConfig.baseUrl}$path');
-    final launched = await launchUrl(
-      uri,
-      mode: LaunchMode.externalApplication,
+  void _openPolicy(String policyType, String title) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PolicyViewerScreen(
+          title: title,
+          policyType: policyType,
+        ),
+      ),
     );
-    if (!mounted) return;
-    if (!launched) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open link.')),
-      );
-    }
+  }
+
+  void _openDeleteAccount() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const DeleteAccountScreen(),
+      ),
+    );
   }
 
   @override
@@ -99,7 +106,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           title: const Text('Privacy Policy'),
                           onTap: () {
                             Navigator.pop(context);
-                            _openPolicy('/privacy-policy/');
+                            _openPolicy('privacy', 'Privacy Policy');
                           },
                         ),
                         ListTile(
@@ -107,7 +114,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           title: const Text('Terms of Use'),
                           onTap: () {
                             Navigator.pop(context);
-                            _openPolicy('/terms/');
+                            _openPolicy('terms', 'Terms of Use');
                           },
                         ),
                         ListTile(
@@ -115,7 +122,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           title: const Text('Refund Policy'),
                           onTap: () {
                             Navigator.pop(context);
-                            _openPolicy('/refund-policy/');
+                            _openPolicy('refund', 'Refund Policy');
                           },
                         ),
                         ListTile(
@@ -123,7 +130,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           title: const Text('Delete Account'),
                           onTap: () {
                             Navigator.pop(context);
-                            _openPolicy('/delete-account/');
+                            _openDeleteAccount();
                           },
                         ),
                       ],

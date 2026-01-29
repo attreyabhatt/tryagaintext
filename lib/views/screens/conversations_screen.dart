@@ -544,12 +544,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         }
       } else {
         // Use the regular text-based generation endpoint
+        final combinedInstructions = _getCombinedCustomInstructions();
+        print('DEBUG: Sending custom instructions: "$combinedInstructions"');
         suggestions = await _apiClient.generate(
           lastText: _conversationCtrl.text,
           situation: _situation,
           herInfo: '',
           tone: _selectedTone,
-          customInstructions: _getCombinedCustomInstructions(),
+          customInstructions: combinedInstructions,
         );
       }
 

@@ -246,6 +246,32 @@ class ApiClient {
     }
   }
 
+  Future<bool> deleteAccount({required String password}) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/delete-account/'),
+        headers: headers,
+        body: jsonEncode({'password': password}),
+      );
+
+      final data = _decodeJson(response.body);
+      if (data['success'] == true) {
+        return true;
+      }
+
+      // Extract error message from response
+      final errorMsg = data['error']?.toString() ?? 'Account deletion failed';
+      throw ApiException(errorMsg, ApiErrorCode.server);
+    } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
+      AppLogger.error('Delete account error', e is Exception ? e : null);
+      throw ApiException('Network error. Please try again.', ApiErrorCode.network);
+    }
+  }
+
   Future<int?> confirmGooglePlayPurchase({
     required String productId,
     required String purchaseToken,
