@@ -333,3 +333,75 @@ class _ThinkingIndicatorCompactState extends State<ThinkingIndicatorCompact>
     );
   }
 }
+
+/// Simple animated text that rotates through messages (no dots)
+class AnimatedLoadingText extends StatefulWidget {
+  final List<String> messages;
+  final Color? color;
+  final double fontSize;
+  final FontWeight fontWeight;
+
+  const AnimatedLoadingText({
+    super.key,
+    required this.messages,
+    this.color,
+    this.fontSize = 16,
+    this.fontWeight = FontWeight.w600,
+  });
+
+  @override
+  State<AnimatedLoadingText> createState() => _AnimatedLoadingTextState();
+}
+
+class _AnimatedLoadingTextState extends State<AnimatedLoadingText> {
+  late Timer _messageTimer;
+  int _currentMessageIndex = 0;
+  double _messageOpacity = 1.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _messageTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (widget.messages.length > 1) {
+        _fadeToNextMessage();
+      }
+    });
+  }
+
+  void _fadeToNextMessage() async {
+    if (!mounted) return;
+    setState(() => _messageOpacity = 0.0);
+    await Future.delayed(const Duration(milliseconds: 200));
+    if (!mounted) return;
+    setState(() {
+      _currentMessageIndex = (_currentMessageIndex + 1) % widget.messages.length;
+    });
+    await Future.delayed(const Duration(milliseconds: 50));
+    if (!mounted) return;
+    setState(() => _messageOpacity = 1.0);
+  }
+
+  @override
+  void dispose() {
+    _messageTimer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textColor = widget.color ?? Theme.of(context).colorScheme.onSurface;
+    return AnimatedOpacity(
+      opacity: _messageOpacity,
+      duration: const Duration(milliseconds: 200),
+      child: Text(
+        widget.messages[_currentMessageIndex],
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: textColor,
+          fontSize: widget.fontSize,
+          fontWeight: widget.fontWeight,
+        ),
+      ),
+    );
+  }
+}

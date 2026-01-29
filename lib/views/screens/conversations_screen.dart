@@ -1057,13 +1057,16 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       if (isLimitExceeded) {
         final limitType = isOpenerTab ? 'opener' : 'reply';
         final resetTime = _getTimeUntilMidnightUtc();
+        final subtitle = isOpenerTab
+            ? 'Resets in $resetTime\n\nPlease use Recommended openers. They have been carefully selected by dating coaches around the world'
+            : 'Resets in $resetTime';
         return Column(
           children: [
             _buildBanner(
               colorScheme: colorScheme,
               icon: Icons.hourglass_empty_outlined,
               title: 'Daily $limitType limit reached',
-              subtitle: 'Resets in $resetTime',
+              subtitle: subtitle,
               type: BannerType.warning,
             ),
           ],
@@ -1346,7 +1349,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       segments: const [
         ButtonSegment(
           value: NewMatchMode.ai,
-          label: Text('AI Generated'),
+          label: Text('Creative'),
         ),
         ButtonSegment(
           value: NewMatchMode.recommended,
@@ -1801,18 +1804,13 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                   ),
                 ),
                 const SizedBox(height: 20),
-                Text(
-                  isRecommendedNewMatch
-                      ? 'Generating openers...'
-                      : (isAiNewMatch
-                          ? 'Analyzing the screenshot'
-                          : 'Analyzing your conversation...'),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                  ),
+                AnimatedLoadingText(
+                  messages: isRecommendedNewMatch
+                      ? recommendedMessages
+                      : (isAiNewMatch ? openerMessages : replyMessages),
+                  color: colorScheme.onSurface,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                 ),
                 const SizedBox(height: 8),
                 Text(
