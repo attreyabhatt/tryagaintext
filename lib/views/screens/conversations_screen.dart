@@ -192,7 +192,10 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         ..clear()
         ..addAll(tokens);
     } catch (e) {
-      AppLogger.error('Failed to load handled purchase tokens', e is Exception ? e : null);
+      AppLogger.error(
+        'Failed to load handled purchase tokens',
+        e is Exception ? e : null,
+      );
     }
   }
 
@@ -200,9 +203,15 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     try {
       final prefs = await SharedPreferences.getInstance();
       _handledPurchaseTokens.add(token);
-      await prefs.setStringList(_handledTokensKey, _handledPurchaseTokens.toList());
+      await prefs.setStringList(
+        _handledTokensKey,
+        _handledPurchaseTokens.toList(),
+      );
     } catch (e) {
-      AppLogger.error('Failed to save handled purchase token', e is Exception ? e : null);
+      AppLogger.error(
+        'Failed to save handled purchase token',
+        e is Exception ? e : null,
+      );
     }
   }
 
@@ -251,7 +260,10 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           try {
             await _inAppPurchase.completePurchase(purchase);
           } catch (e) {
-            AppLogger.error('Failed to complete purchase', e is Exception ? e : null);
+            AppLogger.error(
+              'Failed to complete purchase',
+              e is Exception ? e : null,
+            );
           }
         }
 
@@ -315,7 +327,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     HapticFeedback.selectionClick();
     final previousSituation = _situation;
     setState(() {
-      _situation = _tabController.index == 0 ? 'just_matched' : 'stuck_after_reply';
+      _situation = _tabController.index == 0
+          ? 'just_matched'
+          : 'stuck_after_reply';
       _suggestions = [];
       _errorMessage = null;
       _isLoading = false;
@@ -329,7 +343,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         _isExtractingImage = false;
       }
     });
-    if (_situation == 'just_matched' && _newMatchMode == NewMatchMode.recommended) {
+    if (_situation == 'just_matched' &&
+        _newMatchMode == NewMatchMode.recommended) {
       _loadRecommendedOpeners();
     }
   }
@@ -455,11 +470,20 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   String _getCombinedCustomInstructions() {
     String instructions = _customInstructionsCtrl.text.trim();
 
-    if (_keepItShort && _situation != 'just_matched') {
+    // Add hidden instructions for Need Reply tab
+    if (_situation != 'just_matched') {
+      const hiddenInstructions =
+          "dont use em dashes or dashes. Do not put single quotes around words unless necessary.";
+
       if (instructions.isEmpty) {
-        instructions = "Keep it Short";
+        instructions = hiddenInstructions;
       } else {
-        instructions = "$instructions. Keep it Short";
+        instructions = "$instructions. $hiddenInstructions";
+      }
+
+      // Also add "Keep it Short" if toggle is enabled (currently hidden in UI)
+      if (_keepItShort) {
+        instructions = "$instructions Keep it Short";
       }
     }
 
@@ -506,19 +530,19 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     try {
       List<Suggestion> suggestions;
 
-    if (_situation == 'just_matched') {
-      if (_newMatchMode == NewMatchMode.recommended) {
-        suggestions = await _apiClient.getRecommendedOpeners(count: 3);
+      if (_situation == 'just_matched') {
+        if (_newMatchMode == NewMatchMode.recommended) {
+          suggestions = await _apiClient.getRecommendedOpeners(count: 3);
+        } else {
+          // Use the new image-based opener generation endpoint
+          suggestions = await _apiClient.generateOpenersFromImage(
+            _uploadedProfileImage!,
+            customInstructions: _enableNewMatchCustomInstructions
+                ? _newMatchCustomInstructionsCtrl.text
+                : '',
+          );
+        }
       } else {
-        // Use the new image-based opener generation endpoint
-        suggestions = await _apiClient.generateOpenersFromImage(
-          _uploadedProfileImage!,
-          customInstructions: _enableNewMatchCustomInstructions
-              ? _newMatchCustomInstructionsCtrl.text
-              : '',
-        );
-      }
-    } else {
         // Use the regular text-based generation endpoint
         suggestions = await _apiClient.generate(
           lastText: _conversationCtrl.text,
@@ -532,13 +556,15 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       if (!mounted ||
           requestId != _generateRequestId ||
           _situation != requestSituation ||
-          (requestSituation == 'just_matched' && _newMatchMode != requestMode)) {
+          (requestSituation == 'just_matched' &&
+              _newMatchMode != requestMode)) {
         return;
       }
       setState(() {
         _suggestions = suggestions;
         _isLoading = false;
-        _isTrialExpired = false; // clear any prior trial-expired banner on success
+        _isTrialExpired =
+            false; // clear any prior trial-expired banner on success
         _isOpenerLimitExceeded = false;
         _isReplyLimitExceeded = false;
       });
@@ -688,10 +714,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               InteractiveViewer(
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: Image.file(
-                    imageFile,
-                    fit: BoxFit.contain,
-                  ),
+                  child: Image.file(imageFile, fit: BoxFit.contain),
                 ),
               ),
               Positioned(
@@ -773,23 +796,23 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       final appState = AppStateScope.of(context);
       await appState.reloadFromStorage();
       if (mounted) {
-      setState(() {
-        _isTrialExpired = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.white),
-              const SizedBox(width: 8),
-              const Text('Account created. You have been signed in'),
-            ],
+        setState(() {
+          _isTrialExpired = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                const Text('Account created. You have been signed in'),
+              ],
+            ),
+            backgroundColor: Colors.green[600],
           ),
-          backgroundColor: Colors.green[600],
-        ),
-      );
+        );
+      }
     }
-  }
   }
 
   Future<void> _copySuggestion(String message) async {
@@ -842,16 +865,24 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     final isSubscribed = appState.isSubscribed;
     final username = appState.user?.username ?? '';
     const double sectionSpacing = 20;
-    final showCustomInstructions = _situation != 'just_matched' ||
+    final showCustomInstructions =
+        _situation != 'just_matched' ||
         (_enableNewMatchCustomInstructions && _newMatchMode == NewMatchMode.ai);
     final isRecommendedNewMatch =
-        _situation == 'just_matched' && _newMatchMode == NewMatchMode.recommended;
+        _situation == 'just_matched' &&
+        _newMatchMode == NewMatchMode.recommended;
     final isAiNewMatch =
         _situation == 'just_matched' && _newMatchMode == NewMatchMode.ai;
     final showGenerateRow = !isAiNewMatch || _uploadedProfileImage != null;
 
     return Scaffold(
-      appBar: _buildAppBar(colorScheme, isLoggedIn, credits, isSubscribed, username),
+      appBar: _buildAppBar(
+        colorScheme,
+        isLoggedIn,
+        credits,
+        isSubscribed,
+        username,
+      ),
       body: Stack(
         children: [
           SingleChildScrollView(
@@ -861,7 +892,12 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Warning banners
-                _buildWarningBanners(colorScheme, isLoggedIn, credits, isSubscribed),
+                _buildWarningBanners(
+                  colorScheme,
+                  isLoggedIn,
+                  credits,
+                  isSubscribed,
+                ),
 
                 const SizedBox(height: 8),
 
@@ -873,6 +909,36 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 if (_situation == 'just_matched') ...[
                   _buildNewMatchToggle(colorScheme),
                   SizedBox(height: sectionSpacing),
+                  if (isRecommendedNewMatch) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: colorScheme.secondaryContainer.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.verified,
+                            size: 18,
+                            color: colorScheme.onSecondaryContainer,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'These openers were hand-picked by dating coaches around the world',
+                              style: TextStyle(
+                                color: colorScheme.onSecondaryContainer,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: sectionSpacing),
+                  ],
                 ],
 
                 // Input section
@@ -1082,7 +1148,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     // Fair use exceeded banner for subscribers
     if (isSubscribed) {
       final isOpenerTab = _situation == 'just_matched';
-      final isLimitExceeded = isOpenerTab ? _isOpenerLimitExceeded : _isReplyLimitExceeded;
+      final isLimitExceeded = isOpenerTab
+          ? _isOpenerLimitExceeded
+          : _isReplyLimitExceeded;
 
       if (isLimitExceeded) {
         final limitType = isOpenerTab ? 'opener' : 'reply';
@@ -1132,7 +1200,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             onPressed: _navigateToPricing,
             type: BannerType.error,
           ),
-
       ],
     );
   }
@@ -1173,8 +1240,12 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: foregroundColor),
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(icon, color: foregroundColor),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -1341,14 +1412,15 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           maxLines: 2,
           minLines: 2,
           maxLength: 250,
-          buildCounter: (
-            BuildContext context, {
-            required int currentLength,
-            required bool isFocused,
-            int? maxLength,
-          }) {
-            return null;
-          },
+          buildCounter:
+              (
+                BuildContext context, {
+                required int currentLength,
+                required bool isFocused,
+                int? maxLength,
+              }) {
+                return null;
+              },
           decoration: InputDecoration(
             hintText: _situation == 'just_matched'
                 ? 'e.g., "mention her dog", "write a poem", "comment on her bio"'
@@ -1370,8 +1442,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           ),
           onChanged: (_) => setState(() {}),
         ),
-        if (_situation != 'just_matched')
-          _buildKeepItShortToggle(colorScheme),
+        if (_situation != 'just_matched') _buildKeepItShortToggle(colorScheme),
       ],
     );
   }
@@ -1418,10 +1489,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   Widget _buildNewMatchToggle(ColorScheme colorScheme) {
     return SegmentedButton<NewMatchMode>(
       segments: const [
-        ButtonSegment(
-          value: NewMatchMode.ai,
-          label: Text('Creative'),
-        ),
+        ButtonSegment(value: NewMatchMode.ai, label: Text('Creative')),
         ButtonSegment(
           value: NewMatchMode.recommended,
           label: Text('Recommended'),
@@ -1433,9 +1501,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         _setNewMatchMode(selection.first);
       },
       showSelectedIcon: false,
-      style: const ButtonStyle(
-        visualDensity: VisualDensity.compact,
-      ),
+      style: const ButtonStyle(visualDensity: VisualDensity.compact),
     );
   }
 
@@ -1650,7 +1716,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: GestureDetector(
-                        onTap: () => _showImagePreview(_uploadedConversationImage!),
+                        onTap: () =>
+                            _showImagePreview(_uploadedConversationImage!),
                         child: Image.file(
                           _uploadedConversationImage!,
                           height: 60,
@@ -1684,7 +1751,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: GestureDetector(
-                        onTap: () => _showImagePreview(_uploadedConversationImage!),
+                        onTap: () =>
+                            _showImagePreview(_uploadedConversationImage!),
                         child: Image.file(
                           _uploadedConversationImage!,
                           height: 60,
@@ -1767,17 +1835,20 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
   Widget _buildGenerateButton(ColorScheme colorScheme) {
     final isRecommended =
-        _situation == 'just_matched' && _newMatchMode == NewMatchMode.recommended;
+        _situation == 'just_matched' &&
+        _newMatchMode == NewMatchMode.recommended;
     final label = (isRecommended || _suggestions.isNotEmpty)
         ? 'Regenerate'
-        : (_situation == 'just_matched' ? 'Get Smart Openers' : 'Get Smart Replies');
+        : (_situation == 'just_matched'
+              ? 'Get Smart Openers'
+              : 'Get Smart Replies');
     return FilledButton(
-      onPressed: (_isLoading || _isExtractingImage) ? null : _generateSuggestions,
+      onPressed: (_isLoading || _isExtractingImage)
+          ? null
+          : _generateSuggestions,
       style: FilledButton.styleFrom(
         minimumSize: const Size(double.infinity, 56),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         textStyle: _primaryButtonTextStyle,
       ),
       child: Row(
@@ -1785,19 +1856,18 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         children: [
           const Icon(Icons.auto_awesome, size: 22),
           const SizedBox(width: 12),
-          Text(
-            label,
-            style: _primaryButtonTextStyle,
-          ),
+          Text(label, style: _primaryButtonTextStyle),
         ],
       ),
     );
   }
 
   Widget _buildGenerateRow(ColorScheme colorScheme) {
-    final showNewButton = _suggestions.isNotEmpty && !_isLoading && !_isExtractingImage;
+    final showNewButton =
+        _suggestions.isNotEmpty && !_isLoading && !_isExtractingImage;
     final isRecommendedNewMatch =
-        _situation == 'just_matched' && _newMatchMode == NewMatchMode.recommended;
+        _situation == 'just_matched' &&
+        _newMatchMode == NewMatchMode.recommended;
     final canShowNew = showNewButton && !isRecommendedNewMatch;
     return Row(
       children: [
@@ -1823,7 +1893,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
   Widget _buildResultsSection(ColorScheme colorScheme) {
     final isRecommendedNewMatch =
-        _situation == 'just_matched' && _newMatchMode == NewMatchMode.recommended;
+        _situation == 'just_matched' &&
+        _newMatchMode == NewMatchMode.recommended;
     final isAiNewMatch =
         _situation == 'just_matched' && _newMatchMode == NewMatchMode.ai;
     // Error state
@@ -2031,9 +2102,7 @@ class _SuggestionCard extends StatelessWidget {
       elevation: 4,
       shadowColor: _smartReplyCardShadow,
       surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       margin: const EdgeInsets.only(bottom: 12),
       color: Colors.white,
       child: InkWell(
@@ -2084,7 +2153,10 @@ class _SuggestionCard extends StatelessWidget {
               if ((suggestion.whyItWorks ?? '').trim().isNotEmpty) ...[
                 const SizedBox(height: 10),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: colorScheme.tertiaryContainer,
                     borderRadius: BorderRadius.circular(10),
