@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../services/account_deletion_service.dart';
-import '../../services/auth_service.dart';
 import 'login_screen.dart';
 
 class DeleteAccountScreen extends StatefulWidget {
@@ -39,9 +38,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.red,
-            ),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Delete Account'),
           ),
         ],
@@ -108,11 +105,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.warning_rounded,
-                    color: Colors.red,
-                    size: 32,
-                  ),
+                  Icon(Icons.warning_rounded, color: Colors.red, size: 32),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -226,7 +219,10 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: (_isConfirmed && !_isLoading && _passwordController.text.isNotEmpty)
+                onPressed:
+                    (_isConfirmed &&
+                        !_isLoading &&
+                        _passwordController.text.isNotEmpty)
                     ? _deleteAccount
                     : null,
                 style: FilledButton.styleFrom(
@@ -240,7 +236,9 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
                     : const Text(
@@ -275,18 +273,16 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.close,
-            color: Colors.red,
-            size: 20,
-          ),
+          Icon(Icons.close, color: Colors.red, size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
               style: TextStyle(
                 fontSize: 14,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.87),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.87),
               ),
             ),
           ),

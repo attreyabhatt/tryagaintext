@@ -78,26 +78,6 @@ class _PricingScreenState extends State<PricingScreen>
     }
   }
 
-  // For debugging: Clear all handled purchase tokens
-  Future<void> _clearHandledTokens() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_handledTokensKey);
-      _handledPurchaseTokens.clear();
-      AppLogger.debug('Cleared all handled purchase tokens');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cleared purchase cache. Old purchases will be reprocessed.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-    } catch (e) {
-      AppLogger.error('Failed to clear tokens', e is Exception ? e : null);
-    }
-  }
-
   Future<void> _initializeBilling() async {
     final available = await _inAppPurchase.isAvailable();
     if (!available) {
@@ -584,28 +564,25 @@ class _PricingScreenState extends State<PricingScreen>
                     ),
                     const SizedBox(height: 12),
                     if (appState.isLoggedIn) ...[
-                      GestureDetector(
-                        onLongPress: _clearHandledTokens,
-                        child: FilledButton.tonalIcon(
-                          onPressed: _isProcessing
-                              ? null
-                              : () {
-                                  HapticFeedback.selectionClick();
-                                  _refreshPendingPurchases();
-                                },
-                          icon: AnimatedRotation(
-                            turns: _isRefreshingPurchases ? 1 : 0,
-                            duration: const Duration(milliseconds: 600),
-                            curve: Curves.easeInOut,
-                            child: const Icon(Icons.refresh, size: 18),
-                          ),
-                          label: Text(
-                            _isRefreshingPurchases ? 'Refreshing...' : 'Refresh purchases',
-                          ),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: colorScheme.onPrimaryContainer.withValues(alpha: 0.08),
-                            foregroundColor: colorScheme.onPrimaryContainer,
-                          ),
+                      FilledButton.tonalIcon(
+                        onPressed: _isProcessing
+                            ? null
+                            : () {
+                                HapticFeedback.selectionClick();
+                                _refreshPendingPurchases();
+                              },
+                        icon: AnimatedRotation(
+                          turns: _isRefreshingPurchases ? 1 : 0,
+                          duration: const Duration(milliseconds: 600),
+                          curve: Curves.easeInOut,
+                          child: const Icon(Icons.refresh, size: 18),
+                        ),
+                        label: Text(
+                          _isRefreshingPurchases ? 'Refreshing...' : 'Refresh purchases',
+                        ),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: colorScheme.onPrimaryContainer.withValues(alpha: 0.08),
+                          foregroundColor: colorScheme.onPrimaryContainer,
                         ),
                       ),
                     ] else ...[

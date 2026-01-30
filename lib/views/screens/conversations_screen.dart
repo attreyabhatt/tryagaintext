@@ -418,6 +418,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           _isTrialExpired = false;
         });
         final justSignedUp = await AuthService.consumeJustSignedUp();
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -490,6 +491,27 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     return instructions;
   }
 
+  String _getCombinedCustomInstructionsForOpeners() {
+    String instructions = '';
+
+    // Get user's custom instructions if feature is enabled
+    if (_enableNewMatchCustomInstructions) {
+      instructions = _newMatchCustomInstructionsCtrl.text.trim();
+    }
+
+    // Add hidden instructions for New Match tab (openers)
+    const hiddenInstructions =
+        "dont use em dashes or dashes. Do not put single quotes around words unless necessary.";
+
+    if (instructions.isEmpty) {
+      instructions = hiddenInstructions;
+    } else {
+      instructions = "$instructions. $hiddenInstructions";
+    }
+
+    return instructions;
+  }
+
   Future<void> _generateSuggestions() async {
     final appState = AppStateScope.of(context);
     if (_situation != 'just_matched' &&
@@ -535,17 +557,15 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           suggestions = await _apiClient.getRecommendedOpeners(count: 3);
         } else {
           // Use the new image-based opener generation endpoint
+          final combinedInstructionsForOpeners = _getCombinedCustomInstructionsForOpeners();
           suggestions = await _apiClient.generateOpenersFromImage(
             _uploadedProfileImage!,
-            customInstructions: _enableNewMatchCustomInstructions
-                ? _newMatchCustomInstructionsCtrl.text
-                : '',
+            customInstructions: combinedInstructionsForOpeners,
           );
         }
       } else {
         // Use the regular text-based generation endpoint
         final combinedInstructions = _getCombinedCustomInstructions();
-        print('DEBUG: Sending custom instructions: "$combinedInstructions"');
         suggestions = await _apiClient.generate(
           lastText: _conversationCtrl.text,
           situation: _situation,
@@ -738,6 +758,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   Future<void> _logDebugState() async {
     final token = await AuthService.getToken();
     final guestId = await AuthService.getOrCreateGuestId();
+    if (!mounted) return;
     final appState = AppStateScope.of(context);
     AppLogger.debug(
       'Generate tapped | isLoggedIn=${appState.isLoggedIn} | isSubscribed=${appState.isSubscribed} '
