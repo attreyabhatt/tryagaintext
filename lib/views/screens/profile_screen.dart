@@ -54,12 +54,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
     final appState = AppStateScope.of(context);
     final user = appState.user;
     final email = user?.email ?? '';
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: const Text('Profile'),
         centerTitle: true,
@@ -70,7 +72,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               showModalBottomSheet(
                 context: context,
                 shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                 ),
                 builder: (context) => SafeArea(
                   child: Padding(
@@ -149,13 +151,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                color: colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
+                    color: Colors.black.withValues(alpha: 0.25),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
@@ -163,8 +165,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   CircleAvatar(
                     radius: 28,
-                    backgroundColor: theme.primaryColor.withValues(alpha: 0.1),
-                    child: Icon(Icons.person, color: theme.primaryColor),
+                    backgroundColor:
+                        colorScheme.primary.withValues(alpha: 0.15),
+                    child: Icon(Icons.person, color: colorScheme.primary),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -173,15 +176,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         Text(
                           email.isNotEmpty ? email : 'Guest',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                          style: textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           email.isNotEmpty ? 'Signed in' : 'Not signed in',
-                          style: TextStyle(color: Colors.grey[600]),
+                          style: TextStyle(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
@@ -193,19 +198,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                color: colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
+                    color: Colors.black.withValues(alpha: 0.25),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
               child: Row(
                 children: [
-                  Icon(Icons.workspace_premium, color: theme.primaryColor),
+                  Icon(Icons.workspace_premium, color: colorScheme.secondary),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -223,7 +228,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           appState.isSubscribed
                               ? 'Active'
                               : 'Not active',
-                          style: TextStyle(color: Colors.grey[600]),
+                          style: TextStyle(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
@@ -246,13 +253,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                color: colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
+                    color: Colors.black.withValues(alpha: 0.25),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),

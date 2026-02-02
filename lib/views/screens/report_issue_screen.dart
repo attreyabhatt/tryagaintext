@@ -77,9 +77,10 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: const Text('Report an Issue'),
         centerTitle: true,
@@ -95,13 +96,13 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    color: colorScheme.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
+                        color: Colors.black.withValues(alpha: 0.25),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
                       ),
                     ],
                   ),
@@ -113,7 +114,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                           labelText: 'Reason',
                           prefixIcon: Icon(
                             Icons.flag,
-                            color: theme.primaryColor,
+                            color: colorScheme.primary,
                           ),
                         ),
                         items: const [
@@ -199,13 +200,13 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.red[50],
+                      color: colorScheme.errorContainer,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.red[200]!),
+                      border: Border.all(color: colorScheme.error),
                     ),
                     child: Text(
                       _errorMessage!,
-                      style: TextStyle(color: Colors.red[700]),
+                      style: TextStyle(color: colorScheme.onErrorContainer),
                     ),
                   ),
                 ],
@@ -213,20 +214,20 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                 ElevatedButton(
                   onPressed: _isSubmitting ? null : _submit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                   child: _isSubmitting
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white,
+                            color: colorScheme.onPrimary,
                           ),
                         )
                       : const Text(

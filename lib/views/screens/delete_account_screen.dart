@@ -38,7 +38,9 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
             child: const Text('Delete Account'),
           ),
         ],
@@ -67,9 +69,10 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
 
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Account deleted successfully'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: const Text('Account deleted successfully'),
+          backgroundColor:
+              Theme.of(context).colorScheme.secondaryContainer,
         ),
       );
     } catch (e) {
@@ -99,19 +102,23 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.1),
+                color: colorScheme.errorContainer,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                border: Border.all(color: colorScheme.error),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.warning_rounded, color: Colors.red, size: 32),
+                  Icon(
+                    Icons.warning_rounded,
+                    color: colorScheme.error,
+                    size: 32,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'Warning: Permanent Action',
                       style: TextStyle(
-                        color: Colors.red.shade700,
+                        color: colorScheme.onErrorContainer,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -226,18 +233,19 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                     ? _deleteAccount
                     : null,
                 style: FilledButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  disabledBackgroundColor: Colors.grey.shade300,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: colorScheme.error,
+                  disabledBackgroundColor: colorScheme.surfaceContainerHigh,
+                  foregroundColor: colorScheme.onError,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
                 child: _isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
+                            colorScheme.onError,
                           ),
                         ),
                       )
@@ -268,12 +276,13 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
   }
 
   Widget _buildWarningItem(String text) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.close, color: Colors.red, size: 20),
+          Icon(Icons.close, color: colorScheme.error, size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

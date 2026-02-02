@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -18,9 +19,7 @@ import 'package:flirtfix/views/screens/pricing_screen.dart';
 import 'package:flirtfix/views/screens/profile_screen.dart';
 import '../widgets/thinking_indicator.dart';
 
-const _smartReplyAccent = Color(0xFF4C9A4A);
-const _smartReplyAccentSoft = Color(0xFFE6F4E7);
-const _smartReplyCardShadow = Color(0x14000000);
+const _smartReplyCardShadow = Color(0x33000000);
 
 class ConversationsScreen extends StatefulWidget {
   const ConversationsScreen({super.key});
@@ -282,7 +281,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: const Text('Subscription activated!'),
-                backgroundColor: Colors.green[600],
+                backgroundColor:
+                    Theme.of(context).colorScheme.secondaryContainer,
               ),
             );
           }
@@ -423,7 +423,10 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle, color: Colors.white),
+                Icon(
+                  Icons.check_circle,
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   justSignedUp
@@ -432,7 +435,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 ),
               ],
             ),
-            backgroundColor: Colors.green[600],
+            backgroundColor:
+                Theme.of(context).colorScheme.secondaryContainer,
           ),
         );
       }
@@ -455,7 +459,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Subscription activated!'),
-          backgroundColor: Colors.green[600],
+          backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
         ),
       );
     }
@@ -672,12 +676,15 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.error_outline, color: Colors.white),
+            Icon(
+              Icons.error_outline,
+              color: Theme.of(context).colorScheme.onErrorContainer,
+            ),
             const SizedBox(width: 8),
             Expanded(child: Text(message)),
           ],
         ),
-        backgroundColor: Theme.of(context).colorScheme.error,
+        backgroundColor: Theme.of(context).colorScheme.errorContainer,
       ),
     );
   }
@@ -735,7 +742,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             children: [
               InteractiveViewer(
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                   child: Image.file(imageFile, fit: BoxFit.contain),
                 ),
               ),
@@ -745,7 +752,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 child: IconButton(
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.close),
-                  color: Colors.grey,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -826,12 +833,16 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle, color: Colors.white),
+                Icon(
+                  Icons.check_circle,
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                ),
                 const SizedBox(width: 8),
                 const Text('Account created. You have been signed in'),
               ],
             ),
-            backgroundColor: Colors.green[600],
+            backgroundColor:
+                Theme.of(context).colorScheme.secondaryContainer,
           ),
         );
       }
@@ -843,14 +854,18 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     HapticFeedback.lightImpact();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Row(
+        content: Row(
           children: [
-            Icon(Icons.check, color: Colors.white, size: 20),
-            SizedBox(width: 8),
-            Text('Copied to clipboard!'),
+            Icon(
+              Icons.check,
+              color: Theme.of(context).colorScheme.onSecondaryContainer,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            const Text('Copied to clipboard!'),
           ],
         ),
-        backgroundColor: Colors.green[600],
+        backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
         duration: const Duration(seconds: 2),
       ),
     );
@@ -992,7 +1007,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                   _buildResultsSection(colorScheme),
                 ],
 
-                const SizedBox(height: 80),
+                const SizedBox(height: 40),
               ],
             ),
           ),
@@ -1035,14 +1050,15 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     bool isSubscribed,
     String username,
   ) {
+    final textTheme = Theme.of(context).textTheme;
     return AppBar(
       titleSpacing: 16,
       title: Row(
         children: [
           Image.asset(
             'assets/images/icons/appstore_transparent.png',
-            width: 36,
-            height: 36,
+            width: 32,
+            height: 32,
             fit: BoxFit.contain,
           ),
           const SizedBox(width: 12),
@@ -1051,18 +1067,18 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             children: [
               Text(
                 'FlirtFix',
-                style: TextStyle(
+                style: textTheme.headlineSmall?.copyWith(
                   fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.2,
                   color: colorScheme.onSurface,
                 ),
               ),
               Text(
                 'Your dating wingman',
-                style: TextStyle(
-                  fontSize: 12,
+                style: textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.normal,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -1088,15 +1104,16 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(10),
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: colorScheme.outlineVariant),
               ),
               child: Text(
                 'Go Pro',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
-                  color: colorScheme.onSurfaceVariant,
+                  color: colorScheme.onSurface,
                 ),
               ),
             ),
@@ -1115,7 +1132,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: colorScheme.secondaryContainer,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(14),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -1151,8 +1168,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(10),
+              shape: BoxShape.circle,
+              border: Border.all(color: colorScheme.outlineVariant),
+              color: Colors.transparent,
             ),
             child: Icon(
               isLoggedIn ? Icons.person : Icons.person_outline,
@@ -1225,7 +1243,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             subtitle: 'Unlimited replies with FlirtFix Unlimited',
             buttonText: 'Subscribe',
             onPressed: _navigateToPricing,
-            type: BannerType.error,
+            type: BannerType.warning,
           ),
       ],
     );
@@ -1264,7 +1282,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1310,6 +1328,10 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   }
 
   Widget _buildTabBar(ColorScheme colorScheme) {
+    final isDark = colorScheme.brightness == Brightness.dark;
+    final backgroundColor = isDark
+        ? colorScheme.surfaceContainerHigh
+        : colorScheme.surfaceContainerLow;
     return GestureDetector(
       onHorizontalDragEnd: (details) {
         // Minimum velocity threshold to detect intentional swipe (500px/s)
@@ -1335,8 +1357,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       },
       child: Container(
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(16),
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: colorScheme.outlineVariant),
         ),
         child: TabBar(
           controller: _tabController,
@@ -1344,7 +1367,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           dividerColor: Colors.transparent,
           indicator: BoxDecoration(
             color: colorScheme.primary,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
           ),
           indicatorPadding: const EdgeInsets.all(4),
           labelColor: colorScheme.onPrimary,
@@ -1571,19 +1594,27 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
             // Upload button (only show if no image uploaded)
             if (_uploadedProfileImage == null)
-              FilledButton(
+              OutlinedButton(
                 onPressed: _uploadProfileImage,
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 48),
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 44),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  backgroundColor: colorScheme.surfaceContainerHigh,
+                  foregroundColor: colorScheme.onSurface,
+                  side: BorderSide(color: colorScheme.outline),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.photo_camera_outlined, size: 20),
+                    Icon(Icons.photo_camera_outlined, size: 18),
                     SizedBox(width: 8),
-                    Text('Upload Profile Screenshot'),
+                    Text(
+                      'Tap to upload profile screenshot',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
                   ],
                 ),
               ),
@@ -1593,8 +1624,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest,
+                  color: colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: colorScheme.outlineVariant),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1711,19 +1743,27 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             const SizedBox(height: 12),
 
             // Upload button
-            FilledButton(
+            OutlinedButton(
               onPressed: _isExtractingImage ? null : _uploadScreenshot,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size(double.infinity, 48),
-                backgroundColor: colorScheme.primary,
-                foregroundColor: colorScheme.onPrimary,
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 44),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                backgroundColor: colorScheme.surfaceContainerHigh,
+                foregroundColor: colorScheme.onSurface,
+                side: BorderSide(color: colorScheme.outline),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.photo_camera_outlined, size: 20),
+                  const Icon(Icons.photo_camera_outlined, size: 18),
                   const SizedBox(width: 8),
-                  const Text('Upload Conversation Screenshot'),
+                  const Text(
+                    'Tap to upload screenshot',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
                 ],
               ),
             ),
@@ -1735,8 +1775,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest,
+                  color: colorScheme.surfaceContainer,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: colorScheme.outlineVariant),
                 ),
                 child: Row(
                   children: [
@@ -1769,8 +1810,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest,
+                  color: colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: colorScheme.outlineVariant),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1860,6 +1902,60 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     );
   }
 
+  Widget _buildPrimaryGradientButton({
+    required VoidCallback? onPressed,
+    required Widget child,
+    double height = 50,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final borderRadius = BorderRadius.circular(14);
+    final blended =
+        Color.lerp(colorScheme.primary, colorScheme.secondary, 0.4) ??
+            colorScheme.primary;
+
+    final button = SizedBox(
+      width: double.infinity,
+      height: height,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [colorScheme.primary, blended],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: borderRadius,
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.primary.withValues(alpha: 0.35),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            foregroundColor: colorScheme.onPrimary,
+            disabledForegroundColor:
+                colorScheme.onPrimary.withValues(alpha: 0.8),
+            disabledBackgroundColor: Colors.transparent,
+            shape: RoundedRectangleBorder(borderRadius: borderRadius),
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            textStyle: _primaryButtonTextStyle,
+          ),
+          child: child,
+        ),
+      ),
+    );
+
+    if (onPressed == null) {
+      return Opacity(opacity: 0.5, child: button);
+    }
+    return button;
+  }
+
   Widget _buildGenerateButton(ColorScheme colorScheme) {
     final isRecommended =
         _situation == 'just_matched' &&
@@ -1869,20 +1965,16 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         : (_situation == 'just_matched'
               ? 'Get Smart Openers'
               : 'Get Smart Replies');
-    return FilledButton(
+    return _buildPrimaryGradientButton(
       onPressed: (_isLoading || _isExtractingImage)
           ? null
           : _generateSuggestions,
-      style: FilledButton.styleFrom(
-        minimumSize: const Size(double.infinity, 56),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        textStyle: _primaryButtonTextStyle,
-      ),
+      height: 50,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.auto_awesome, size: 22),
-          const SizedBox(width: 12),
+          const Icon(Icons.auto_awesome, size: 20),
+          const SizedBox(width: 10),
           Text(label, style: _primaryButtonTextStyle),
         ],
       ),
@@ -1906,10 +1998,12 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             icon: const Icon(Icons.add, size: 18),
             label: const Text('New'),
             style: OutlinedButton.styleFrom(
-              minimumSize: const Size(0, 56),
+              minimumSize: const Size(0, 50),
               padding: const EdgeInsets.symmetric(horizontal: 16),
+              foregroundColor: colorScheme.onSurface,
+              side: BorderSide(color: colorScheme.outline),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
           ),
@@ -1919,6 +2013,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   }
 
   Widget _buildResultsSection(ColorScheme colorScheme) {
+    final textTheme = Theme.of(context).textTheme;
     final isRecommendedNewMatch =
         _situation == 'just_matched' &&
         _newMatchMode == NewMatchMode.recommended;
@@ -2009,20 +2104,20 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: colorScheme.secondaryContainer,
+                  color: colorScheme.surfaceContainerHigh,
                   shape: BoxShape.circle,
+                  border: Border.all(color: colorScheme.outlineVariant),
                 ),
                 child: Icon(
                   Icons.chat_bubble_outline,
-                  size: 40,
-                  color: colorScheme.onSecondaryContainer,
+                  size: 36,
+                  color: colorScheme.secondary,
                 ),
               ),
               const SizedBox(height: 20),
               Text(
                 'Ready to help you connect!',
-                style: TextStyle(
-                  fontSize: 18,
+                style: textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: colorScheme.onSurface,
                 ),
@@ -2031,8 +2126,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               Text(
                 'Share your conversation details and we\'ll suggest the perfect replies',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
+                style: textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
               ),
@@ -2053,21 +2147,20 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: _smartReplyAccentSoft,
+                  color: colorScheme.secondaryContainer,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   Icons.check_circle,
-                  color: _smartReplyAccent,
+                  color: colorScheme.secondary,
                   size: 20,
                 ),
               ),
               const SizedBox(width: 12),
               Text(
                 '${_suggestions.length} ${_situation == 'just_matched' ? 'Smart Openers' : 'Smart Replies'}',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
                   color: colorScheme.onSurface,
                 ),
               ),
@@ -2125,92 +2218,157 @@ class _SuggestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 4,
-      shadowColor: _smartReplyCardShadow,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      margin: const EdgeInsets.only(bottom: 12),
-      color: Colors.white,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    final textTheme = Theme.of(context).textTheme;
+    final badgeLabel = (index + 1).toString().padLeft(2, '0');
+    final isDark = colorScheme.brightness == Brightness.dark;
+    final borderRadius = BorderRadius.circular(isDark ? 18 : 14);
+    final cardContent = Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: colorScheme.secondary,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: colorScheme.secondary.withValues(alpha: 0.35),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  badgeLabel,
+                  style: textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSecondary,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.06)
+                      : colorScheme.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.12)
+                        : colorScheme.outlineVariant,
+                  ),
+                ),
+                child: Icon(
+                  Icons.copy_outlined,
+                  size: 18,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            suggestion.message,
+            style: TextStyle(
+              fontSize: 15,
+              color: colorScheme.onSurface,
+              height: 1.4,
+            ),
+          ),
+          if ((suggestion.whyItWorks ?? '').trim().isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 6,
+              ),
+              decoration: BoxDecoration(
+                color: colorScheme.tertiaryContainer,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _smartReplyAccentSoft,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                  Icon(
+                    Icons.lightbulb_outline,
+                    size: 16,
+                    color: colorScheme.onTertiaryContainer,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
                     child: Text(
-                      '#${index + 1}',
+                      suggestion.whyItWorks!.trim(),
                       style: TextStyle(
-                        color: _smartReplyAccent,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 12.5,
+                        color: colorScheme.onTertiaryContainer,
                       ),
                     ),
-                  ),
-                  const Spacer(),
-                  Icon(
-                    Icons.copy_outlined,
-                    size: 18,
-                    color: colorScheme.onSurfaceVariant,
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Text(
-                suggestion.message,
-                style: TextStyle(
-                  fontSize: 15,
-                  color: colorScheme.onSurface,
-                  height: 1.4,
-                ),
+            ),
+          ],
+        ],
+      ),
+    );
+
+    if (!isDark) {
+      return Card(
+        elevation: 1,
+        shadowColor: _smartReplyCardShadow,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: borderRadius,
+          side: BorderSide(color: colorScheme.outlineVariant),
+        ),
+        margin: const EdgeInsets.only(bottom: 12),
+        color: colorScheme.surfaceContainerLow,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: borderRadius,
+          child: cardContent,
+        ),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ClipRRect(
+        borderRadius: borderRadius,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.06),
+              borderRadius: borderRadius,
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.12),
               ),
-              if ((suggestion.whyItWorks ?? '').trim().isNotEmpty) ...[
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colorScheme.tertiaryContainer,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.lightbulb_outline,
-                        size: 16,
-                        color: colorScheme.onTertiaryContainer,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          suggestion.whyItWorks!.trim(),
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            color: colorScheme.onTertiaryContainer,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
                 ),
               ],
-            ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onTap,
+                borderRadius: borderRadius,
+                child: cardContent,
+              ),
+            ),
           ),
         ),
       ),

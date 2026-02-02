@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'state/app_state.dart';
 import 'views/screens/conversations_screen.dart';
 
@@ -39,72 +40,332 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return AppStateScope(
-      notifier: _appState,
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'FlirtFix',
-        theme: _buildLightTheme(),
-        navigatorObservers: [FirebaseAnalyticsObserver(analytics: _analytics)],
-        home: const SplashScreen(),
-      ),
+    return AnimatedBuilder(
+      animation: _appState,
+      builder: (context, child) {
+        return AppStateScope(
+          notifier: _appState,
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'FlirtFix',
+            theme: _buildPremiumLightTheme(),
+            darkTheme: _buildPremiumDarkNeonTheme(),
+            themeMode: ThemeMode.dark,
+            navigatorObservers: [
+              FirebaseAnalyticsObserver(analytics: _analytics),
+            ],
+            home: const SplashScreen(),
+          ),
+        );
+      },
     );
   }
 
-  ThemeData _buildLightTheme() {
+  ThemeData _buildPremiumLightTheme() {
+    const baseLight = Color(0xFF2D2D2D);
+    const background = Color(0xFFFFFBFE);
+    const surface = Color(0xFFFFFBFE);
+    const surfaceLow = Color(0xFFF7F4F0);
+    const primary = Color(0xFF2D2D2D);
+    const secondary = Color(0xFFD4AF37);
+    const tertiary = Color(0xFF8A6B2A);
+
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: primary,
+      brightness: Brightness.light,
+    ).copyWith(
+      primary: primary,
+      onPrimary: background,
+      primaryContainer: const Color(0xFFE6E1DA),
+      onPrimaryContainer: baseLight,
+      secondary: secondary,
+      onSecondary: baseLight,
+      secondaryContainer: const Color(0xFFF6E6B8),
+      onSecondaryContainer: baseLight,
+      tertiary: tertiary,
+      onTertiary: background,
+      tertiaryContainer: const Color(0xFFF0E3C7),
+      onTertiaryContainer: baseLight,
+      surface: surface,
+      surfaceDim: const Color(0xFFF3EFE8),
+      surfaceBright: const Color(0xFFFFFFFF),
+      surfaceContainerLowest: const Color(0xFFFFFFFF),
+      surfaceContainerLow: surfaceLow,
+      surfaceContainer: const Color(0xFFF2EDE6),
+      surfaceContainerHigh: const Color(0xFFECE6DE),
+      surfaceContainerHighest: const Color(0xFFE4DED6),
+      onSurface: baseLight,
+      onSurfaceVariant: const Color(0xFF6B6560),
+      outline: const Color(0xFFC9C1B6),
+      outlineVariant: const Color(0xFFE1DBD2),
+      shadow: Colors.black,
+      scrim: Colors.black,
+      inverseSurface: baseLight,
+      onInverseSurface: background,
+      inversePrimary: const Color(0xFFF2C96B),
+    );
+
+    final textTheme = _buildPremiumTextTheme(
+      colorScheme,
+      Brightness.light,
+    );
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      colorSchemeSeed: const Color(0xFFD32F2F), // Bold red
-      scaffoldBackgroundColor: const Color(0xFFFAFAFA),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.transparent,
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: colorScheme.surface,
+      textTheme: textTheme,
+      appBarTheme: AppBarTheme(
+        backgroundColor: colorScheme.surface,
         elevation: 0,
+        scrolledUnderElevation: 2,
+        surfaceTintColor: colorScheme.secondary.withValues(alpha: 0.18),
         systemOverlayStyle: SystemUiOverlayStyle.dark,
-        iconTheme: IconThemeData(color: Color(0xFF1A1A1A)),
-        titleTextStyle: TextStyle(
-          color: Color(0xFF1A1A1A),
-          fontSize: 20,
+        iconTheme: IconThemeData(color: colorScheme.onSurface),
+        titleTextStyle: textTheme.titleLarge?.copyWith(
+          color: colorScheme.onSurface,
           fontWeight: FontWeight.w600,
         ),
       ),
       cardTheme: CardThemeData(
-        color: Colors.white,
+        color: colorScheme.surfaceContainerLow,
         elevation: 0,
         shadowColor: Colors.black.withValues(alpha: 0.08),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600),
+        ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           elevation: 0,
           shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
           ),
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          side: BorderSide(color: colorScheme.outline),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: colorScheme.surfaceContainerLow,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colorScheme.outlineVariant),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.grey.shade200),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colorScheme.outlineVariant),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFD32F2F), width: 2),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
         ),
-        contentPadding: const EdgeInsets.all(20),
+        contentPadding: const EdgeInsets.all(16),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
+        backgroundColor: colorScheme.surfaceContainerHighest,
+        contentTextStyle: textTheme.bodyMedium?.copyWith(
+          color: colorScheme.onSurface,
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
+      dividerTheme: DividerThemeData(
+        color: colorScheme.outlineVariant,
+        thickness: 1,
+      ),
+    );
+  }
+
+  ThemeData _buildPremiumDarkNeonTheme() {
+    const baseDark = Color(0xFF0E0F12);
+    const surface = Color(0xFF12141A);
+    const surfaceLow = Color(0xFF16181F);
+    const primary = Color(0xFFFF2D6D);
+    const secondary = Color(0xFFD4AF37);
+    const tertiary = Color(0xFFB95A7B);
+
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: primary,
+      brightness: Brightness.dark,
+    ).copyWith(
+      primary: primary,
+      onPrimary: baseDark,
+      primaryContainer: const Color(0xFF4A0D26),
+      onPrimaryContainer: const Color(0xFFFFC2D4),
+      secondary: secondary,
+      onSecondary: baseDark,
+      secondaryContainer: const Color(0xFF3A2F0D),
+      onSecondaryContainer: const Color(0xFFFFE3A1),
+      tertiary: tertiary,
+      onTertiary: baseDark,
+      tertiaryContainer: const Color(0xFF3A1C2A),
+      onTertiaryContainer: const Color(0xFFF3C3D5),
+      surface: surface,
+      surfaceDim: const Color(0xFF0C0D10),
+      surfaceBright: const Color(0xFF191B22),
+      surfaceContainerLowest: const Color(0xFF0A0B0E),
+      surfaceContainerLow: surfaceLow,
+      surfaceContainer: const Color(0xFF1B1E25),
+      surfaceContainerHigh: const Color(0xFF21242C),
+      surfaceContainerHighest: const Color(0xFF272B35),
+      onSurface: const Color(0xFFF4F2EE),
+      onSurfaceVariant: const Color(0xFF8F9BB3),
+      outline: const Color(0xFF3A3F4A),
+      outlineVariant: const Color(0xFF2E323B),
+      shadow: Colors.black,
+      scrim: Colors.black,
+      inverseSurface: const Color(0xFFF4F2EE),
+      onInverseSurface: baseDark,
+      inversePrimary: const Color(0xFFFF86A8),
+    );
+
+    final textTheme = _buildPremiumTextTheme(
+      colorScheme,
+      Brightness.dark,
+    );
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: colorScheme.surface,
+      textTheme: textTheme,
+      appBarTheme: AppBarTheme(
+        backgroundColor: colorScheme.surface,
+        elevation: 0,
+        scrolledUnderElevation: 2,
+        surfaceTintColor: colorScheme.primary.withValues(alpha: 0.18),
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+        iconTheme: IconThemeData(color: colorScheme.onSurface),
+        titleTextStyle: textTheme.titleLarge?.copyWith(
+          color: colorScheme.onSurface,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: Colors.transparent,
+        elevation: 0,
+        shadowColor: Colors.black.withValues(alpha: 0.2),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: colorScheme.outlineVariant),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          side: BorderSide(color: colorScheme.outline),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.05),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colorScheme.secondary, width: 1),
+        ),
+        contentPadding: const EdgeInsets.all(18),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: colorScheme.surfaceContainerHigh,
+        contentTextStyle: textTheme.bodyMedium?.copyWith(
+          color: colorScheme.onSurface,
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      dividerTheme: DividerThemeData(
+        color: colorScheme.outlineVariant,
+        thickness: 1,
+      ),
+    );
+  }
+
+  TextTheme _buildPremiumTextTheme(
+    ColorScheme colorScheme,
+    Brightness brightness,
+  ) {
+    final base = GoogleFonts.manropeTextTheme(
+      brightness == Brightness.dark
+          ? ThemeData.dark().textTheme
+          : ThemeData.light().textTheme,
+    );
+
+    TextStyle? headline(TextStyle? style) {
+      return GoogleFonts.playfairDisplay(
+        textStyle: style,
+        fontWeight: FontWeight.w600,
+      );
+    }
+
+    final blended = base.copyWith(
+      displayLarge: headline(base.displayLarge),
+      displayMedium: headline(base.displayMedium),
+      displaySmall: headline(base.displaySmall),
+      headlineLarge: headline(base.headlineLarge),
+      headlineMedium: headline(base.headlineMedium),
+      headlineSmall: headline(base.headlineSmall),
+    );
+
+    return blended.apply(
+      bodyColor: colorScheme.onSurface,
+      displayColor: colorScheme.onSurface,
     );
   }
 
@@ -123,16 +384,23 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _controller;
+  late AnimationController _breathController;
   late Animation<double> _fadeIn;
   late Animation<double> _scale;
+  late Animation<double> _breathOpacity;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+
+    _breathController = AnimationController(
+      duration: const Duration(milliseconds: 2200),
       vsync: this,
     );
 
@@ -147,12 +415,21 @@ class _SplashScreenState extends State<SplashScreen>
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
     _controller.forward();
+    _breathOpacity = Tween<double>(
+      begin: 0.6,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _breathController,
+      curve: Curves.easeInOut,
+    ));
+    _breathController.repeat(reverse: true);
     _initializeApp();
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _breathController.dispose();
     super.dispose();
   }
 
@@ -177,9 +454,10 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surfaceContainerLow,
+      backgroundColor: colorScheme.surface,
       body: SafeArea(
         child: AnimatedBuilder(
           animation: _controller,
@@ -195,34 +473,13 @@ class _SplashScreenState extends State<SplashScreen>
               children: [
                 const Spacer(flex: 3),
 
-                // Logo with Material elevation
-                Container(
-                  width: 140,
-                  height: 140,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(32),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colorScheme.primary.withValues(alpha: 0.25),
-                        blurRadius: 32,
-                        offset: const Offset(0, 12),
-                        spreadRadius: 0,
-                      ),
-                      BoxShadow(
-                        color: colorScheme.primary.withValues(alpha: 0.12),
-                        blurRadius: 64,
-                        offset: const Offset(0, 24),
-                        spreadRadius: 0,
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Image.asset(
-                      'assets/images/icons/appstore.png',
-                      fit: BoxFit.contain,
-                    ),
+                FadeTransition(
+                  opacity: _breathOpacity,
+                  child: Image.asset(
+                    'assets/images/icons/appstore_transparent.png',
+                    width: 140,
+                    height: 140,
+                    fit: BoxFit.contain,
                   ),
                 ),
 
@@ -231,11 +488,10 @@ class _SplashScreenState extends State<SplashScreen>
                 // App name
                 Text(
                   'FlirtFix',
-                  style: TextStyle(
+                  style: textTheme.displaySmall?.copyWith(
                     fontSize: 36,
-                    fontWeight: FontWeight.w700,
-                    color: colorScheme.onSurface,
-                    letterSpacing: -1,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.6,
                     height: 1.1,
                   ),
                 ),
@@ -244,26 +500,15 @@ class _SplashScreenState extends State<SplashScreen>
 
                 // Tagline
                 Text(
-                  'Your dating conversation wingman',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                    color: colorScheme.onSurfaceVariant,
-                    letterSpacing: 0.15,
+                  'Master the Art of Conversation.',
+                  style: textTheme.titleSmall?.copyWith(
+                    color: colorScheme.secondary,
+                    letterSpacing: 0.8,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
 
                 const Spacer(flex: 3),
-
-                // Loading indicator at bottom
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    color: colorScheme.primary,
-                  ),
-                ),
 
                 const SizedBox(height: 48),
               ],

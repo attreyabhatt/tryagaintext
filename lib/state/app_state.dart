@@ -1,9 +1,13 @@
 import 'package:flutter/widgets.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../utils/app_logger.dart';
 
+enum AppThemeMode { premiumLightGold, premiumDarkNeonGold }
+
 class AppState extends ChangeNotifier {
+  static const String _themeModeKey = 'app_theme_mode';
   User? _user;
   int _credits = 0;
   bool _isSubscribed = false;
@@ -17,6 +21,7 @@ class AppState extends ChangeNotifier {
   int? _dailyRepliesLimit;
   bool _isLoggedIn = false;
   bool _initialized = false;
+  AppThemeMode _themeMode = AppThemeMode.premiumDarkNeonGold;
 
   User? get user => _user;
   int get credits => _credits;
@@ -31,14 +36,32 @@ class AppState extends ChangeNotifier {
   int? get dailyRepliesLimit => _dailyRepliesLimit;
   bool get isLoggedIn => _isLoggedIn;
   bool get initialized => _initialized;
+  AppThemeMode get themeMode => _themeMode;
 
   Future<void> initialize() async {
+    await _loadThemePreference();
     await reloadFromStorage();
     if (_isLoggedIn) {
       await refreshUserData();
     }
     _initialized = true;
     notifyListeners();
+  }
+
+  Future<void> setThemeMode(AppThemeMode mode) async {
+    if (_themeMode == mode) return;
+    _themeMode = mode;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_themeModeKey, mode.name);
+  }
+
+  Future<void> _loadThemePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_themeModeKey);
+    if (raw == AppThemeMode.premiumDarkNeonGold.name) {
+      _themeMode = AppThemeMode.premiumDarkNeonGold;
+    }
   }
 
   Future<void> reloadFromStorage() async {

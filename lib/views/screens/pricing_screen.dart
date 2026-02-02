@@ -9,6 +9,7 @@ import '../../state/app_state.dart';
 import '../../utils/app_logger.dart';
 import 'login_screen.dart';
 import 'signup_screen.dart';
+import '../widgets/premium_gradient_button.dart';
 
 class PricingScreen extends StatefulWidget {
   final bool showCloseButton;
@@ -107,7 +108,8 @@ class _PricingScreenState extends State<PricingScreen>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Purchase error: ${error.toString()}'),
-              backgroundColor: Colors.red[600],
+              backgroundColor:
+                  Theme.of(context).colorScheme.errorContainer,
             ),
           );
         }
@@ -173,7 +175,8 @@ class _PricingScreenState extends State<PricingScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Billing is not available on this device.'),
-          backgroundColor: Colors.red[600],
+          backgroundColor:
+              Theme.of(context).colorScheme.errorContainer,
         ),
       );
       return;
@@ -183,7 +186,8 @@ class _PricingScreenState extends State<PricingScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Loading products. Please try again.'),
-          backgroundColor: Colors.orange[600],
+          backgroundColor:
+              Theme.of(context).colorScheme.tertiaryContainer,
         ),
       );
       return;
@@ -193,7 +197,8 @@ class _PricingScreenState extends State<PricingScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Product not available. Please try again later.'),
-          backgroundColor: Colors.red[600],
+          backgroundColor:
+              Theme.of(context).colorScheme.errorContainer,
         ),
       );
       return;
@@ -221,7 +226,7 @@ class _PricingScreenState extends State<PricingScreen>
         context: context,
         builder: (context) => AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
           title: const Text('Sign In Required'),
           content: const Text(
@@ -284,9 +289,12 @@ class _PricingScreenState extends State<PricingScreen>
           if (mounted) {
             HapticFeedback.heavyImpact();
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Payment declined. Please try another card.'),
-                backgroundColor: Colors.redAccent,
+              SnackBar(
+                content: const Text(
+                  'Payment declined. Please try another card.',
+                ),
+                backgroundColor:
+                    Theme.of(context).colorScheme.errorContainer,
                 behavior: SnackBarBehavior.floating,
               ),
             );
@@ -294,7 +302,7 @@ class _PricingScreenState extends State<PricingScreen>
               context: context,
               builder: (context) => AlertDialog(
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 title: const Text('Payment declined'),
                 content: const Text(
@@ -396,7 +404,8 @@ class _PricingScreenState extends State<PricingScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Purchase verification failed.'),
-          backgroundColor: Colors.red[600],
+          backgroundColor:
+              Theme.of(context).colorScheme.errorContainer,
         ),
       );
     }
@@ -425,7 +434,10 @@ class _PricingScreenState extends State<PricingScreen>
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle, color: Colors.white),
+                Icon(
+                  Icons.check_circle,
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -434,7 +446,8 @@ class _PricingScreenState extends State<PricingScreen>
                 ),
               ],
             ),
-            backgroundColor: Colors.green[600],
+            backgroundColor:
+                Theme.of(context).colorScheme.secondaryContainer,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 4),
           ),
@@ -471,7 +484,8 @@ class _PricingScreenState extends State<PricingScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Purchase failed: ${e.toString()}'),
-            backgroundColor: Colors.red[600],
+            backgroundColor:
+                Theme.of(context).colorScheme.errorContainer,
           ),
         );
       }
@@ -744,140 +758,132 @@ class _PricingScreenState extends State<PricingScreen>
         ),
         child: Stack(
           children: [
-          // Popular Badge
-          if (plan.isPopular)
-            Positioned(
-              top: 0,
-              right: 20,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary,
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(12),
-                    bottomRight: Radius.circular(12),
+            // Popular Badge
+            if (plan.isPopular)
+              Positioned(
+                top: 0,
+                right: 20,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
                   ),
-                ),
-                child: const Text(
-                  'MOST POPULAR',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary,
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(12),
+                      bottomRight: Radius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    'MOST POPULAR',
+                    style: TextStyle(
+                      color: colorScheme.onPrimary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ),
               ),
-            ),
 
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Plan Name and Savings
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    if (plan.savingsText != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colorScheme.tertiaryContainer,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          plan.savingsText!,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onTertiaryContainer,
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Plan Name and Savings
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      if (plan.savingsText != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
                           ),
-                        ),
-                      ),
-                    if (plan.savingsText != null) const SizedBox(height: 8),
-                    Text(
-                      plan.priceString,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                    if (plan.billingPeriod != null)
-                      Text(
-                        plan.billingPeriod!,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
-                if (plan.tagline != null) ...[
-                  Text(
-                    plan.tagline!,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-
-                // Features
-                ...plan.features.map(
-                  (feature) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.check_circle,
-                          color: colorScheme.primary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
+                          decoration: BoxDecoration(
+                            color: colorScheme.tertiaryContainer,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
                           child: Text(
-                            feature,
+                            plan.savingsText!,
                             style: TextStyle(
-                              fontSize: 14,
-                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: colorScheme.onTertiaryContainer,
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                      if (plan.savingsText != null) const SizedBox(height: 8),
+                      Text(
+                        plan.priceString,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                      if (plan.billingPeriod != null)
+                        Text(
+                          plan.billingPeriod!,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                    ],
                   ),
-                ),
 
-                const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-                // Purchase Button
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: isProcessing ? null : () => _handlePurchase(plan),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: colorScheme.primary,
-                      foregroundColor: colorScheme.onPrimary,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  if (plan.tagline != null) ...[
+                    Text(
+                      plan.tagline!,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
                       ),
                     ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // Features
+                  ...plan.features.map(
+                    (feature) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            color: colorScheme.primary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              feature,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Purchase Button
+                  PremiumGradientButton(
+                    onPressed:
+                        isProcessing ? null : () => _handlePurchase(plan),
+                    height: 52,
                     child: isProcessing
                         ? SizedBox(
                             height: 20,
@@ -891,14 +897,16 @@ class _PricingScreenState extends State<PricingScreen>
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                widget.guestConversionMode && !AppStateScope.of(context).isLoggedIn
+                                widget.guestConversionMode &&
+                                        !AppStateScope.of(context).isLoggedIn
                                     ? Icons.person_add
                                     : Icons.shopping_cart,
                                 size: 20,
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                widget.guestConversionMode && !AppStateScope.of(context).isLoggedIn
+                                widget.guestConversionMode &&
+                                        !AppStateScope.of(context).isLoggedIn
                                     ? 'Sign Up'
                                     : 'Start subscription',
                                 style: const TextStyle(
@@ -909,8 +917,7 @@ class _PricingScreenState extends State<PricingScreen>
                             ],
                           ),
                   ),
-                ),
-              ],
+                ],
               ),
             ),
           ],
