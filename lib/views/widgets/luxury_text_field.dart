@@ -102,13 +102,13 @@ class _LuxuryTextFieldState extends State<LuxuryTextField> {
     final enabledBorderSide = isLight
         ? BorderSide.none
         : (widget.useDarkOutlineBorder
-            ? BorderSide(color: colorScheme.outlineVariant)
+            ? BorderSide(color: const Color(0xFFC4A462).withValues(alpha: 0.3))
             : BorderSide.none);
     final focusedBorderSide = BorderSide(
       color: isLight
           ? colorScheme.secondary
           : (widget.useDarkOutlineBorder
-              ? colorScheme.outlineVariant
+              ? const Color(0xFFC4A462) // Champagne Gold for dark mode
               : colorScheme.primary),
       width: 1,
     );

@@ -18,11 +18,12 @@ import 'login_screen.dart';
 import 'signup_screen.dart';
 import 'package:flirtfix/views/screens/pricing_screen.dart';
 import 'package:flirtfix/views/screens/profile_screen.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../widgets/luxury_text_field.dart';
 import '../widgets/gradient_icon.dart';
 import '../widgets/thinking_indicator.dart';
 
-const _smartReplyCardShadow = Color(0x1A9E9E9E);
+const _smartReplyCardShadow = Color(0x0D000000); // Black at 5% opacity
 
 class ConversationsScreen extends StatefulWidget {
   const ConversationsScreen({super.key});
@@ -968,9 +969,11 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                       child: Row(
                         children: [
                           Icon(
-                            Icons.verified_outlined,
+                            Icons.verified,
                             size: 18,
-                            color: colorScheme.onSecondaryContainer,
+                            color: colorScheme.brightness == Brightness.light
+                                ? const Color(0xFF991B38) // Merlot for light mode
+                                : colorScheme.onSecondaryContainer, // Original color for dark mode
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -1060,9 +1063,13 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   ) {
     final textTheme = Theme.of(context).textTheme;
     return AppBar(
-      titleSpacing: 16,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      centerTitle: false,
+      titleSpacing: 0,
       title: Row(
         children: [
+          const SizedBox(width: 16),
           Image.asset(
             'assets/images/icons/appstore_transparent.png',
             width: 32,
@@ -1095,9 +1102,13 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       ),
       actions: [
         if (!isLoggedIn) ...[
-          // "Go Pro" button for guest users
-          GestureDetector(
-            onTap: () {
+          IconButton(
+            icon: FaIcon(
+              FontAwesomeIcons.crown,
+              color: colorScheme.secondary,
+              size: 20,
+            ),
+            onPressed: () {
               HapticFeedback.lightImpact();
               Navigator.push(
                 context,
@@ -1109,22 +1120,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 ),
               );
             },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: colorScheme.outlineVariant),
-              ),
-              child: Text(
-                'Go Pro',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-            ),
           ),
           const SizedBox(width: 8),
         ],
@@ -2015,18 +2010,25 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     final colorScheme = Theme.of(context).colorScheme;
     final isLight = colorScheme.brightness == Brightness.light;
     final borderRadius = BorderRadius.circular(14);
-    final blended =
-        Color.lerp(colorScheme.primary, colorScheme.secondary, 0.4) ??
-            colorScheme.primary;
-    final gradientColors = isLight
-        ? <Color>[
-            const Color(0xFF991B38),
-            const Color(0xFFC22E53),
-          ]
-        : <Color>[colorScheme.primary, blended];
-    final shadowColor = isLight
-        ? gradientColors.first.withValues(alpha: 0.3)
-        : colorScheme.primary.withValues(alpha: 0.35);
+
+    // Light mode: Merlot gradient (matching Access button)
+    // Dark mode: Standard theme gradient
+    final List<Color> gradientColors;
+    final Color shadowColor;
+
+    if (isLight) {
+      gradientColors = [
+        const Color(0xFF991B38), // Merlot
+        const Color(0xFFC22E53), // Lighter Merlot
+      ];
+      shadowColor = gradientColors.first.withValues(alpha: 0.3);
+    } else {
+      final blended =
+          Color.lerp(colorScheme.primary, colorScheme.secondary, 0.35) ??
+              colorScheme.primary;
+      gradientColors = [colorScheme.primary, blended];
+      shadowColor = colorScheme.primary.withValues(alpha: 0.35);
+    }
 
     final button = SizedBox(
       width: double.infinity,
@@ -2043,7 +2045,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             BoxShadow(
               color: shadowColor,
               blurRadius: 18,
-              offset: const Offset(0, 10),
+              offset: const Offset(0, 8),
             ),
           ],
         ),
@@ -2053,8 +2055,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
             foregroundColor: colorScheme.onPrimary,
-            disabledForegroundColor:
-                colorScheme.onPrimary.withValues(alpha: 0.8),
+            disabledForegroundColor: colorScheme.onPrimary.withValues(alpha: 0.6),
             disabledBackgroundColor: Colors.transparent,
             shape: RoundedRectangleBorder(borderRadius: borderRadius),
             padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -2392,21 +2393,25 @@ class _SuggestionCard extends StatelessWidget {
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(
-                  color: colorScheme.secondary,
+                  color: isDark ? colorScheme.secondary : Colors.transparent,
                   shape: BoxShape.circle,
-                  boxShadow: [
+                  border: isDark ? null : Border.all(
+                    color: const Color(0xFFC4A462), // Champagne Gold
+                    width: 1.5,
+                  ),
+                  boxShadow: isDark ? [
                     BoxShadow(
                       color: colorScheme.secondary.withValues(alpha: 0.35),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
-                  ],
+                  ] : null,
                 ),
                 alignment: Alignment.center,
                 child: Text(
                   badgeLabel,
                   style: textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSecondary,
+                    color: isDark ? colorScheme.onSecondary : const Color(0xFFC4A462),
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.6,
                   ),
@@ -2427,9 +2432,11 @@ class _SuggestionCard extends StatelessWidget {
                   ),
                 ),
                 child: Icon(
-                  Icons.copy_outlined,
-                  size: 18,
-                  color: colorScheme.onSurfaceVariant,
+                  isDark ? Icons.copy_outlined : Icons.copy,
+                  size: 20,
+                  color: isDark
+                      ? colorScheme.onSurfaceVariant
+                      : const Color(0xFFC4A462), // Champagne Gold for light mode
                 ),
               ),
             ],

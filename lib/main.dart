@@ -225,22 +225,7 @@ class _MyAppState extends State<MyApp> {
                 ? ThemeMode.light
                 : ThemeMode.dark,
             builder: (context, child) {
-              final theme = Theme.of(context);
-              final isLight = theme.brightness == Brightness.light;
-              final decoration = isLight
-                  ? const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Color(0xFFF9F8F6),
-                          Color(0xFFF1EEE9),
-                        ],
-                      ),
-                    )
-                  : BoxDecoration(color: theme.colorScheme.surface);
-              return DecoratedBox(
-                decoration: decoration,
+              return RepaintBoundary(
                 child: child ?? const SizedBox.shrink(),
               );
             },
@@ -309,7 +294,7 @@ class _MyAppState extends State<MyApp> {
       useMaterial3: true,
       brightness: Brightness.light,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: Colors.transparent,
+      scaffoldBackgroundColor: background,
       textTheme: textTheme,
       appBarTheme: AppBarTheme(
         backgroundColor: background,
@@ -326,7 +311,7 @@ class _MyAppState extends State<MyApp> {
       cardTheme: CardThemeData(
         color: surface,
         elevation: 0.6,
-        shadowColor: const Color(0xFF9E9E9E).withValues(alpha: 0.12),
+        shadowColor: Colors.black.withValues(alpha: 0.05),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       filledButtonTheme: FilledButtonThemeData(
