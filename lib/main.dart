@@ -53,6 +53,26 @@ class _MyAppState extends State<MyApp> {
             themeMode: _appState.themeMode == AppThemeMode.premiumLightGold
                 ? ThemeMode.light
                 : ThemeMode.dark,
+            builder: (context, child) {
+              final theme = Theme.of(context);
+              final isLight = theme.brightness == Brightness.light;
+              final decoration = isLight
+                  ? const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Color(0xFFF9F8F4),
+                          Color(0xFFF0EFEA),
+                        ],
+                      ),
+                    )
+                  : BoxDecoration(color: theme.colorScheme.surface);
+              return DecoratedBox(
+                decoration: decoration,
+                child: child ?? const SizedBox.shrink(),
+              );
+            },
             navigatorObservers: [
               FirebaseAnalyticsObserver(analytics: _analytics),
             ],
@@ -64,47 +84,49 @@ class _MyAppState extends State<MyApp> {
   }
 
   ThemeData _buildPremiumLightTheme() {
-    const baseLight = Color(0xFF2D2D2D);
-    const background = Color(0xFFFFFBFE);
-    const surface = Color(0xFFFFFBFE);
-    const surfaceLow = Color(0xFFF7F4F0);
-    const primary = Color(0xFF2D2D2D);
-    const secondary = Color(0xFFD4AF37);
-    const tertiary = Color(0xFF8A6B2A);
+    const baseLight = Color(0xFF2C2C2C); // Onyx
+    const background = Color(0xFFF9F8F4); // Alabaster White
+    const surface = Color(0xFFFFFFFF); // Pure White
+    const surfaceLow = Color(0xFFFFFFFF);
+    const primary = Color(0xFFD81B60); // Velvet Rose
+    const secondary = Color(0xFFBFA055); // Burnished Gold
+    const tertiary = Color(0xFFC08A7A); // Rose Gold
+    const stoneGrey = Color(0xFF8E8E93);
+    const vaporGrey = Color(0xFFF2F2F5);
 
     final colorScheme = ColorScheme.fromSeed(
       seedColor: primary,
       brightness: Brightness.light,
     ).copyWith(
       primary: primary,
-      onPrimary: background,
-      primaryContainer: const Color(0xFFE6E1DA),
+      onPrimary: const Color(0xFFFFFFFF),
+      primaryContainer: const Color(0xFFF7DCE7),
       onPrimaryContainer: baseLight,
       secondary: secondary,
       onSecondary: baseLight,
-      secondaryContainer: const Color(0xFFF6E6B8),
+      secondaryContainer: const Color(0xFFF3E6C8),
       onSecondaryContainer: baseLight,
       tertiary: tertiary,
-      onTertiary: background,
-      tertiaryContainer: const Color(0xFFF0E3C7),
+      onTertiary: baseLight,
+      tertiaryContainer: const Color(0xFFF3E2DC),
       onTertiaryContainer: baseLight,
       surface: surface,
-      surfaceDim: const Color(0xFFF3EFE8),
-      surfaceBright: const Color(0xFFFFFFFF),
-      surfaceContainerLowest: const Color(0xFFFFFFFF),
+      surfaceDim: const Color(0xFFF0EFEA),
+      surfaceBright: surface,
+      surfaceContainerLowest: surface,
       surfaceContainerLow: surfaceLow,
-      surfaceContainer: const Color(0xFFF2EDE6),
-      surfaceContainerHigh: const Color(0xFFECE6DE),
-      surfaceContainerHighest: const Color(0xFFE4DED6),
+      surfaceContainer: const Color(0xFFF7F6F2),
+      surfaceContainerHigh: vaporGrey,
+      surfaceContainerHighest: const Color(0xFFEFEDE6),
       onSurface: baseLight,
-      onSurfaceVariant: const Color(0xFF6B6560),
-      outline: const Color(0xFFC9C1B6),
-      outlineVariant: const Color(0xFFE1DBD2),
-      shadow: Colors.black,
+      onSurfaceVariant: stoneGrey,
+      outline: const Color(0xFFE5E5EA),
+      outlineVariant: const Color(0xFFEDEBE4),
+      shadow: const Color(0xFF9E9E9E),
       scrim: Colors.black,
       inverseSurface: baseLight,
       onInverseSurface: background,
-      inversePrimary: const Color(0xFFF2C96B),
+      inversePrimary: const Color(0xFFFF5C8D),
     );
 
     final textTheme = _buildPremiumTextTheme(
@@ -116,13 +138,13 @@ class _MyAppState extends State<MyApp> {
       useMaterial3: true,
       brightness: Brightness.light,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: colorScheme.surface,
+      scaffoldBackgroundColor: Colors.transparent,
       textTheme: textTheme,
       appBarTheme: AppBarTheme(
-        backgroundColor: colorScheme.surface,
+        backgroundColor: background,
         elevation: 0,
         scrolledUnderElevation: 2,
-        surfaceTintColor: colorScheme.secondary.withValues(alpha: 0.18),
+        surfaceTintColor: colorScheme.secondary.withValues(alpha: 0.12),
         systemOverlayStyle: SystemUiOverlayStyle.dark,
         iconTheme: IconThemeData(color: colorScheme.onSurface),
         titleTextStyle: textTheme.titleLarge?.copyWith(
@@ -131,10 +153,10 @@ class _MyAppState extends State<MyApp> {
         ),
       ),
       cardTheme: CardThemeData(
-        color: colorScheme.surfaceContainerLow,
-        elevation: 0,
-        shadowColor: Colors.black.withValues(alpha: 0.08),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        color: surface,
+        elevation: 0.6,
+        shadowColor: const Color(0xFF9E9E9E).withValues(alpha: 0.12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
@@ -163,25 +185,25 @@ class _MyAppState extends State<MyApp> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          side: BorderSide(color: colorScheme.outline),
+          side: BorderSide(color: colorScheme.outlineVariant),
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
           textStyle: const TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: colorScheme.surfaceContainerLow,
+        fillColor: vaporGrey,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.outlineVariant),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.outlineVariant),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
+          borderSide: BorderSide(color: colorScheme.secondary, width: 1),
         ),
         contentPadding: const EdgeInsets.all(16),
       ),
@@ -320,7 +342,7 @@ class _MyAppState extends State<MyApp> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.secondary, width: 1),
+          borderSide: BorderSide(color: colorScheme.primary, width: 1),
         ),
         contentPadding: const EdgeInsets.all(18),
       ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../services/account_deletion_service.dart';
 import 'login_screen.dart';
+import '../widgets/luxury_text_field.dart';
 import '../widgets/thinking_indicator.dart';
 
 class DeleteAccountScreen extends StatefulWidget {
@@ -99,7 +100,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Delete Account'),
-        backgroundColor: colorScheme.surface,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -171,7 +172,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
 
             const SizedBox(height: 8),
 
-            TextField(
+            LuxuryTextField(
               controller: _passwordController,
               obscureText: _obscurePassword,
               enabled: !_isLoading,
@@ -191,9 +192,6 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                   },
                 ),
                 errorText: _errorMessage,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
               ),
               onChanged: (_) {
                 if (_errorMessage != null) {

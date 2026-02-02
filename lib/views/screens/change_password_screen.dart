@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../services/api_client.dart';
+import '../widgets/luxury_text_field.dart';
 import '../widgets/thinking_indicator.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
@@ -79,7 +80,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Change Password'),
         centerTitle: true,
@@ -92,7 +93,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                TextFormField(
+                LuxuryTextField(
                   controller: _currentController,
                   obscureText: true,
                   decoration: const InputDecoration(
@@ -106,7 +107,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
+                LuxuryTextField(
                   controller: _newController,
                   obscureText: true,
                   decoration: const InputDecoration(
@@ -123,7 +124,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-                TextFormField(
+                LuxuryTextField(
                   controller: _confirmController,
                   obscureText: true,
                   decoration: const InputDecoration(

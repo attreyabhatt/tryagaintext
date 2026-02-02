@@ -18,10 +18,11 @@ import 'login_screen.dart';
 import 'signup_screen.dart';
 import 'package:flirtfix/views/screens/pricing_screen.dart';
 import 'package:flirtfix/views/screens/profile_screen.dart';
+import '../widgets/luxury_text_field.dart';
 import '../widgets/gradient_icon.dart';
 import '../widgets/thinking_indicator.dart';
 
-const _smartReplyCardShadow = Color(0x33000000);
+const _smartReplyCardShadow = Color(0x1A9E9E9E);
 
 class ConversationsScreen extends StatefulWidget {
   const ConversationsScreen({super.key});
@@ -1338,17 +1339,36 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     final isDark = colorScheme.brightness == Brightness.dark;
     final backgroundColor = isDark
         ? colorScheme.surfaceContainerHigh
-        : colorScheme.surfaceContainerLow;
+        : const Color(0xFFE5E5EA);
+    final borderColor = isDark
+        ? colorScheme.outlineVariant
+        : const Color(0xFFE5E5EA);
     final activeGradient = LinearGradient(
       colors: isDark
           ? [colorScheme.primary, colorScheme.tertiary]
-          : [colorScheme.primary, colorScheme.secondary],
+          : [const Color(0xFFFFFFFF), const Color(0xFFFFFFFF)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     );
-    final glowColor = colorScheme.primary.withValues(
-      alpha: isDark ? 0.35 : 0.25,
-    );
+    final glowColor = isDark
+        ? colorScheme.primary.withValues(alpha: 0.35)
+        : const Color(0xFF9E9E9E).withValues(alpha: 0.25);
+    final activeShadow = isDark
+        ? [
+            BoxShadow(
+              color: glowColor,
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ]
+        : [
+            BoxShadow(
+              color: glowColor,
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+              spreadRadius: -6,
+            ),
+          ];
 
     return GestureDetector(
       onHorizontalDragEnd: (details) {
@@ -1388,7 +1408,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             decoration: BoxDecoration(
               color: backgroundColor,
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: colorScheme.outlineVariant),
+              border: Border.all(color: borderColor),
             ),
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -1406,13 +1426,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                         decoration: BoxDecoration(
                           gradient: activeGradient,
                           borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: glowColor,
-                              blurRadius: 10,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
+                          boxShadow: activeShadow,
                         ),
                       ),
                     ),
@@ -1457,7 +1471,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     required VoidCallback onTap,
     required ColorScheme colorScheme,
   }) {
-    final activeColor = colorScheme.onPrimary;
+    final isDark = colorScheme.brightness == Brightness.dark;
+    final activeColor = isDark ? colorScheme.onPrimary : colorScheme.primary;
     final inactiveColor = colorScheme.onSurfaceVariant;
 
     return Expanded(
@@ -1544,11 +1559,12 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           ),
         ),
         const SizedBox(height: 8),
-        TextField(
+        LuxuryTextField(
           controller: controller,
           maxLines: 2,
           minLines: 2,
           maxLength: 250,
+          useDarkOutlineBorder: true,
           buildCounter:
               (
                 BuildContext context, {
@@ -1997,10 +2013,20 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     double height = 50,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isLight = colorScheme.brightness == Brightness.light;
     final borderRadius = BorderRadius.circular(14);
     final blended =
         Color.lerp(colorScheme.primary, colorScheme.secondary, 0.4) ??
             colorScheme.primary;
+    final gradientColors = isLight
+        ? <Color>[
+            const Color(0xFFD81B60),
+            const Color(0xFFFF5C8D),
+          ]
+        : <Color>[colorScheme.primary, blended];
+    final shadowColor = isLight
+        ? gradientColors.first.withValues(alpha: 0.3)
+        : colorScheme.primary.withValues(alpha: 0.35);
 
     final button = SizedBox(
       width: double.infinity,
@@ -2008,14 +2034,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [colorScheme.primary, blended],
+            colors: gradientColors,
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: borderRadius,
           boxShadow: [
             BoxShadow(
-              color: colorScheme.primary.withValues(alpha: 0.35),
+              color: shadowColor,
               blurRadius: 18,
               offset: const Offset(0, 10),
             ),

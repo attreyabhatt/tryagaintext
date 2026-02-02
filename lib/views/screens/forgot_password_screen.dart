@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../services/api_client.dart';
+import '../widgets/luxury_text_field.dart';
 import '../widgets/thinking_indicator.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -71,7 +72,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final textTheme = theme.textTheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -110,56 +111,36 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerLow,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.25),
-                            blurRadius: 18,
-                            offset: const Offset(0, 6),
+                    LuxuryTextField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: InputDecoration(
+                        labelText: 'Email',
+                        hintText: 'Enter your email address',
+                        prefixIcon: Container(
+                          margin: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color:
+                                colorScheme.primary.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                        ],
-                      ),
-                      child: TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: InputDecoration(
-                          labelText: 'Email',
-                          hintText: 'Enter your email address',
-                          prefixIcon: Container(
-                            margin: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color:
-                                  colorScheme.primary.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.email_outlined,
-                              color: colorScheme.primary,
-                            ),
+                          child: Icon(
+                            Icons.email_outlined,
+                            color: colorScheme.primary,
                           ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          filled: true,
-                          fillColor: colorScheme.surfaceContainerLow,
-                          contentPadding: const EdgeInsets.all(16),
                         ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Please enter your email';
-                          }
-                          if (!RegExp(
-                            r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                          ).hasMatch(value.trim())) {
-                            return 'Please enter a valid email';
-                          }
-                          return null;
-                        },
                       ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter your email';
+                        }
+                        if (!RegExp(
+                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                        ).hasMatch(value.trim())) {
+                          return 'Please enter a valid email';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
                     if (_errorMessage != null) ...[

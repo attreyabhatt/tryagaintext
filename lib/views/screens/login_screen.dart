@@ -4,6 +4,7 @@ import '../../state/app_state.dart';
 import '../../services/auth_service.dart';
 import 'forgot_password_screen.dart';
 import 'signup_screen.dart';
+import '../widgets/luxury_text_field.dart';
 import '../widgets/premium_gradient_button.dart';
 import '../widgets/thinking_indicator.dart';
 
@@ -69,7 +70,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final textTheme = theme.textTheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -120,143 +121,75 @@ class _LoginScreenState extends State<LoginScreen> {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               // Email Field
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: colorScheme.surfaceContainerLow,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.25),
-                                      blurRadius: 18,
-                                      offset: const Offset(0, 6),
+                              LuxuryTextField(
+                                controller: _usernameController,
+                                keyboardType: TextInputType.emailAddress,
+                                decoration: InputDecoration(
+                                  labelText: 'Member ID / Email',
+                                  hintText: 'Enter your member ID or email',
+                                  prefixIcon: Container(
+                                    margin: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.primary
+                                          .withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
-                                  ],
-                                ),
-                                child: TextFormField(
-                                  controller: _usernameController,
-                                  keyboardType: TextInputType.emailAddress,
-                                  decoration: InputDecoration(
-                                    labelText: 'Member ID / Email',
-                                    hintText: 'Enter your member ID or email',
-                                    prefixIcon: Container(
-                                      margin: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: colorScheme.primary
-                                            .withValues(alpha: 0.15),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Icon(
-                                        Icons.email_outlined,
-                                        color: colorScheme.primary,
-                                      ),
-                                    ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(
-                                      color: colorScheme.outlineVariant,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(
+                                    child: Icon(
+                                      Icons.email_outlined,
                                       color: colorScheme.primary,
-                                      width: 1.5,
                                     ),
                                   ),
-                                  filled: true,
-                                  fillColor: colorScheme.surfaceContainerLow,
-                                  contentPadding: const EdgeInsets.all(16),
-                                  ),
-                                  validator: (value) {
-                                    if (value == null ||
-                                        value.trim().isEmpty) {
-                                      return 'Please enter your email';
-                                    }
-                                    return null;
-                                  },
                                 ),
+                                validator: (value) {
+                                  if (value == null ||
+                                      value.trim().isEmpty) {
+                                    return 'Please enter your email';
+                                  }
+                                  return null;
+                                },
                               ),
 
                               const SizedBox(height: 16),
 
                               // Password Field
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: colorScheme.surfaceContainerLow,
-                                  borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.25),
-                                      blurRadius: 18,
-                                      offset: const Offset(0, 6),
+                              LuxuryTextField(
+                                controller: _passwordController,
+                                obscureText: _obscurePassword,
+                                decoration: InputDecoration(
+                                  labelText: 'Passcode',
+                                  hintText: 'Enter your passcode',
+                                  prefixIcon: Container(
+                                    margin: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.primary
+                                          .withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(8),
                                     ),
-                                  ],
-                                ),
-                                child: TextFormField(
-                                  controller: _passwordController,
-                                  obscureText: _obscurePassword,
-                                  decoration: InputDecoration(
-                                    labelText: 'Passcode',
-                                    hintText: 'Enter your passcode',
-                                    prefixIcon: Container(
-                                      margin: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: colorScheme.primary
-                                            .withValues(alpha: 0.15),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Icon(
-                                        Icons.lock_outline,
-                                        color: colorScheme.primary,
-                                      ),
+                                    child: Icon(
+                                      Icons.lock_outline,
+                                      color: colorScheme.primary,
                                     ),
-                                    suffixIcon: IconButton(
-                                      icon: Icon(
-                                        _obscurePassword
-                                            ? Icons.visibility_off_outlined
-                                            : Icons.visibility_outlined,
-                                        color: colorScheme.onSurfaceVariant,
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          _obscurePassword = !_obscurePassword;
-                                        });
-                                      },
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                        color: colorScheme.outlineVariant,
-                                        width: 1,
-                                      ),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                        color: colorScheme.primary,
-                                        width: 1.5,
-                                      ),
-                                    ),
-                                    filled: true,
-                                    fillColor: colorScheme.surfaceContainerLow,
-                                    contentPadding: const EdgeInsets.all(16),
                                   ),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please enter your password';
-                                    }
-                                    return null;
-                                  },
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscurePassword
+                                          ? Icons.visibility_off_outlined
+                                          : Icons.visibility_outlined,
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _obscurePassword = !_obscurePassword;
+                                      });
+                                    },
+                                  ),
                                 ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your password';
+                                  }
+                                  return null;
+                                },
                               ),
 
                               const SizedBox(height: 8),

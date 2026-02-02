@@ -66,9 +66,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
         : (email.isNotEmpty ? email.split('@').first : 'Guest');
     final isLightMode = appState.themeMode == AppThemeMode.premiumLightGold;
     final ambienceLabel = isLightMode ? 'Ivory Gold' : 'Midnight Gold';
+    final isLight = theme.brightness == Brightness.light;
+    final cardShadow = isLight
+        ? BoxShadow(
+            color: const Color(0xFF9E9E9E).withValues(alpha: 0.12),
+            blurRadius: 25,
+            offset: const Offset(0, 10),
+            spreadRadius: -5,
+          )
+        : BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          );
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Profile'),
         centerTitle: true,
@@ -167,11 +180,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.25),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
+                  cardShadow,
                 ],
               ),
               child: Row(
@@ -217,11 +226,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.25),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
+                  cardShadow,
                 ],
               ),
               child: Row(
@@ -276,11 +281,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.25),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
+                  cardShadow,
                 ],
               ),
               child: Column(

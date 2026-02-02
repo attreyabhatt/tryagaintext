@@ -504,11 +504,12 @@ class _PricingScreenState extends State<PricingScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isLight = theme.brightness == Brightness.light;
     final plans = PricingPlan.allPlans;
     final appState = AppStateScope.of(context);
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -544,9 +545,12 @@ class _PricingScreenState extends State<PricingScreen>
                   borderRadius: BorderRadius.circular(28),
                   boxShadow: [
                     BoxShadow(
-                      color: colorScheme.primary.withValues(alpha: 0.18),
-                      blurRadius: 24,
+                      color: isLight
+                          ? const Color(0xFF9E9E9E).withValues(alpha: 0.14)
+                          : colorScheme.primary.withValues(alpha: 0.18),
+                      blurRadius: isLight ? 30 : 24,
                       offset: const Offset(0, 12),
+                      spreadRadius: isLight ? -6 : 0,
                     ),
                   ],
                 ),
@@ -635,9 +639,14 @@ class _PricingScreenState extends State<PricingScreen>
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: colorScheme.shadow.withValues(alpha: 0.08),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
+                      color: isLight
+                          ? const Color(0xFF9E9E9E).withValues(alpha: 0.1)
+                          : colorScheme.shadow.withValues(alpha: 0.08),
+                      blurRadius: isLight ? 25 : 16,
+                      offset: isLight
+                          ? const Offset(0, 10)
+                          : const Offset(0, 6),
+                      spreadRadius: isLight ? -5 : 0,
                     ),
                   ],
                 ),
@@ -741,6 +750,7 @@ class _PricingScreenState extends State<PricingScreen>
 
   Widget _buildPricingCard(PricingPlan plan, ThemeData theme) {
     final colorScheme = theme.colorScheme;
+    final isLight = theme.brightness == Brightness.light;
     final isSelected = _selectedPlan?.id == plan.id;
     final isProcessing = _isProcessing && isSelected;
     final surfaceColor = isSelected
@@ -748,6 +758,18 @@ class _PricingScreenState extends State<PricingScreen>
         : (plan.isPopular ? colorScheme.primaryContainer : colorScheme.surface);
     final borderColor =
         plan.isPopular ? colorScheme.primary : colorScheme.outlineVariant;
+    final shadowColor = isLight
+        ? const Color(0xFF9E9E9E).withValues(
+            alpha: plan.isPopular ? 0.16 : 0.1,
+          )
+        : colorScheme.shadow.withValues(
+            alpha: plan.isPopular ? 0.18 : 0.08,
+          );
+    final shadowBlur = isLight
+        ? (plan.isPopular ? 28.0 : 24.0)
+        : (plan.isPopular ? 20.0 : 12.0);
+    final shadowOffset = isLight ? const Offset(0, 12) : const Offset(0, 8);
+    final shadowSpread = isLight ? -6.0 : 0.0;
 
     return AnimatedScale(
       duration: const Duration(milliseconds: 180),
@@ -763,11 +785,10 @@ class _PricingScreenState extends State<PricingScreen>
           ),
           boxShadow: [
             BoxShadow(
-              color: colorScheme.shadow.withValues(
-                alpha: plan.isPopular ? 0.18 : 0.08,
-              ),
-              blurRadius: plan.isPopular ? 20 : 12,
-              offset: const Offset(0, 8),
+              color: shadowColor,
+              blurRadius: shadowBlur,
+              offset: shadowOffset,
+              spreadRadius: shadowSpread,
             ),
           ],
         ),

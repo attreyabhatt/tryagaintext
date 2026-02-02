@@ -22,12 +22,21 @@ class PremiumGradientButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isLight = Theme.of(context).brightness == Brightness.light;
     final gradientColors = colors ??
-        <Color>[
-          colorScheme.primary,
-          Color.lerp(colorScheme.primary, colorScheme.secondary, 0.35) ??
-              colorScheme.primary,
-        ];
+        (isLight
+            ? <Color>[
+                const Color(0xFFD81B60),
+                const Color(0xFFFF5C8D),
+              ]
+            : <Color>[
+                colorScheme.primary,
+                Color.lerp(colorScheme.primary, colorScheme.secondary, 0.35) ??
+                    colorScheme.primary,
+              ]);
+    final shadowColor = isLight
+        ? gradientColors.first.withValues(alpha: 0.3)
+        : gradientColors.first.withValues(alpha: 0.35);
 
     final resolvedOnPressed = onPressed == null
         ? null
@@ -49,7 +58,7 @@ class PremiumGradientButton extends StatelessWidget {
           borderRadius: borderRadius,
           boxShadow: [
             BoxShadow(
-              color: gradientColors.first.withValues(alpha: 0.35),
+              color: shadowColor,
               blurRadius: 18,
               offset: const Offset(0, 8),
             ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../services/api_client.dart';
+import '../widgets/luxury_text_field.dart';
 import '../widgets/thinking_indicator.dart';
 
 class ReportIssueScreen extends StatefulWidget {
@@ -81,9 +82,22 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isLight = theme.brightness == Brightness.light;
+    final cardShadow = isLight
+        ? BoxShadow(
+            color: const Color(0xFF9E9E9E).withValues(alpha: 0.12),
+            blurRadius: 25,
+            offset: const Offset(0, 10),
+            spreadRadius: -5,
+          )
+        : BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          );
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Report an Issue'),
         centerTitle: true,
@@ -102,11 +116,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                     color: colorScheme.surfaceContainerLow,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.25),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
-                      ),
+                      cardShadow,
                     ],
                   ),
                   child: Column(
@@ -148,12 +158,13 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
+                      LuxuryTextField(
                         controller: _titleController,
                         decoration: const InputDecoration(
                           labelText: 'Title',
                           hintText: 'Short summary',
                         ),
+                        showShadow: false,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Please enter a title';
@@ -162,13 +173,14 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
+                      LuxuryTextField(
                         controller: _messageController,
                         maxLines: 5,
                         decoration: const InputDecoration(
                           labelText: 'Details',
                           hintText: 'Tell us what happened',
                         ),
+                        showShadow: false,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Please enter details';
@@ -177,13 +189,14 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
+                      LuxuryTextField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
                         decoration: const InputDecoration(
                           labelText: 'Email',
                           hintText: 'you@example.com',
                         ),
+                        showShadow: false,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Please enter your email';

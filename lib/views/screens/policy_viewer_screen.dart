@@ -48,7 +48,7 @@ class PolicyViewerScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
-        backgroundColor: colorScheme.surface,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),

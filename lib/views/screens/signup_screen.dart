@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../services/auth_service.dart';
+import '../widgets/luxury_text_field.dart';
 import '../widgets/premium_gradient_button.dart';
 import '../widgets/thinking_indicator.dart';
 
@@ -78,7 +79,7 @@ class _SignupScreenState extends State<SignupScreen> {
     final textTheme = theme.textTheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -333,68 +334,34 @@ class _SignupScreenState extends State<SignupScreen> {
   }) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
+    return LuxuryTextField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        prefixIcon: Container(
+          margin: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: colorScheme.primary.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(8),
           ),
-        ],
-      ),
-      child: TextFormField(
-        controller: controller,
-        obscureText: obscureText,
-        keyboardType: keyboardType,
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hint,
-          prefixIcon: Container(
-            margin: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: colorScheme.primary.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: colorScheme.primary),
-          ),
-          suffixIcon: isPassword
-              ? IconButton(
-                  icon: Icon(
-                    obscureText
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  onPressed: onToggleObscure,
-                )
-              : null,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: colorScheme.outlineVariant,
-              width: 1,
-            ),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: colorScheme.primary,
-              width: 1.5,
-            ),
-          ),
-          filled: true,
-          fillColor: colorScheme.surfaceContainerLow,
-          contentPadding: const EdgeInsets.all(16),
+          child: Icon(icon, color: colorScheme.primary),
         ),
-        validator: validator,
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  obscureText
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                onPressed: onToggleObscure,
+              )
+            : null,
       ),
+      validator: validator,
     );
   }
 
