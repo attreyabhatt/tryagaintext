@@ -59,6 +59,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final appState = AppStateScope.of(context);
     final user = appState.user;
     final email = user?.email ?? '';
+    final isLightMode = appState.themeMode == AppThemeMode.premiumLightGold;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -265,6 +266,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               child: Column(
                 children: [
+                  SwitchListTile.adaptive(
+                    secondary: const Icon(Icons.light_mode_outlined),
+                    title: const Text('Light mode'),
+                    value: isLightMode,
+                    onChanged: (value) {
+                      appState.setThemeMode(
+                        value
+                            ? AppThemeMode.premiumLightGold
+                            : AppThemeMode.premiumDarkNeonGold,
+                      );
+                    },
+                  ),
+                  const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.lock_reset),
                     title: const Text('Change password'),

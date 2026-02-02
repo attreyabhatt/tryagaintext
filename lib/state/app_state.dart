@@ -59,7 +59,9 @@ class AppState extends ChangeNotifier {
   Future<void> _loadThemePreference() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_themeModeKey);
-    if (raw == AppThemeMode.premiumDarkNeonGold.name) {
+    if (raw == AppThemeMode.premiumLightGold.name) {
+      _themeMode = AppThemeMode.premiumLightGold;
+    } else if (raw == AppThemeMode.premiumDarkNeonGold.name) {
       _themeMode = AppThemeMode.premiumDarkNeonGold;
     }
   }

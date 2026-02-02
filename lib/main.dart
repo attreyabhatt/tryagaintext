@@ -50,7 +50,9 @@ class _MyAppState extends State<MyApp> {
             title: 'FlirtFix',
             theme: _buildPremiumLightTheme(),
             darkTheme: _buildPremiumDarkNeonTheme(),
-            themeMode: ThemeMode.dark,
+            themeMode: _appState.themeMode == AppThemeMode.premiumLightGold
+                ? ThemeMode.light
+                : ThemeMode.dark,
             navigatorObservers: [
               FirebaseAnalyticsObserver(analytics: _analytics),
             ],

@@ -1332,6 +1332,17 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     final backgroundColor = isDark
         ? colorScheme.surfaceContainerHigh
         : colorScheme.surfaceContainerLow;
+    final activeGradient = LinearGradient(
+      colors: isDark
+          ? [colorScheme.primary, colorScheme.tertiary]
+          : [colorScheme.primary, colorScheme.secondary],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+    final glowColor = colorScheme.primary.withValues(
+      alpha: isDark ? 0.35 : 0.25,
+    );
+
     return GestureDetector(
       onHorizontalDragEnd: (details) {
         // Minimum velocity threshold to detect intentional swipe (500px/s)
@@ -1355,53 +1366,122 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           _tabController.animateTo(1);
         }
       },
-      child: Container(
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: colorScheme.outlineVariant),
-        ),
-        child: TabBar(
-          controller: _tabController,
-          indicatorSize: TabBarIndicatorSize.tab,
-          dividerColor: Colors.transparent,
-          indicator: BoxDecoration(
-            color: colorScheme.primary,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          indicatorPadding: const EdgeInsets.all(4),
-          labelColor: colorScheme.onPrimary,
-          unselectedLabelColor: colorScheme.onSurfaceVariant,
-          labelStyle: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-          ),
-          unselectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.w500,
-            fontSize: 15,
-          ),
-          tabs: [
-            Tab(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.favorite_outline, size: 20),
-                  const SizedBox(width: 8),
-                  const Text('New Match'),
-                ],
-              ),
+      child: AnimatedBuilder(
+        animation: _tabController.animation ?? _tabController,
+        builder: (context, child) {
+          final animationValue =
+              _tabController.animation?.value ??
+              _tabController.index.toDouble();
+          final t = animationValue.clamp(0.0, 1.0).toDouble();
+          final isNeedReplySelected = t >= 0.5;
+
+          return Container(
+            height: 54,
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: colorScheme.outlineVariant),
             ),
-            Tab(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.chat_bubble_outline, size: 20),
-                  const SizedBox(width: 8),
-                  const Text('Need Reply'),
-                ],
-              ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final pillWidth = constraints.maxWidth / 2;
+                return Stack(
+                  children: [
+                    Align(
+                      alignment: Alignment.lerp(
+                        Alignment.centerLeft,
+                        Alignment.centerRight,
+                        t,
+                      )!,
+                      child: Container(
+                        width: pillWidth,
+                        decoration: BoxDecoration(
+                          gradient: activeGradient,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: glowColor,
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        _buildTabPillItem(
+                          icon: Icons.favorite_outline,
+                          label: 'New Match',
+                          isActive: !isNeedReplySelected,
+                          onTap: () => _handleTabTap(0),
+                          colorScheme: colorScheme,
+                        ),
+                        _buildTabPillItem(
+                          icon: Icons.chat_bubble_outline,
+                          label: 'Need Reply',
+                          isActive: isNeedReplySelected,
+                          onTap: () => _handleTabTap(1),
+                          colorScheme: colorScheme,
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
             ),
-          ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _handleTabTap(int index) {
+    if (_tabController.index == index) return;
+    HapticFeedback.selectionClick();
+    _tabController.animateTo(index);
+  }
+
+  Widget _buildTabPillItem({
+    required IconData icon,
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+    required ColorScheme colorScheme,
+  }) {
+    final activeColor = colorScheme.onPrimary;
+    final inactiveColor = colorScheme.onSurfaceVariant;
+
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 18,
+                  color: isActive ? activeColor : inactiveColor,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: isActive ? activeColor : inactiveColor,
+                    fontWeight:
+                        isActive ? FontWeight.w600 : FontWeight.w500,
+                    fontSize: 15,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
