@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../services/api_client.dart';
+import '../widgets/thinking_indicator.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -16,6 +18,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    HapticFeedback.mediumImpact();
 
     setState(() {
       _isLoading = true;
@@ -73,8 +76,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
-          onPressed: () => Navigator.pop(context),
+          icon: Icon(Icons.arrow_back_outlined, color: colorScheme.onSurface),
+          onPressed: () {
+            HapticFeedback.selectionClick();
+            Navigator.pop(context);
+          },
         ),
       ),
       body: SafeArea(
@@ -130,7 +136,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
-                              Icons.email,
+                              Icons.email_outlined,
                               color: colorScheme.primary,
                             ),
                           ),
@@ -204,15 +210,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
+                              child: BreathingPulseIndicator(
+                                size: 18,
                                 color: colorScheme.onPrimary,
                               ),
                             ),
                             const SizedBox(width: 12),
                             const Text('Sending reset link...'),
                           ] else ...[
-                            const Icon(Icons.send, size: 20),
+                            const Icon(Icons.send_outlined, size: 20),
                             const SizedBox(width: 8),
                             const Text(
                               'Send Reset Link',

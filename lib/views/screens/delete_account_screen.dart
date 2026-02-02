@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../services/account_deletion_service.dart';
 import 'login_screen.dart';
+import '../widgets/thinking_indicator.dart';
 
 class DeleteAccountScreen extends StatefulWidget {
   const DeleteAccountScreen({super.key});
@@ -31,13 +33,19 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
         content: const Text(
           'This action cannot be undone. All your data will be permanently deleted.',
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
+          actions: [
+            TextButton(
+            onPressed: () {
+              HapticFeedback.selectionClick();
+              Navigator.pop(context, false);
+            },
             child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
+            ),
+            FilledButton(
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              Navigator.pop(context, true);
+            },
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
@@ -109,7 +117,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
               child: Row(
                 children: [
                   Icon(
-                    Icons.warning_rounded,
+                    Icons.warning_amber_outlined,
                     color: colorScheme.error,
                     size: 32,
                   ),
@@ -172,7 +180,9 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                 prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
                   icon: Icon(
-                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                    _obscurePassword
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
                   ),
                   onPressed: () {
                     setState(() {
@@ -208,6 +218,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                 onChanged: _isLoading
                     ? null
                     : (value) {
+                        HapticFeedback.selectionClick();
                         setState(() {
                           _isConfirmed = value ?? false;
                         });
@@ -242,11 +253,9 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                     ? SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            colorScheme.onError,
-                          ),
+                        child: BreathingPulseIndicator(
+                          size: 18,
+                          color: colorScheme.onError,
                         ),
                       )
                     : const Text(
@@ -264,10 +273,15 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
             // Cancel button
             SizedBox(
               width: double.infinity,
-              child: TextButton(
-                onPressed: _isLoading ? null : () => Navigator.pop(context),
+            child: TextButton(
+                onPressed: _isLoading
+                    ? null
+                    : () {
+                        HapticFeedback.selectionClick();
+                        Navigator.pop(context);
+                      },
                 child: const Text('Cancel'),
-              ),
+            ),
             ),
           ],
         ),
@@ -282,7 +296,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.close, color: colorScheme.error, size: 20),
+          Icon(Icons.close_outlined, color: colorScheme.error, size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

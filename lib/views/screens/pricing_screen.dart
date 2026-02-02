@@ -10,6 +10,8 @@ import '../../utils/app_logger.dart';
 import 'login_screen.dart';
 import 'signup_screen.dart';
 import '../widgets/premium_gradient_button.dart';
+import '../widgets/gradient_icon.dart';
+import '../widgets/thinking_indicator.dart';
 
 class PricingScreen extends StatefulWidget {
   final bool showCloseButton;
@@ -170,7 +172,6 @@ class _PricingScreenState extends State<PricingScreen>
   }
 
   Future<void> _handlePurchase(PricingPlan plan) async {
-    HapticFeedback.mediumImpact();
     if (!_isBillingAvailable) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -435,7 +436,7 @@ class _PricingScreenState extends State<PricingScreen>
             content: Row(
               children: [
                 Icon(
-                  Icons.check_circle,
+                  Icons.check_circle_outlined,
                   color: Theme.of(context).colorScheme.onSecondaryContainer,
                 ),
                 const SizedBox(width: 8),
@@ -513,12 +514,15 @@ class _PricingScreenState extends State<PricingScreen>
         elevation: 0,
         leading: widget.showCloseButton
             ? IconButton(
-                icon: Icon(Icons.close, color: colorScheme.onSurface),
-                onPressed: () => Navigator.pop(context),
+                icon: Icon(Icons.close_outlined, color: colorScheme.onSurface),
+                onPressed: () {
+                  HapticFeedback.selectionClick();
+                  Navigator.pop(context);
+                },
               )
             : null,
         title: Text(
-          'FlirtFix Unlimited',
+          'FlirtFix Elite',
           style: theme.textTheme.titleLarge?.copyWith(
             color: colorScheme.onSurface,
             fontWeight: FontWeight.w700,
@@ -555,15 +559,25 @@ class _PricingScreenState extends State<PricingScreen>
                         color: colorScheme.primary,
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: Icon(
-                        Icons.all_inclusive,
-                        color: colorScheme.onPrimary,
+                      child: GradientIcon(
+                        icon: Icons.all_inclusive_outlined,
                         size: 28,
+                        gradient: LinearGradient(
+                          colors: [
+                            colorScheme.secondary,
+                            Color.lerp(
+                                  colorScheme.secondary,
+                                  colorScheme.primary,
+                                  0.4,
+                                ) ??
+                                colorScheme.secondary,
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Unlimited replies & openers',
+                      'Limitless Conversation.',
                       style: theme.textTheme.headlineSmall?.copyWith(
                         color: colorScheme.onPrimaryContainer,
                         fontWeight: FontWeight.w800,
@@ -571,7 +585,7 @@ class _PricingScreenState extends State<PricingScreen>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Get unlimited smart replies, openers, and regenerations every week.',
+                      'Remove all constraints. Enjoy unrestricted access to AI-crafted dialogue and priority analysis. Perfect your approach.',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onPrimaryContainer.withValues(alpha: 0.85),
                       ),
@@ -589,7 +603,7 @@ class _PricingScreenState extends State<PricingScreen>
                           turns: _isRefreshingPurchases ? 1 : 0,
                           duration: const Duration(milliseconds: 600),
                           curve: Curves.easeInOut,
-                          child: const Icon(Icons.refresh, size: 18),
+                          child: const Icon(Icons.refresh_outlined, size: 18),
                         ),
                         label: Text(
                           _isRefreshingPurchases ? 'Refreshing...' : 'Refresh purchases',
@@ -601,7 +615,7 @@ class _PricingScreenState extends State<PricingScreen>
                       ),
                     ] else ...[
                       Text(
-                        'Sign in to manage your subscription',
+                        'Manage your membership privileges.',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.onPrimaryContainer.withValues(alpha: 0.75),
                         ),
@@ -631,21 +645,22 @@ class _PricingScreenState extends State<PricingScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'What You Get',
+                      'WHAT YOU GET',
                       style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 2.0,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 16),
                     _buildFeatureItem(
-                      Icons.flash_on,
-                      'Unlimited AI replies & regenerations',
+                      Icons.flash_on_outlined,
+                      'Unlimited crafted replies & refinements',
                       colorScheme,
                     ),
                     _buildFeatureItem(
-                      Icons.image_search,
+                      Icons.image_search_outlined,
                       'Fast OCR from screenshots',
                       colorScheme,
                     ),
@@ -655,7 +670,7 @@ class _PricingScreenState extends State<PricingScreen>
                       colorScheme,
                     ),
                     _buildFeatureItem(
-                      Icons.verified,
+                      Icons.verified_outlined,
                       'Priority access & updates',
                       colorScheme,
                     ),
@@ -781,7 +796,7 @@ class _PricingScreenState extends State<PricingScreen>
                       color: colorScheme.onPrimary,
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
+                      letterSpacing: 1.6,
                     ),
                   ),
                 ),
@@ -858,7 +873,7 @@ class _PricingScreenState extends State<PricingScreen>
                       child: Row(
                         children: [
                           Icon(
-                            Icons.check_circle,
+                            Icons.check_circle_outlined,
                             color: colorScheme.primary,
                             size: 20,
                           ),
@@ -888,8 +903,8 @@ class _PricingScreenState extends State<PricingScreen>
                         ? SizedBox(
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
+                            child: BreathingPulseIndicator(
+                              size: 18,
                               color: colorScheme.onPrimary,
                             ),
                           )
@@ -899,16 +914,16 @@ class _PricingScreenState extends State<PricingScreen>
                               Icon(
                                 widget.guestConversionMode &&
                                         !AppStateScope.of(context).isLoggedIn
-                                    ? Icons.person_add
-                                    : Icons.shopping_cart,
+                                    ? Icons.person_add_outlined
+                                    : Icons.shopping_cart_outlined,
                                 size: 20,
                               ),
                               const SizedBox(width: 8),
                               Text(
                                 widget.guestConversionMode &&
                                         !AppStateScope.of(context).isLoggedIn
-                                    ? 'Sign Up'
-                                    : 'Start subscription',
+                                    ? 'Apply for Access'
+                                    : 'Begin Membership',
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,

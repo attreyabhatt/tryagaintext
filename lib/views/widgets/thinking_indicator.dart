@@ -405,3 +405,193 @@ class _AnimatedLoadingTextState extends State<AnimatedLoadingText> {
     );
   }
 }
+
+class BreathingLogoIndicator extends StatefulWidget {
+  final String assetPath;
+  final double size;
+  final Color glowColor;
+  final Duration duration;
+
+  const BreathingLogoIndicator({
+    super.key,
+    required this.assetPath,
+    required this.size,
+    required this.glowColor,
+    this.duration = const Duration(milliseconds: 2000),
+  });
+
+  @override
+  State<BreathingLogoIndicator> createState() => _BreathingLogoIndicatorState();
+}
+
+class _BreathingLogoIndicatorState extends State<BreathingLogoIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scale;
+  late Animation<double> _glow;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(duration: widget.duration, vsync: this)
+      ..repeat(reverse: true);
+    _scale = Tween<double>(begin: 0.94, end: 1.04).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    _glow = Tween<double>(begin: 0.25, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void didUpdateWidget(BreathingLogoIndicator oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.duration != widget.duration) {
+      _controller.duration = widget.duration;
+      _controller
+        ..reset()
+        ..repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final glow = _glow.value;
+        return Container(
+          width: widget.size,
+          height: widget.size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: widget.glowColor.withValues(
+                  alpha: 0.2 + (0.35 * glow),
+                ),
+                blurRadius: widget.size * (0.35 + glow),
+                spreadRadius: widget.size * 0.05 * glow,
+              ),
+            ],
+          ),
+          child: Transform.scale(scale: _scale.value, child: child),
+        );
+      },
+      child: ClipOval(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: RadialGradient(
+              colors: [
+                widget.glowColor.withValues(alpha: 0.2),
+                Colors.transparent,
+              ],
+            ),
+          ),
+          child: Center(
+            child: Image.asset(
+              widget.assetPath,
+              width: widget.size * 0.55,
+              height: widget.size * 0.55,
+              fit: BoxFit.contain,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class BreathingPulseIndicator extends StatefulWidget {
+  final double size;
+  final Color color;
+  final Duration duration;
+
+  const BreathingPulseIndicator({
+    super.key,
+    required this.size,
+    required this.color,
+    this.duration = const Duration(milliseconds: 1600),
+  });
+
+  @override
+  State<BreathingPulseIndicator> createState() => _BreathingPulseIndicatorState();
+}
+
+class _BreathingPulseIndicatorState extends State<BreathingPulseIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scale;
+  late Animation<double> _glow;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(duration: widget.duration, vsync: this)
+      ..repeat(reverse: true);
+    _scale = Tween<double>(begin: 0.88, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    _glow = Tween<double>(begin: 0.2, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void didUpdateWidget(BreathingPulseIndicator oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.duration != widget.duration) {
+      _controller.duration = widget.duration;
+      _controller
+        ..reset()
+        ..repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final glow = _glow.value;
+        return Transform.scale(
+          scale: _scale.value,
+          child: Container(
+            width: widget.size,
+            height: widget.size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  widget.color.withValues(alpha: 0.9),
+                  widget.color.withValues(alpha: 0.45),
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: widget.color.withValues(
+                    alpha: 0.2 + (0.45 * glow),
+                  ),
+                  blurRadius: widget.size * (0.35 + glow),
+                  spreadRadius: widget.size * 0.08 * glow,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

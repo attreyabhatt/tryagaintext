@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class PremiumGradientButton extends StatelessWidget {
   final VoidCallback? onPressed;
@@ -28,6 +29,13 @@ class PremiumGradientButton extends StatelessWidget {
               colorScheme.primary,
         ];
 
+    final resolvedOnPressed = onPressed == null
+        ? null
+        : () {
+            HapticFeedback.mediumImpact();
+            onPressed!.call();
+          };
+
     final button = SizedBox(
       width: double.infinity,
       height: height,
@@ -48,7 +56,7 @@ class PremiumGradientButton extends StatelessWidget {
           ],
         ),
         child: ElevatedButton(
-          onPressed: onPressed,
+          onPressed: resolvedOnPressed,
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,

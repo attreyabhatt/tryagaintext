@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../state/app_state.dart';
 import '../../services/auth_service.dart';
 import 'forgot_password_screen.dart';
 import 'signup_screen.dart';
 import '../widgets/premium_gradient_button.dart';
+import '../widgets/thinking_indicator.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -71,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Sign In'),
+        title: const Text('Private Access'),
         centerTitle: true,
       ),
       body: GestureDetector(
@@ -93,7 +95,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         Column(
                           children: [
                             Text(
-                              'Welcome Back!',
+                              'Welcome.',
                               style: textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: colorScheme.onSurface,
@@ -101,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Sign in to continue using FlirtFix',
+                              'Access your personal dating concierge.',
                               style: textTheme.bodyMedium?.copyWith(
                                 color: colorScheme.onSurfaceVariant,
                               ),
@@ -134,8 +136,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   controller: _usernameController,
                                   keyboardType: TextInputType.emailAddress,
                                   decoration: InputDecoration(
-                                    labelText: 'Email',
-                                    hintText: 'Enter your email',
+                                    labelText: 'Member ID / Email',
+                                    hintText: 'Enter your member ID or email',
                                     prefixIcon: Container(
                                       margin: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
@@ -144,7 +146,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Icon(
-                                        Icons.email,
+                                        Icons.email_outlined,
                                         color: colorScheme.primary,
                                       ),
                                     ),
@@ -199,8 +201,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   controller: _passwordController,
                                   obscureText: _obscurePassword,
                                   decoration: InputDecoration(
-                                    labelText: 'Password',
-                                    hintText: 'Enter your password',
+                                    labelText: 'Passcode',
+                                    hintText: 'Enter your passcode',
                                     prefixIcon: Container(
                                       margin: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
@@ -209,15 +211,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Icon(
-                                        Icons.lock,
+                                        Icons.lock_outline,
                                         color: colorScheme.primary,
                                       ),
                                     ),
                                     suffixIcon: IconButton(
                                       icon: Icon(
                                         _obscurePassword
-                                            ? Icons.visibility_off
-                                            : Icons.visibility,
+                                            ? Icons.visibility_off_outlined
+                                            : Icons.visibility_outlined,
                                         color: colorScheme.onSurfaceVariant,
                                       ),
                                       onPressed: () {
@@ -265,6 +267,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   onPressed: _isLoading
                                       ? null
                                       : () {
+                                          HapticFeedback.selectionClick();
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(
@@ -274,7 +277,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           );
                                         },
                                   child: Text(
-                                    'Forgot password?',
+                                    'Forgot passcode?',
                                     style:
                                         TextStyle(color: colorScheme.secondary),
                                   ),
@@ -326,18 +329,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                       SizedBox(
                                         width: 20,
                                         height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
+                                        child: BreathingPulseIndicator(
+                                          size: 18,
                                           color: colorScheme.onPrimary,
                                         ),
                                       ),
                                       const SizedBox(width: 12),
-                                      const Text('Signing in...'),
+                                      const Text('Accessing...'),
                                     ] else ...[
-                                      const Icon(Icons.login, size: 20),
+                                      const Icon(Icons.login_outlined, size: 20),
                                       const SizedBox(width: 8),
                                       const Text(
-                                        'Sign In',
+                                        'Access',
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
@@ -385,6 +388,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 onPressed: _isLoading
                                     ? null
                                     : () async {
+                                        HapticFeedback.selectionClick();
                                         // Capture references before async gap
                                         final appState = AppStateScope.of(context);
                                         final navigator = Navigator.of(context);
@@ -416,13 +420,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Icon(
-                                      Icons.person_add,
+                                      Icons.person_add_outlined,
                                       size: 20,
                                       color: colorScheme.primary,
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      'Create New Account',
+                                      'Become a Member',
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
@@ -440,12 +444,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                 onPressed: _isLoading
                                     ? null
                                     : () {
+                                        HapticFeedback.selectionClick();
                                         Navigator.of(
                                           context,
                                         ).pop(false); // Return false to indicate skip
                                       },
                                 child: Text(
-                                  'Continue as Guest',
+                                  'Preview Experience',
                                   style: TextStyle(
                                     color: colorScheme.onSurfaceVariant,
                                     fontSize: 14,

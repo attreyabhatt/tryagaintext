@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,6 +18,7 @@ import 'login_screen.dart';
 import 'signup_screen.dart';
 import 'package:flirtfix/views/screens/pricing_screen.dart';
 import 'package:flirtfix/views/screens/profile_screen.dart';
+import '../widgets/gradient_icon.dart';
 import '../widgets/thinking_indicator.dart';
 
 const _smartReplyCardShadow = Color(0x33000000);
@@ -79,7 +81,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 900),
       vsync: this,
     );
     _fadeAnimation = CurvedAnimation(
@@ -375,6 +377,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       });
       await AppStateScope.of(context).reloadFromStorage();
       if (suggestions.isNotEmpty) {
+        HapticFeedback.heavyImpact();
         _animationController.forward();
       }
     } on ApiException catch (e) {
@@ -424,7 +427,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             content: Row(
               children: [
                 Icon(
-                  Icons.check_circle,
+                  Icons.check_circle_outlined,
                   color: Theme.of(context).colorScheme.onSecondaryContainer,
                 ),
                 const SizedBox(width: 8),
@@ -598,6 +601,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       await AppStateScope.of(context).reloadFromStorage();
 
       if (suggestions.isNotEmpty) {
+        HapticFeedback.heavyImpact();
         _animationController.forward();
       }
     } on ApiException catch (e) {
@@ -623,6 +627,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   }
 
   Future<void> _uploadScreenshot() async {
+    HapticFeedback.selectionClick();
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
@@ -654,6 +659,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   }
 
   Future<void> _uploadProfileImage() async {
+    HapticFeedback.selectionClick();
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
@@ -710,6 +716,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   }
 
   void _startNewSession() {
+    HapticFeedback.selectionClick();
     setState(() {
       _suggestions = [];
       _errorMessage = null;
@@ -751,7 +758,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 right: 8,
                 child: IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
+                  icon: const Icon(Icons.close_outlined),
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
@@ -834,7 +841,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             content: Row(
               children: [
                 Icon(
-                  Icons.check_circle,
+                  Icons.check_circle_outlined,
                   color: Theme.of(context).colorScheme.onSecondaryContainer,
                 ),
                 const SizedBox(width: 8),
@@ -857,7 +864,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         content: Row(
           children: [
             Icon(
-              Icons.check,
+              Icons.check_outlined,
               color: Theme.of(context).colorScheme.onSecondaryContainer,
               size: 20,
             ),
@@ -960,14 +967,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                       child: Row(
                         children: [
                           Icon(
-                            Icons.verified,
+                            Icons.verified_outlined,
                             size: 18,
                             color: colorScheme.onSecondaryContainer,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'These openers were hand-picked by dating coaches around the world',
+                              'Expertly formulated to maximize engagement and intrigue.',
                               style: TextStyle(
                                 color: colorScheme.onSecondaryContainer,
                                 fontSize: 13,
@@ -1075,7 +1082,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 ),
               ),
               Text(
-                'Your dating wingman',
+                'Your Conversation Architect',
                 style: textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w500,
@@ -1138,7 +1145,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    Icons.bolt,
+                    Icons.bolt_outlined,
                     size: 16,
                     color: colorScheme.onSecondaryContainer,
                   ),
@@ -1173,7 +1180,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               color: Colors.transparent,
             ),
             child: Icon(
-              isLoggedIn ? Icons.person : Icons.person_outline,
+              isLoggedIn ? Icons.person_outline_outlined : Icons.person_outline,
               color: colorScheme.onSurfaceVariant,
               size: 20,
             ),
@@ -1201,7 +1208,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         final limitType = isOpenerTab ? 'opener' : 'reply';
         final resetTime = _getTimeUntilMidnightUtc();
         final subtitle = isOpenerTab
-            ? 'Resets in $resetTime\n\nPlease use Recommended openers. They have been carefully selected by dating coaches around the world'
+            ? 'Resets in $resetTime\n\nPlease use Recommended openers. Expertly formulated to maximize engagement and intrigue.'
             : 'Resets in $resetTime';
         return Column(
           children: [
@@ -1240,7 +1247,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             colorScheme: colorScheme,
             icon: Icons.credit_card_off_outlined,
             title: 'Start your subscription',
-            subtitle: 'Unlimited replies with FlirtFix Unlimited',
+            subtitle: 'Unlimited replies with FlirtFix Elite',
             buttonText: 'Subscribe',
             onPressed: _navigateToPricing,
             type: BannerType.warning,
@@ -1413,14 +1420,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                       children: [
                         _buildTabPillItem(
                           icon: Icons.favorite_outline,
-                          label: 'New Match',
+                          label: 'Open',
                           isActive: !isNeedReplySelected,
                           onTap: () => _handleTabTap(0),
                           colorScheme: colorScheme,
                         ),
                         _buildTabPillItem(
                           icon: Icons.chat_bubble_outline,
-                          label: 'Need Reply',
+                          label: 'Respond',
                           isActive: isNeedReplySelected,
                           onTap: () => _handleTabTap(1),
                           colorScheme: colorScheme,
@@ -1511,7 +1518,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           child: Row(
             children: [
               Icon(
-                Icons.edit_note,
+                Icons.edit_note_outlined,
                 size: 18,
                 color: colorScheme.onSurfaceVariant,
               ),
@@ -1561,7 +1568,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             ),
             suffixIcon: controller.text.isNotEmpty
                 ? IconButton(
-                    icon: const Icon(Icons.clear, size: 18),
+                    icon: const Icon(Icons.clear_outlined, size: 18),
                     onPressed: () {
                       setState(() {
                         controller.clear();
@@ -1586,7 +1593,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           Row(
             children: [
               Icon(
-                Icons.short_text,
+                Icons.short_text_outlined,
                 size: 18,
                 color: colorScheme.onSurfaceVariant,
               ),
@@ -1604,6 +1611,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           Switch(
             value: _keepItShort,
             onChanged: (value) {
+              HapticFeedback.selectionClick();
               setState(() {
                 _keepItShort = value;
               });
@@ -1628,6 +1636,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       selected: <NewMatchMode>{_newMatchMode},
       onSelectionChanged: (selection) {
         if (selection.isEmpty) return;
+        HapticFeedback.selectionClick();
         _setNewMatchMode(selection.first);
       },
       showSelectedIcon: false,
@@ -1692,7 +1701,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     Icon(Icons.photo_camera_outlined, size: 18),
                     SizedBox(width: 8),
                     Text(
-                      'Tap to upload profile screenshot',
+                      'Analyze Profile',
                       style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                     ),
                   ],
@@ -1731,7 +1740,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                           Row(
                             children: [
                               Icon(
-                                Icons.check_circle,
+                                Icons.check_circle_outlined,
                                 color: colorScheme.primary,
                                 size: 16,
                               ),
@@ -1751,7 +1760,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Tap "Get Smart Openers" to generate personalized first messages',
+                            'Tap "Craft Opening" to generate personalized first messages',
                             style: TextStyle(
                               color: colorScheme.onSurfaceVariant,
                               fontSize: 12,
@@ -1772,7 +1781,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                         });
                       },
                       icon: Icon(
-                        Icons.close,
+                        Icons.close_outlined,
                         size: 18,
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -1918,7 +1927,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                           Row(
                             children: [
                               Icon(
-                                Icons.check_circle,
+                                Icons.check_circle_outlined,
                                 color: colorScheme.primary,
                                 size: 16,
                               ),
@@ -1961,7 +1970,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                         });
                       },
                       icon: Icon(
-                        Icons.close,
+                        Icons.close_outlined,
                         size: 18,
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -2041,10 +2050,10 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         _situation == 'just_matched' &&
         _newMatchMode == NewMatchMode.recommended;
     final label = (isRecommended || _suggestions.isNotEmpty)
-        ? 'Regenerate'
+        ? 'Refine Selection'
         : (_situation == 'just_matched'
-              ? 'Get Smart Openers'
-              : 'Get Smart Replies');
+              ? 'Craft Opening'
+              : 'Craft Response');
     return _buildPrimaryGradientButton(
       onPressed: (_isLoading || _isExtractingImage)
           ? null
@@ -2053,7 +2062,17 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.auto_awesome, size: 20),
+          GradientIcon(
+            icon: Icons.auto_awesome_outlined,
+            size: 20,
+            gradient: LinearGradient(
+              colors: [
+                colorScheme.secondary,
+                Color.lerp(colorScheme.secondary, colorScheme.primary, 0.45) ??
+                    colorScheme.secondary,
+              ],
+            ),
+          ),
           const SizedBox(width: 10),
           Text(label, style: _primaryButtonTextStyle),
         ],
@@ -2075,7 +2094,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           const SizedBox(width: 12),
           OutlinedButton.icon(
             onPressed: _startNewSession,
-            icon: const Icon(Icons.add, size: 18),
+            icon: const Icon(Icons.add_outlined, size: 18),
             label: const Text('New'),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(0, 50),
@@ -2137,14 +2156,16 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             child: Column(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer,
+                    color: colorScheme.surfaceContainerHigh,
                     shape: BoxShape.circle,
+                    border: Border.all(color: colorScheme.outlineVariant),
                   ),
-                  child: CircularProgressIndicator(
-                    color: colorScheme.onPrimaryContainer,
-                    strokeWidth: 3,
+                  child: BreathingLogoIndicator(
+                    assetPath: 'assets/images/icons/appstore_transparent.png',
+                    size: 84,
+                    glowColor: colorScheme.secondary,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -2174,40 +2195,55 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
     // Empty state
     if (_suggestions.isEmpty) {
-      return Card(
-        elevation: 0,
-        color: colorScheme.surfaceContainerLow,
+      return Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              colorScheme.surfaceContainerLow,
+              colorScheme.surfaceContainerLow.withValues(alpha: 0.9),
+              colorScheme.surfaceContainerHigh.withValues(alpha: 0.7),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: colorScheme.outlineVariant),
+        ),
         child: Padding(
-          padding: const EdgeInsets.all(32),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
           child: Column(
             children: [
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHigh,
                   shape: BoxShape.circle,
-                  border: Border.all(color: colorScheme.outlineVariant),
+                  border: Border.all(
+                    color: colorScheme.secondary.withValues(alpha: 0.35),
+                  ),
+                  color: colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.6),
                 ),
                 child: Icon(
-                  Icons.chat_bubble_outline,
-                  size: 36,
-                  color: colorScheme.secondary,
+                  CupertinoIcons.pen,
+                  size: 32,
+                  color: colorScheme.secondary.withValues(alpha: 0.65),
                 ),
               ),
               const SizedBox(height: 20),
               Text(
-                'Ready to help you connect!',
-                style: textTheme.titleMedium?.copyWith(
+                'Workspace Ready',
+                style: textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Share your conversation details and we\'ll suggest the perfect replies',
+                'Upload a screenshot or provide context to begin crafting your next move.',
                 textAlign: TextAlign.center,
                 style: textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
+                  height: 1.5,
                 ),
               ),
             ],
@@ -2217,12 +2253,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     }
 
     // Results
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    final resultsLabel =
+        _situation == 'just_matched' ? 'Drafted Options' : 'Curated Responses';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        FadeTransition(
+          opacity: _fadeAnimation,
+          child: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
@@ -2231,14 +2269,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
-                  Icons.check_circle,
+                  Icons.check_circle_outlined,
                   color: colorScheme.secondary,
                   size: 20,
                 ),
               ),
               const SizedBox(width: 12),
               Text(
-                '${_suggestions.length} ${_situation == 'just_matched' ? 'Smart Openers' : 'Smart Replies'}',
+                resultsLabel,
                 style: textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: colorScheme.onSurface,
@@ -2246,20 +2284,35 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          ..._suggestions.asMap().entries.map((entry) {
-            final index = entry.key;
-            final suggestion = entry.value;
-            return _SuggestionCard(
-              index: index,
-              suggestion: suggestion,
-              colorScheme: colorScheme,
-              onTap: () => _copySuggestion(suggestion.message),
-            );
-          }),
-          const SizedBox(height: 32),
-        ],
-      ),
+        ),
+        const SizedBox(height: 16),
+        ..._suggestions.asMap().entries.map((entry) {
+          final index = entry.key;
+          final suggestion = entry.value;
+          final start = (index * 0.12).clamp(0.0, 0.6);
+          final end = (start + 0.5).clamp(0.0, 1.0);
+          final animation = CurvedAnimation(
+            parent: _animationController,
+            curve: Interval(start, end, curve: Curves.easeOutCubic),
+          );
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.08),
+                end: Offset.zero,
+              ).animate(animation),
+              child: _SuggestionCard(
+                index: index,
+                suggestion: suggestion,
+                colorScheme: colorScheme,
+                onTap: () => _copySuggestion(suggestion.message),
+              ),
+            ),
+          );
+        }),
+        const SizedBox(height: 32),
+      ],
     );
   }
 
@@ -2379,7 +2432,7 @@ class _SuggestionCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(
-                    Icons.lightbulb_outline,
+                    Icons.lightbulb_outlined,
                     size: 16,
                     color: colorScheme.onTertiaryContainer,
                   ),

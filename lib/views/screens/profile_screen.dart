@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../state/app_state.dart';
 import 'change_password_screen.dart';
 import 'delete_account_screen.dart';
@@ -59,7 +60,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final appState = AppStateScope.of(context);
     final user = appState.user;
     final email = user?.email ?? '';
+    final username = user?.username ?? '';
+    final memberName = username.isNotEmpty
+        ? username
+        : (email.isNotEmpty ? email.split('@').first : 'Guest');
     final isLightMode = appState.themeMode == AppThemeMode.premiumLightGold;
+    final ambienceLabel = isLightMode ? 'Ivory Gold' : 'Midnight Gold';
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -70,6 +76,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           IconButton(
             icon: const Icon(Icons.help_outline),
             onPressed: () {
+              HapticFeedback.selectionClick();
               showModalBottomSheet(
                 context: context,
                 shape: const RoundedRectangleBorder(
@@ -94,6 +101,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           leading: const Icon(Icons.report_outlined),
                           title: const Text('Report an Issue'),
                           onTap: () {
+                            HapticFeedback.selectionClick();
                             Navigator.pop(context);
                             Navigator.push(
                               context,
@@ -108,6 +116,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           leading: const Icon(Icons.privacy_tip_outlined),
                           title: const Text('Privacy Policy'),
                           onTap: () {
+                            HapticFeedback.selectionClick();
                             Navigator.pop(context);
                             _openPolicy('privacy', 'Privacy Policy');
                           },
@@ -116,6 +125,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           leading: const Icon(Icons.description_outlined),
                           title: const Text('Terms of Use'),
                           onTap: () {
+                            HapticFeedback.selectionClick();
                             Navigator.pop(context);
                             _openPolicy('terms', 'Terms of Use');
                           },
@@ -124,6 +134,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           leading: const Icon(Icons.receipt_long_outlined),
                           title: const Text('Refund Policy'),
                           onTap: () {
+                            HapticFeedback.selectionClick();
                             Navigator.pop(context);
                             _openPolicy('refund', 'Refund Policy');
                           },
@@ -132,6 +143,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           leading: const Icon(Icons.delete_outline),
                           title: const Text('Delete Account'),
                           onTap: () {
+                            HapticFeedback.selectionClick();
                             Navigator.pop(context);
                             _openDeleteAccount();
                           },
@@ -168,7 +180,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     radius: 28,
                     backgroundColor:
                         colorScheme.primary.withValues(alpha: 0.15),
-                    child: Icon(Icons.person, color: colorScheme.primary),
+                    child:
+                        Icon(Icons.person_outline, color: colorScheme.primary),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -176,7 +189,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          email.isNotEmpty ? email : 'Guest',
+                          appState.isLoggedIn
+                              ? 'Member: $memberName'
+                              : 'Guest Preview',
                           style: textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                             color: colorScheme.onSurface,
@@ -184,7 +199,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          email.isNotEmpty ? 'Signed in' : 'Not signed in',
+                          appState.isLoggedIn ? 'Member Access' : 'Preview Access',
                           style: TextStyle(
                             color: colorScheme.onSurfaceVariant,
                           ),
@@ -211,14 +226,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.workspace_premium, color: colorScheme.secondary),
+                  Icon(
+                    Icons.workspace_premium_outlined,
+                    color: colorScheme.secondary,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Subscription',
+                          'Membership Status',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -227,8 +245,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 4),
                         Text(
                           appState.isSubscribed
-                              ? 'Active'
-                              : 'Not active',
+                              ? 'Active • Elite'
+                              : 'Inactive',
                           style: TextStyle(
                             color: colorScheme.onSurfaceVariant,
                           ),
@@ -238,6 +256,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   TextButton(
                     onPressed: () async {
+                      HapticFeedback.selectionClick();
                       await Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -268,9 +287,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   SwitchListTile.adaptive(
                     secondary: const Icon(Icons.light_mode_outlined),
-                    title: const Text('Light mode'),
+                    title: const Text('Ambience'),
+                    subtitle: Text(ambienceLabel),
                     value: isLightMode,
                     onChanged: (value) {
+                      HapticFeedback.selectionClick();
                       appState.setThemeMode(
                         value
                             ? AppThemeMode.premiumLightGold
@@ -280,9 +301,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const Divider(height: 1),
                   ListTile(
-                    leading: const Icon(Icons.lock_reset),
-                    title: const Text('Change password'),
+                    leading: const Icon(Icons.lock_reset_outlined),
+                    title: const Text('Security Settings'),
                     onTap: () {
+                      HapticFeedback.selectionClick();
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -293,9 +315,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const Divider(height: 1),
                   ListTile(
-                    leading: const Icon(Icons.logout),
+                    leading: const Icon(Icons.logout_outlined),
                     title: const Text('Sign out'),
-                    onTap: _signOut,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      _signOut();
+                    },
                   ),
                 ],
               ),

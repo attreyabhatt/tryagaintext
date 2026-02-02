@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../services/auth_service.dart';
 import '../widgets/premium_gradient_button.dart';
+import '../widgets/thinking_indicator.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -83,8 +85,11 @@ class _SignupScreenState extends State<SignupScreen> {
         title: const Text('Create Account'),
         centerTitle: true,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
-          onPressed: () => Navigator.pop(context),
+          icon: Icon(Icons.arrow_back_outlined, color: colorScheme.onSurface),
+          onPressed: () {
+            HapticFeedback.selectionClick();
+            Navigator.pop(context);
+          },
         ),
       ),
       body: GestureDetector(
@@ -138,7 +143,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                 controller: _emailController,
                                 label: 'Email',
                                 hint: 'Enter your email address',
-                                icon: Icons.email,
+                                icon: Icons.email_outlined,
                                 keyboardType: TextInputType.emailAddress,
                                 validator: (value) {
                                   if (value == null || value.trim().isEmpty) {
@@ -160,7 +165,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                 controller: _passwordController,
                                 label: 'Password',
                                 hint: 'Create a password',
-                                icon: Icons.lock,
+                                icon: Icons.lock_outline,
                                 isPassword: true,
                                 obscureText: _obscurePassword,
                                 onToggleObscure: () {
@@ -248,15 +253,15 @@ class _SignupScreenState extends State<SignupScreen> {
                                       SizedBox(
                                         width: 20,
                                         height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
+                                        child: BreathingPulseIndicator(
+                                          size: 18,
                                           color: colorScheme.onPrimary,
                                         ),
                                       ),
                                       const SizedBox(width: 12),
                                       const Text('Creating account...'),
                                     ] else ...[
-                                      const Icon(Icons.person_add, size: 20),
+                                      const Icon(Icons.person_add_outlined, size: 20),
                                       const SizedBox(width: 8),
                                       const Text(
                                         'Create Account',
@@ -284,7 +289,12 @@ class _SignupScreenState extends State<SignupScreen> {
                                   ),
                                   TextButton(
                                     onPressed:
-                                        _isLoading ? null : () => Navigator.pop(context),
+                                        _isLoading
+                                            ? null
+                                            : () {
+                                                HapticFeedback.selectionClick();
+                                                Navigator.pop(context);
+                                              },
                                     child: Text(
                                       'Sign In',
                                       style: TextStyle(
@@ -353,7 +363,9 @@ class _SignupScreenState extends State<SignupScreen> {
           suffixIcon: isPassword
               ? IconButton(
                   icon: Icon(
-                    obscureText ? Icons.visibility_off : Icons.visibility,
+                    obscureText
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
                     color: colorScheme.onSurfaceVariant,
                   ),
                   onPressed: onToggleObscure,

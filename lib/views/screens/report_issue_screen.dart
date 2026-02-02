@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../services/api_client.dart';
+import '../widgets/thinking_indicator.dart';
 
 class ReportIssueScreen extends StatefulWidget {
   const ReportIssueScreen({super.key});
@@ -21,6 +23,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    HapticFeedback.mediumImpact();
 
     setState(() {
       _isSubmitting = true;
@@ -113,7 +116,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                         decoration: InputDecoration(
                           labelText: 'Reason',
                           prefixIcon: Icon(
-                            Icons.flag,
+                            Icons.flag_outlined,
                             color: colorScheme.primary,
                           ),
                         ),
@@ -137,6 +140,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                         ],
                         onChanged: (value) {
                           if (value != null) {
+                            HapticFeedback.selectionClick();
                             setState(() {
                               _reason = value;
                             });
@@ -221,16 +225,16 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: _isSubmitting
-                      ? SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: colorScheme.onPrimary,
-                          ),
-                        )
-                      : const Text(
+                child: _isSubmitting
+                    ? SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: BreathingPulseIndicator(
+                          size: 18,
+                          color: colorScheme.onPrimary,
+                        ),
+                      )
+                    : const Text(
                           'Send Report',
                           style: TextStyle(
                             fontSize: 16,
