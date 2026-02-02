@@ -26,8 +26,8 @@ class PremiumGradientButton extends StatelessWidget {
     final gradientColors = colors ??
         (isLight
             ? <Color>[
-                const Color(0xFFD81B60),
-                const Color(0xFFFF5C8D),
+                const Color(0xFF991B38),
+                const Color(0xFFC22E53),
               ]
             : <Color>[
                 colorScheme.primary,

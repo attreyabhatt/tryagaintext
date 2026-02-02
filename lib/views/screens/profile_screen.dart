@@ -65,7 +65,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ? username
         : (email.isNotEmpty ? email.split('@').first : 'Guest');
     final isLightMode = appState.themeMode == AppThemeMode.premiumLightGold;
-    final ambienceLabel = isLightMode ? 'Ivory Gold' : 'Midnight Gold';
+    final ambienceLabel = isLightMode ? 'Royal Romance' : 'Midnight Gold';
     final isLight = theme.brightness == Brightness.light;
     final cardShadow = isLight
         ? BoxShadow(

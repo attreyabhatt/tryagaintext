@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../services/auth_service.dart';
@@ -83,7 +82,7 @@ class _SignupScreenState extends State<SignupScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Create Account'),
+        title: const Text('Become a Member'),
         centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_outlined, color: colorScheme.onSurface),
@@ -112,7 +111,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         Column(
                           children: [
                             Text(
-                              'Create Account',
+                              'Become a Member',
                               style: textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: colorScheme.onSurface,
@@ -120,9 +119,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              kIsWeb
-                                  ? 'Get 3 free credits to start using FlirtFix'
-                                  : 'Sign up to continue using FlirtFix',
+                              'Your journey to effortless connection begins here.',
                               textAlign: TextAlign.center,
                               style: textTheme.bodyMedium?.copyWith(
                                 color: colorScheme.onSurfaceVariant,
@@ -142,13 +139,13 @@ class _SignupScreenState extends State<SignupScreen> {
                               // Email Field
                               _buildTextField(
                                 controller: _emailController,
-                                label: 'Email',
-                                hint: 'Enter your email address',
+                                label: 'Correspondence Email',
+                                hint: 'Enter your correspondence email',
                                 icon: Icons.email_outlined,
                                 keyboardType: TextInputType.emailAddress,
                                 validator: (value) {
                                   if (value == null || value.trim().isEmpty) {
-                                    return 'Please enter your email';
+                                    return 'Please enter your correspondence email';
                                   }
                                   if (!RegExp(
                                     r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
@@ -164,8 +161,8 @@ class _SignupScreenState extends State<SignupScreen> {
                               // Password Field
                               _buildTextField(
                                 controller: _passwordController,
-                                label: 'Password',
-                                hint: 'Create a password',
+                                label: 'Secure Passcode',
+                                hint: 'Create a secure passcode',
                                 icon: Icons.lock_outline,
                                 isPassword: true,
                                 obscureText: _obscurePassword,
@@ -176,10 +173,10 @@ class _SignupScreenState extends State<SignupScreen> {
                                 },
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Please enter a password';
+                                    return 'Please enter a secure passcode';
                                   }
                                   if (value.length < 6) {
-                                    return 'Password must be at least 6 characters';
+                                    return 'Passcode must be at least 6 characters';
                                   }
                                   return null;
                                 },
@@ -190,8 +187,8 @@ class _SignupScreenState extends State<SignupScreen> {
                               // Confirm Password Field
                               _buildTextField(
                                 controller: _confirmPasswordController,
-                                label: 'Confirm Password',
-                                hint: 'Confirm your password',
+                                label: 'Verify Passcode',
+                                hint: 'Verify your passcode',
                                 icon: Icons.lock_outline,
                                 isPassword: true,
                                 obscureText: _obscureConfirmPassword,
@@ -203,7 +200,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                 },
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Please confirm your password';
+                                    return 'Please verify your passcode';
                                   }
                                   return null;
                                 },
@@ -260,12 +257,12 @@ class _SignupScreenState extends State<SignupScreen> {
                                         ),
                                       ),
                                       const SizedBox(width: 12),
-                                      const Text('Creating account...'),
+                                      const Text('Claiming access...'),
                                     ] else ...[
                                       const Icon(Icons.person_add_outlined, size: 20),
                                       const SizedBox(width: 8),
                                       const Text(
-                                        'Create Account',
+                                        'Claim Your Access',
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
@@ -283,7 +280,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    'Already have an account? ',
+                                    'Already established? ',
                                     style: TextStyle(
                                       color: colorScheme.onSurfaceVariant,
                                     ),
@@ -297,7 +294,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                                 Navigator.pop(context);
                                               },
                                     child: Text(
-                                      'Sign In',
+                                      'Enter Here',
                                       style: TextStyle(
                                         color: colorScheme.secondary,
                                         fontWeight: FontWeight.w600,
