@@ -921,6 +921,10 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     final isAiNewMatch =
         _situation == 'just_matched' && _newMatchMode == NewMatchMode.ai;
     final showGenerateRow = !isAiNewMatch || _uploadedProfileImage != null;
+    final shouldShowGenerateRow =
+        isRecommendedNewMatch
+            ? !_isLoading && !_isExtractingImage
+            : showGenerateRow;
 
     return Scaffold(
       appBar: _buildAppBar(
@@ -1004,19 +1008,11 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                   SizedBox(height: sectionSpacing),
                 ],
 
-                if (isRecommendedNewMatch) ...[
-                  if (!_isLoading && !_isExtractingImage) ...[
-                    _buildGenerateRow(colorScheme),
-                    SizedBox(height: sectionSpacing),
-                  ],
-                  _buildResultsSection(colorScheme),
-                ] else ...[
-                  if (showGenerateRow) ...[
-                    _buildGenerateRow(colorScheme),
-                    SizedBox(height: sectionSpacing),
-                  ],
-                  _buildResultsSection(colorScheme),
+                if (shouldShowGenerateRow) ...[
+                  _buildGenerateRow(colorScheme),
+                  SizedBox(height: sectionSpacing),
                 ],
+                _buildResultsSection(colorScheme),
 
                 const SizedBox(height: 40),
               ],
@@ -1571,8 +1567,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               },
           decoration: InputDecoration(
             hintText: _situation == 'just_matched'
-                ? 'e.g., "mention her dog", "write a poem", "comment on her bio"'
-                : 'e.g., "roast her", "talk like a pirate", "she is a writer"',
+                ? 'e.g., mention her dog, write a poem, comment on her bio'
+                : 'e.g., roast her, talk like a pirate, she is a writer',
             hintStyle: TextStyle(
               color: colorScheme.onSurfaceVariant,
               fontSize: 14,
@@ -1861,7 +1857,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                   const Icon(Icons.photo_camera_outlined, size: 18),
                   const SizedBox(width: 8),
                   const Text(
-                    'Tap to upload screenshot',
+                    'Analyze Chat',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                   ),
                 ],
@@ -2077,7 +2073,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         _situation == 'just_matched' &&
         _newMatchMode == NewMatchMode.recommended;
     final label = (isRecommended || _suggestions.isNotEmpty)
-        ? 'Refine Selection'
+        ? 'Regenerate'
         : (_situation == 'just_matched'
               ? 'Craft Opening'
               : 'Craft Response');
@@ -2122,7 +2118,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           OutlinedButton.icon(
             onPressed: _startNewSession,
             icon: const Icon(Icons.add_outlined, size: 18),
-            label: const Text('New'),
+            label: const Text('New chat'),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(0, 50),
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -2281,7 +2277,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
     // Results
     final resultsLabel =
-        _situation == 'just_matched' ? 'Drafted Options' : 'Curated Responses';
+        _situation == 'just_matched' ? 'Your Approach' : 'Curated Responses';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
