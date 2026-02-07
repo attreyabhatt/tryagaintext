@@ -1032,7 +1032,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     final colorScheme = theme.colorScheme;
     final appState = AppStateScope.of(context);
     final isLoggedIn = appState.isLoggedIn;
-    final credits = appState.freeDailyCreditsRemaining ?? appState.credits;
+    final dailyCreditsRemaining = appState.freeDailyCreditsRemaining;
     final isSubscribed = appState.isSubscribed;
     final username = appState.user?.username ?? '';
     const double sectionSpacing = 20;
@@ -1053,7 +1053,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       appBar: _buildAppBar(
         colorScheme,
         isLoggedIn,
-        credits,
+        dailyCreditsRemaining,
         isSubscribed,
         username,
       ),
@@ -1072,7 +1072,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                   _buildWarningBanners(
                     colorScheme,
                     isLoggedIn,
-                    credits,
                     isSubscribed,
                   ),
 
@@ -1181,7 +1180,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   PreferredSizeWidget _buildAppBar(
     ColorScheme colorScheme,
     bool isLoggedIn,
-    int credits,
+    int? dailyCreditsRemaining,
     bool isSubscribed,
     String username,
   ) {
@@ -1247,7 +1246,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           ),
           const SizedBox(width: 8),
         ],
-        if (isLoggedIn && !isSubscribed) ...[
+        if (isLoggedIn &&
+            !isSubscribed &&
+            dailyCreditsRemaining != null) ...[
           // Credits badge
           GestureDetector(
             onTap: () {
@@ -1271,7 +1272,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    '$credits',
+                    '$dailyCreditsRemaining',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: colorScheme.onSecondaryContainer,
@@ -1314,7 +1315,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   Widget _buildWarningBanners(
     ColorScheme colorScheme,
     bool isLoggedIn,
-    int credits,
     bool isSubscribed,
   ) {
     // Fair use exceeded banner for subscribers

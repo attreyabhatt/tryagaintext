@@ -4,6 +4,8 @@ import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:android_id/android_id.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
 import '../models/auth_response.dart';
@@ -17,9 +19,11 @@ class AuthService {
   static const String userKey = 'user_data';
   static const String creditsKey = 'chat_credits';
   static const String guestIdKey = 'guest_id';
+  static const String deviceFingerprintKey = 'device_fingerprint';
   static const String subscriptionKey = 'is_subscribed';
   static const String subscriptionExpiryKey = 'subscription_expiry';
-  static const String subscriberWeeklyRemainingKey = 'subscriber_weekly_remaining';
+  static const String subscriberWeeklyRemainingKey =
+      'subscriber_weekly_remaining';
   static const String subscriberWeeklyLimitKey = 'subscriber_weekly_limit';
   // Daily limits (new)
   static const String dailyOpenersRemainingKey = 'daily_openers_remaining';
@@ -27,9 +31,11 @@ class AuthService {
   static const String dailyRepliesRemainingKey = 'daily_replies_remaining';
   static const String dailyRepliesLimitKey = 'daily_replies_limit';
   // Free user daily credits
-  static const String freeDailyCreditsRemainingKey = 'free_daily_credits_remaining';
+  static const String freeDailyCreditsRemainingKey =
+      'free_daily_credits_remaining';
   static const String freeDailyCreditsLimitKey = 'free_daily_credits_limit';
   static const String justSignedUpKey = 'just_signed_up';
+  static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
 
   // Store auth token
   static Future<void> _storeToken(String token) async {
@@ -63,7 +69,10 @@ class AuthService {
       await prefs.setString(subscriptionExpiryKey, subscriptionExpiry);
     }
     if (subscriberWeeklyRemaining != null) {
-      await prefs.setInt(subscriberWeeklyRemainingKey, subscriberWeeklyRemaining);
+      await prefs.setInt(
+        subscriberWeeklyRemainingKey,
+        subscriberWeeklyRemaining,
+      );
     }
     if (subscriberWeeklyLimit != null) {
       await prefs.setInt(subscriberWeeklyLimitKey, subscriberWeeklyLimit);
@@ -168,6 +177,7 @@ class AuthService {
     await prefs.remove(freeDailyCreditsRemainingKey);
     await prefs.remove(freeDailyCreditsLimitKey);
     await prefs.remove(guestIdKey);
+    await prefs.remove(deviceFingerprintKey);
     await prefs.remove(justSignedUpKey);
   }
 
@@ -184,9 +194,15 @@ class AuthService {
     required String password,
   }) async {
     try {
+      final deviceFingerprint = await getOrCreateDeviceFingerprint();
       final response = await http.post(
         Uri.parse('$baseUrl/register/'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Device-Fingerprint': deviceFingerprint,
+          // Backward compatibility for existing backend parsing.
+          'X-Guest-Id': deviceFingerprint,
+        },
         body: jsonEncode({
           'username': username,
           'email': email,
@@ -200,6 +216,7 @@ class AuthService {
       if (authResponse.success &&
           authResponse.token != null &&
           authResponse.user != null) {
+        await updateSubscriptionFromPayload(data);
         await _storeToken(authResponse.token!);
         await _storeUser(
           authResponse.user!,
@@ -227,9 +244,15 @@ class AuthService {
     required String password,
   }) async {
     try {
+      final deviceFingerprint = await getOrCreateDeviceFingerprint();
       final response = await http.post(
         Uri.parse('$baseUrl/login/'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Device-Fingerprint': deviceFingerprint,
+          // Backward compatibility for existing backend parsing.
+          'X-Guest-Id': deviceFingerprint,
+        },
         body: jsonEncode({'username': username, 'password': password}),
       );
 
@@ -239,6 +262,7 @@ class AuthService {
       if (authResponse.success &&
           authResponse.token != null &&
           authResponse.user != null) {
+        await updateSubscriptionFromPayload(data);
         await _storeToken(authResponse.token!);
         await _storeUser(
           authResponse.user!,
@@ -267,12 +291,16 @@ class AuthService {
       if (token == null) {
         return ProfileResponse(success: false, error: 'Not authenticated');
       }
+      final deviceFingerprint = await getOrCreateDeviceFingerprint();
 
       final response = await http.get(
         Uri.parse('$baseUrl/profile/'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Token $token',
+          'X-Device-Fingerprint': deviceFingerprint,
+          // Backward compatibility for existing backend parsing.
+          'X-Guest-Id': deviceFingerprint,
         },
       );
 
@@ -280,6 +308,7 @@ class AuthService {
       final profileResponse = ProfileResponse.fromJson(data);
 
       if (profileResponse.success && profileResponse.user != null) {
+        await updateSubscriptionFromPayload(data);
         await _storeUser(
           profileResponse.user!,
           profileResponse.chatCredits ?? 0,
@@ -325,66 +354,155 @@ class AuthService {
     return flag;
   }
 
-  static Future<String> getOrCreateGuestId() async {
+  static Future<String> getOrCreateDeviceFingerprint() async {
     final prefs = await SharedPreferences.getInstance();
-    final existing = prefs.getString(guestIdKey);
+    final existing =
+        prefs.getString(deviceFingerprintKey) ?? prefs.getString(guestIdKey);
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       try {
         final androidId = await const AndroidId().getId();
         if (androidId != null && androidId.isNotEmpty) {
-          if (existing != androidId) {
-            await prefs.setString(guestIdKey, androidId);
-          }
-          return androidId;
+          return _persistDeviceFingerprint(prefs, androidId, saveSecure: true);
         }
       } catch (e) {
         AppLogger.error('Android ID lookup failed', e is Exception ? e : null);
       }
     }
-    if (existing != null && existing.isNotEmpty) {
-      return existing;
+
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+      try {
+        final deviceInfo = await DeviceInfoPlugin().iosInfo;
+        final idfv = deviceInfo.identifierForVendor;
+        if (idfv != null && idfv.isNotEmpty) {
+          return _persistDeviceFingerprint(prefs, idfv, saveSecure: true);
+        }
+      } catch (e) {
+        AppLogger.error('IDFV lookup failed', e is Exception ? e : null);
+      }
     }
+
+    final secureExisting = await _readSecureDeviceFingerprint();
+    if (secureExisting != null && secureExisting.isNotEmpty) {
+      return _persistDeviceFingerprint(
+        prefs,
+        secureExisting,
+        saveSecure: false,
+      );
+    }
+
+    if (existing != null && existing.isNotEmpty) {
+      return _persistDeviceFingerprint(prefs, existing, saveSecure: true);
+    }
+
     final rand = Random.secure();
     final bytes = List<int>.generate(16, (_) => rand.nextInt(256));
     final id = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
-    await prefs.setString(guestIdKey, id);
-    return id;
+    return _persistDeviceFingerprint(prefs, id, saveSecure: true);
   }
 
-  static Future<void> updateSubscriptionFromPayload(Map<String, dynamic> json) async {
+  static Future<String> getOrCreateGuestId() async {
+    return getOrCreateDeviceFingerprint();
+  }
+
+  static Future<String?> _readSecureDeviceFingerprint() async {
+    if (kIsWeb) return null;
+    try {
+      return await _secureStorage.read(key: deviceFingerprintKey);
+    } catch (e) {
+      AppLogger.error('Secure storage read failed', e is Exception ? e : null);
+      return null;
+    }
+  }
+
+  static Future<void> _writeSecureDeviceFingerprint(String value) async {
+    if (kIsWeb) return;
+    try {
+      await _secureStorage.write(key: deviceFingerprintKey, value: value);
+    } catch (e) {
+      AppLogger.error('Secure storage write failed', e is Exception ? e : null);
+    }
+  }
+
+  static Future<String> _persistDeviceFingerprint(
+    SharedPreferences prefs,
+    String value, {
+    required bool saveSecure,
+  }) async {
+    if (prefs.getString(deviceFingerprintKey) != value) {
+      await prefs.setString(deviceFingerprintKey, value);
+    }
+    if (prefs.getString(guestIdKey) != value) {
+      await prefs.setString(guestIdKey, value);
+    }
+    if (saveSecure) {
+      await _writeSecureDeviceFingerprint(value);
+    }
+    return value;
+  }
+
+  static Future<void> updateSubscriptionFromPayload(
+    Map<String, dynamic> json,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     if (json.containsKey('is_subscribed')) {
       await prefs.setBool(subscriptionKey, json['is_subscribed'] == true);
     }
     if (json['subscription_expiry'] != null) {
-      await prefs.setString(subscriptionExpiryKey, json['subscription_expiry'].toString());
+      await prefs.setString(
+        subscriptionExpiryKey,
+        json['subscription_expiry'].toString(),
+      );
     }
     // Legacy weekly fields
     if (json['subscriber_weekly_remaining'] != null) {
-      await prefs.setInt(subscriberWeeklyRemainingKey, json['subscriber_weekly_remaining'] as int);
+      await prefs.setInt(
+        subscriberWeeklyRemainingKey,
+        json['subscriber_weekly_remaining'] as int,
+      );
     }
     if (json['subscriber_weekly_limit'] != null) {
-      await prefs.setInt(subscriberWeeklyLimitKey, json['subscriber_weekly_limit'] as int);
+      await prefs.setInt(
+        subscriberWeeklyLimitKey,
+        json['subscriber_weekly_limit'] as int,
+      );
     }
     // New daily fields
     if (json['daily_openers_remaining'] != null) {
-      await prefs.setInt(dailyOpenersRemainingKey, json['daily_openers_remaining'] as int);
+      await prefs.setInt(
+        dailyOpenersRemainingKey,
+        json['daily_openers_remaining'] as int,
+      );
     }
     if (json['daily_openers_limit'] != null) {
-      await prefs.setInt(dailyOpenersLimitKey, json['daily_openers_limit'] as int);
+      await prefs.setInt(
+        dailyOpenersLimitKey,
+        json['daily_openers_limit'] as int,
+      );
     }
     if (json['daily_replies_remaining'] != null) {
-      await prefs.setInt(dailyRepliesRemainingKey, json['daily_replies_remaining'] as int);
+      await prefs.setInt(
+        dailyRepliesRemainingKey,
+        json['daily_replies_remaining'] as int,
+      );
     }
     if (json['daily_replies_limit'] != null) {
-      await prefs.setInt(dailyRepliesLimitKey, json['daily_replies_limit'] as int);
+      await prefs.setInt(
+        dailyRepliesLimitKey,
+        json['daily_replies_limit'] as int,
+      );
     }
     // Free user daily credits
     if (json['free_daily_credits_remaining'] != null) {
-      await prefs.setInt(freeDailyCreditsRemainingKey, json['free_daily_credits_remaining'] as int);
+      await prefs.setInt(
+        freeDailyCreditsRemainingKey,
+        json['free_daily_credits_remaining'] as int,
+      );
     }
     if (json['free_daily_credits_limit'] != null) {
-      await prefs.setInt(freeDailyCreditsLimitKey, json['free_daily_credits_limit'] as int);
+      await prefs.setInt(
+        freeDailyCreditsLimitKey,
+        json['free_daily_credits_limit'] as int,
+      );
     }
   }
 }

@@ -21,8 +21,10 @@ class ApiClient {
     if (token != null) {
       headers['Authorization'] = 'Token $token';
     }
-    final guestId = await AuthService.getOrCreateGuestId();
-    headers['X-Guest-Id'] = guestId;
+    final deviceFingerprint = await AuthService.getOrCreateDeviceFingerprint();
+    headers['X-Device-Fingerprint'] = deviceFingerprint;
+    // Backward compatibility for existing backend parsing.
+    headers['X-Guest-Id'] = deviceFingerprint;
 
     return headers;
   }
@@ -103,14 +105,18 @@ class ApiClient {
         rethrow;
       }
       AppLogger.error('Generate error', e is Exception ? e : null);
-      throw ApiException('Network error. Please try again.', ApiErrorCode.network);
+      throw ApiException(
+        'Network error. Please try again.',
+        ApiErrorCode.network,
+      );
     }
   }
 
   Future<String> extractFromImage(File imageFile) async {
     try {
       final token = await AuthService.getToken();
-      final guestId = await AuthService.getOrCreateGuestId();
+      final deviceFingerprint =
+          await AuthService.getOrCreateDeviceFingerprint();
 
       var request = http.MultipartRequest(
         'POST',
@@ -120,7 +126,9 @@ class ApiClient {
       if (token != null) {
         request.headers['Authorization'] = 'Token $token';
       }
-      request.headers['X-Guest-Id'] = guestId;
+      request.headers['X-Device-Fingerprint'] = deviceFingerprint;
+      // Backward compatibility for existing backend parsing.
+      request.headers['X-Guest-Id'] = deviceFingerprint;
 
       request.files.add(
         await http.MultipartFile.fromPath(
@@ -175,7 +183,8 @@ class ApiClient {
   Future<String> analyzeProfile(File imageFile) async {
     try {
       final token = await AuthService.getToken();
-      final guestId = await AuthService.getOrCreateGuestId();
+      final deviceFingerprint =
+          await AuthService.getOrCreateDeviceFingerprint();
 
       var request = http.MultipartRequest(
         'POST',
@@ -185,7 +194,9 @@ class ApiClient {
       if (token != null) {
         request.headers['Authorization'] = 'Token $token';
       }
-      request.headers['X-Guest-Id'] = guestId;
+      request.headers['X-Device-Fingerprint'] = deviceFingerprint;
+      // Backward compatibility for existing backend parsing.
+      request.headers['X-Guest-Id'] = deviceFingerprint;
 
       request.files.add(
         await http.MultipartFile.fromPath(
@@ -213,7 +224,10 @@ class ApiClient {
         rethrow;
       }
       AppLogger.error('Analyze profile error', e is Exception ? e : null);
-      throw ApiException('Failed to analyze profile image', ApiErrorCode.server);
+      throw ApiException(
+        'Failed to analyze profile image',
+        ApiErrorCode.server,
+      );
     }
   }
 
@@ -292,7 +306,10 @@ class ApiClient {
         rethrow;
       }
       AppLogger.error('Delete account error', e is Exception ? e : null);
-      throw ApiException('Network error. Please try again.', ApiErrorCode.network);
+      throw ApiException(
+        'Network error. Please try again.',
+        ApiErrorCode.network,
+      );
     }
   }
 
@@ -391,7 +408,10 @@ class ApiClient {
       );
       return false;
     } catch (e) {
-      AppLogger.error('Google Play subscription error', e is Exception ? e : null);
+      AppLogger.error(
+        'Google Play subscription error',
+        e is Exception ? e : null,
+      );
       return false;
     }
   }
@@ -407,7 +427,10 @@ class ApiClient {
       await AuthService.updateSubscriptionFromPayload(data);
       return data['is_subscribed'] == true;
     } catch (e) {
-      AppLogger.error('Refresh subscription status error', e is Exception ? e : null);
+      AppLogger.error(
+        'Refresh subscription status error',
+        e is Exception ? e : null,
+      );
       return false;
     }
   }
@@ -423,7 +446,9 @@ class ApiClient {
       final data = _decodeJson(response.body);
       if (data['success'] == true && data['purchases'] is List) {
         return (data['purchases'] as List)
-            .map((item) => PaymentHistory.fromJson(item as Map<String, dynamic>))
+            .map(
+              (item) => PaymentHistory.fromJson(item as Map<String, dynamic>),
+            )
             .toList();
       }
 
@@ -436,7 +461,7 @@ class ApiClient {
 
   Stream<Map<String, dynamic>> analyzeProfileStream(File imageFile) async* {
     final token = await AuthService.getToken();
-    final guestId = await AuthService.getOrCreateGuestId();
+    final deviceFingerprint = await AuthService.getOrCreateDeviceFingerprint();
 
     final request = http.MultipartRequest(
       'POST',
@@ -446,7 +471,9 @@ class ApiClient {
     if (token != null) {
       request.headers['Authorization'] = 'Token $token';
     }
-    request.headers['X-Guest-Id'] = guestId;
+    request.headers['X-Device-Fingerprint'] = deviceFingerprint;
+    // Backward compatibility for existing backend parsing.
+    request.headers['X-Guest-Id'] = deviceFingerprint;
 
     request.files.add(
       await http.MultipartFile.fromPath(
@@ -474,7 +501,8 @@ class ApiClient {
   }) async {
     try {
       final token = await AuthService.getToken();
-      final guestId = await AuthService.getOrCreateGuestId();
+      final deviceFingerprint =
+          await AuthService.getOrCreateDeviceFingerprint();
 
       var request = http.MultipartRequest(
         'POST',
@@ -484,7 +512,9 @@ class ApiClient {
       if (token != null) {
         request.headers['Authorization'] = 'Token $token';
       }
-      request.headers['X-Guest-Id'] = guestId;
+      request.headers['X-Device-Fingerprint'] = deviceFingerprint;
+      // Backward compatibility for existing backend parsing.
+      request.headers['X-Guest-Id'] = deviceFingerprint;
 
       request.files.add(
         await http.MultipartFile.fromPath(
@@ -543,9 +573,11 @@ class ApiClient {
 
       // Handle locked response (blurred cliff — first time at limit)
       if (data['is_locked'] == true) {
-        final previews = (data['locked_preview'] as List<dynamic>?)
-            ?.map((e) => e.toString())
-            .toList() ?? [];
+        final previews =
+            (data['locked_preview'] as List<dynamic>?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            [];
         final lockedId = data['locked_reply_id'] as int?;
         return List.generate(
           previews.length,
@@ -570,7 +602,10 @@ class ApiClient {
       if (e is ApiException) {
         rethrow;
       }
-      AppLogger.error('Generate openers from image error', e is Exception ? e : null);
+      AppLogger.error(
+        'Generate openers from image error',
+        e is Exception ? e : null,
+      );
       throw ApiException(
         'Failed to generate openers from image',
         ApiErrorCode.server,
@@ -601,7 +636,10 @@ class ApiClient {
     } catch (e) {
       if (e is ApiException) rethrow;
       AppLogger.error('Unlock reply error', e is Exception ? e : null);
-      throw ApiException('Network error. Please try again.', ApiErrorCode.network);
+      throw ApiException(
+        'Network error. Please try again.',
+        ApiErrorCode.network,
+      );
     }
   }
 
@@ -704,9 +742,15 @@ class ApiClient {
         return decoded;
       }
     } catch (e) {
-      AppLogger.error('Failed to decode JSON response', e is Exception ? e : null);
+      AppLogger.error(
+        'Failed to decode JSON response',
+        e is Exception ? e : null,
+      );
     }
-    return <String, dynamic>{'success': false, 'message': 'Invalid server response'};
+    return <String, dynamic>{
+      'success': false,
+      'message': 'Invalid server response',
+    };
   }
 
   ApiErrorCode _mapErrorCode(String? error) {
@@ -729,14 +773,17 @@ class ApiClient {
   Future<List<Suggestion>> getRecommendedOpeners({int count = 3}) async {
     try {
       final token = await AuthService.getToken();
-      final guestId = await AuthService.getOrCreateGuestId();
+      final deviceFingerprint =
+          await AuthService.getOrCreateDeviceFingerprint();
 
       final response = await http.post(
         Uri.parse('$baseUrl/api/recommended-openers/'),
         headers: {
           'Content-Type': 'application/json',
           if (token != null) 'Authorization': 'Token $token',
-          'X-Guest-Id': guestId,
+          'X-Device-Fingerprint': deviceFingerprint,
+          // Backward compatibility for existing backend parsing.
+          'X-Guest-Id': deviceFingerprint,
         },
         body: jsonEncode({'count': count}),
       );
@@ -815,7 +862,10 @@ class ApiClient {
             yield decoded;
           }
         } catch (e) {
-          AppLogger.error('Failed to decode SSE payload', e is Exception ? e : null);
+          AppLogger.error(
+            'Failed to decode SSE payload',
+            e is Exception ? e : null,
+          );
         }
       }
     }
@@ -828,7 +878,12 @@ class ApiException implements Exception {
   final ApiErrorCode code;
   final int? lockedReplyId;
   final List<String>? lockedPreview;
-  ApiException(this.message, [this.code = ApiErrorCode.unknown, this.lockedReplyId, this.lockedPreview]);
+  ApiException(
+    this.message, [
+    this.code = ApiErrorCode.unknown,
+    this.lockedReplyId,
+    this.lockedPreview,
+  ]);
 
   @override
   String toString() => message;
