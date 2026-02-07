@@ -59,9 +59,33 @@ class ApiClient {
       final generateResponse = GenerateResponse.fromJson(data);
 
       if (!generateResponse.success) {
+        // Handle has_pending_unlock — carry locked reply data in exception
+        if (generateResponse.error == 'has_pending_unlock') {
+          throw ApiException(
+            generateResponse.message ?? 'You have a hidden reply waiting!',
+            ApiErrorCode.hasPendingUnlock,
+            generateResponse.lockedReplyId,
+            generateResponse.lockedPreview,
+          );
+        }
         throw ApiException(
           generateResponse.message ?? 'Generation failed',
           _mapErrorCode(generateResponse.error),
+        );
+      }
+
+      // Handle locked response (blurred cliff — first time at limit)
+      if (generateResponse.isLocked == true) {
+        final previews = generateResponse.lockedPreview ?? [];
+        return List.generate(
+          previews.length,
+          (i) => Suggestion(
+            message: previews[i],
+            confidence: 0.8,
+            isLocked: true,
+            blurPreview: previews[i],
+            lockedReplyId: generateResponse.lockedReplyId,
+          ),
         );
       }
 
@@ -479,6 +503,17 @@ class ApiClient {
       final data = _decodeJson(response.body);
 
       if (data['success'] == false) {
+        if (data['error'] == 'has_pending_unlock') {
+          final preview = (data['locked_preview'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList();
+          throw ApiException(
+            data['message'] ?? 'You have a hidden reply waiting!',
+            ApiErrorCode.hasPendingUnlock,
+            data['locked_reply_id'] as int?,
+            preview,
+          );
+        }
         if (data['error'] == 'insufficient_credits') {
           throw ApiException(
             data['message'] ?? 'No credits remaining',
@@ -506,6 +541,24 @@ class ApiClient {
       // Update subscription info (including credits and daily limits)
       await AuthService.updateSubscriptionFromPayload(data);
 
+      // Handle locked response (blurred cliff — first time at limit)
+      if (data['is_locked'] == true) {
+        final previews = (data['locked_preview'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ?? [];
+        final lockedId = data['locked_reply_id'] as int?;
+        return List.generate(
+          previews.length,
+          (i) => Suggestion(
+            message: previews[i],
+            confidence: 0.8,
+            isLocked: true,
+            blurPreview: previews[i],
+            lockedReplyId: lockedId,
+          ),
+        );
+      }
+
       // Update stored credits if available (backwards compatibility)
       if (data['credits_remaining'] != null) {
         await AuthService.updateStoredCredits(data['credits_remaining']);
@@ -522,6 +575,33 @@ class ApiClient {
         'Failed to generate openers from image',
         ApiErrorCode.server,
       );
+    }
+  }
+
+  /// Unlock a previously locked reply after subscribing
+  Future<List<Suggestion>> unlockReply(int lockedReplyId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/unlock-reply/'),
+        headers: headers,
+        body: jsonEncode({'locked_reply_id': lockedReplyId}),
+      );
+
+      final data = _decodeJson(response.body);
+      if (data['success'] != true) {
+        throw ApiException(
+          data['message'] ?? 'Failed to unlock reply',
+          _mapErrorCode(data['error']?.toString()),
+        );
+      }
+
+      await AuthService.updateSubscriptionFromPayload(data);
+      return _parseReplyToSuggestions(data['reply'] ?? '');
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      AppLogger.error('Unlock reply error', e is Exception ? e : null);
+      throw ApiException('Network error. Please try again.', ApiErrorCode.network);
     }
   }
 
@@ -639,6 +719,8 @@ class ApiClient {
         return ApiErrorCode.insufficientCredits;
       case 'fair_use_exceeded':
         return ApiErrorCode.fairUseExceeded;
+      case 'has_pending_unlock':
+        return ApiErrorCode.hasPendingUnlock;
       default:
         return ApiErrorCode.unknown;
     }
@@ -744,7 +826,9 @@ class ApiClient {
 class ApiException implements Exception {
   final String message;
   final ApiErrorCode code;
-  ApiException(this.message, [this.code = ApiErrorCode.unknown]);
+  final int? lockedReplyId;
+  final List<String>? lockedPreview;
+  ApiException(this.message, [this.code = ApiErrorCode.unknown, this.lockedReplyId, this.lockedPreview]);
 
   @override
   String toString() => message;
@@ -754,6 +838,7 @@ enum ApiErrorCode {
   insufficientCredits,
   trialExpired,
   fairUseExceeded,
+  hasPendingUnlock,
   network,
   server,
   unknown,

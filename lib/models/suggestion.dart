@@ -3,12 +3,19 @@ class Suggestion {
   final double confidence;
   final String? whyItWorks;
   final String? imageUrl;
+  // Blurred cliff fields
+  final bool isLocked;
+  final String? blurPreview;
+  final int? lockedReplyId;
 
   Suggestion({
     required this.message,
     required this.confidence,
     this.whyItWorks,
     this.imageUrl,
+    this.isLocked = false,
+    this.blurPreview,
+    this.lockedReplyId,
   });
 
   factory Suggestion.fromJson(Map<String, dynamic> j) {

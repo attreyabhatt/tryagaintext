@@ -285,8 +285,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: const Text('Subscription activated!'),
-                backgroundColor:
-                    Theme.of(context).colorScheme.secondaryContainer,
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.secondaryContainer,
               ),
             );
           }
@@ -440,8 +441,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 ),
               ],
             ),
-            backgroundColor:
-                Theme.of(context).colorScheme.secondaryContainer,
+            backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
           ),
         );
       }
@@ -522,14 +522,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   }
 
   Future<void> _generateSuggestions() async {
-    final appState = AppStateScope.of(context);
-    if (_situation != 'just_matched' &&
-        appState.isLoggedIn &&
-        !appState.isSubscribed &&
-        appState.credits == 0) {
-      await _navigateToPricing();
-      return;
-    }
     // For New Match tab, require a profile image
     if (_situation == 'just_matched' &&
         _newMatchMode == NewMatchMode.ai &&
@@ -566,7 +558,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           suggestions = await _apiClient.getRecommendedOpeners(count: 3);
         } else {
           // Use the new image-based opener generation endpoint
-          final combinedInstructionsForOpeners = _getCombinedCustomInstructionsForOpeners();
+          final combinedInstructionsForOpeners =
+              _getCombinedCustomInstructionsForOpeners();
           suggestions = await _apiClient.generateOpenersFromImage(
             _uploadedProfileImage!,
             customInstructions: combinedInstructionsForOpeners,
@@ -700,7 +693,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   bool _isCreditError(ApiException e) {
     return e.code == ApiErrorCode.insufficientCredits ||
         e.code == ApiErrorCode.trialExpired ||
-        e.code == ApiErrorCode.fairUseExceeded;
+        e.code == ApiErrorCode.fairUseExceeded ||
+        e.code == ApiErrorCode.hasPendingUnlock;
   }
 
   String _getTimeUntilMidnightUtc() {
@@ -784,6 +778,31 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   }
 
   Future<void> _handleCreditError(ApiException e) async {
+    if (e.code == ApiErrorCode.hasPendingUnlock) {
+      final previews = e.lockedPreview ?? const <String>[];
+      if (mounted) {
+        setState(() {
+          _errorMessage = previews.isEmpty ? e.message : null;
+          if (previews.isNotEmpty) {
+            _suggestions = List.generate(
+              previews.length,
+              (index) => Suggestion(
+                message: previews[index],
+                confidence: 0.8,
+                isLocked: true,
+                blurPreview: previews[index],
+                lockedReplyId: e.lockedReplyId,
+              ),
+            );
+          }
+        });
+        if (previews.isNotEmpty) {
+          _animationController.reset();
+          _animationController.forward();
+        }
+      }
+      return;
+    }
     if (e.code == ApiErrorCode.trialExpired) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_trialExpiredKey, true);
@@ -819,6 +838,112 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     }
   }
 
+  void _showUpgradePopup(int? lockedReplyId) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = colorScheme.brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
+          decoration: BoxDecoration(
+            color: isDark
+                ? colorScheme.surfaceContainerHigh
+                : colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: colorScheme.secondaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.lock_outline,
+                  size: 32,
+                  color: colorScheme.onSecondaryContainer,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Unlock this reply instantly',
+                style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Upgrade to Premium for unlimited replies',
+                style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await _navigateToPricing();
+                    if (!mounted) return;
+                    final appState = AppStateScope.of(context);
+                    await appState.reloadFromStorage();
+                    if (appState.isSubscribed && lockedReplyId != null) {
+                      try {
+                        final unlocked = await _apiClient.unlockReply(
+                          lockedReplyId,
+                        );
+                        if (mounted) {
+                          setState(() {
+                            _suggestions = unlocked;
+                          });
+                          _animationController.reset();
+                          _animationController.forward();
+                        }
+                      } catch (e) {
+                        AppLogger.error(
+                          'Unlock reply failed',
+                          e is Exception ? e : null,
+                        );
+                      }
+                    }
+                  },
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Text(
+                    'Upgrade to Premium',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(
+                  'Maybe later',
+                  style: TextStyle(color: colorScheme.onSurfaceVariant),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _navigateToSignup() async {
     final result = await Navigator.push<bool>(
       context,
@@ -850,8 +975,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 const Text('Account created. You have been signed in'),
               ],
             ),
-            backgroundColor:
-                Theme.of(context).colorScheme.secondaryContainer,
+            backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
           ),
         );
       }
@@ -908,7 +1032,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     final colorScheme = theme.colorScheme;
     final appState = AppStateScope.of(context);
     final isLoggedIn = appState.isLoggedIn;
-    final credits = appState.credits;
+    final credits = appState.freeDailyCreditsRemaining ?? appState.credits;
     final isSubscribed = appState.isSubscribed;
     final username = appState.user?.username ?? '';
     const double sectionSpacing = 20;
@@ -921,10 +1045,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     final isAiNewMatch =
         _situation == 'just_matched' && _newMatchMode == NewMatchMode.ai;
     final showGenerateRow = !isAiNewMatch || _uploadedProfileImage != null;
-    final shouldShowGenerateRow =
-        isRecommendedNewMatch
-            ? !_isLoading && !_isExtractingImage
-            : showGenerateRow;
+    final shouldShowGenerateRow = isRecommendedNewMatch
+        ? !_isLoading && !_isExtractingImage
+        : showGenerateRow;
 
     return Scaffold(
       appBar: _buildAppBar(
@@ -940,112 +1063,117 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         child: Stack(
           children: [
             SingleChildScrollView(
-            controller: _scrollController,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Warning banners
-                _buildWarningBanners(
-                  colorScheme,
-                  isLoggedIn,
-                  credits,
-                  isSubscribed,
-                ),
+              controller: _scrollController,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Warning banners
+                  _buildWarningBanners(
+                    colorScheme,
+                    isLoggedIn,
+                    credits,
+                    isSubscribed,
+                  ),
 
-                const SizedBox(height: 8),
+                  const SizedBox(height: 8),
 
-                // Tab bar for situation selection
-                _buildTabBar(colorScheme),
+                  // Tab bar for situation selection
+                  _buildTabBar(colorScheme),
 
-                SizedBox(height: sectionSpacing),
-
-                if (_situation == 'just_matched') ...[
-                  _buildNewMatchToggle(colorScheme),
                   SizedBox(height: sectionSpacing),
-                  if (isRecommendedNewMatch) ...[
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: colorScheme.secondaryContainer.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.verified,
-                            size: 18,
-                            color: colorScheme.brightness == Brightness.light
-                                ? const Color(0xFF991B38) // Merlot for light mode
-                                : colorScheme.onSecondaryContainer, // Original color for dark mode
+
+                  if (_situation == 'just_matched') ...[
+                    _buildNewMatchToggle(colorScheme),
+                    SizedBox(height: sectionSpacing),
+                    if (isRecommendedNewMatch) ...[
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: colorScheme.secondaryContainer.withValues(
+                            alpha: 0.5,
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Expertly formulated to maximize engagement and intrigue.',
-                              style: TextStyle(
-                                color: colorScheme.onSecondaryContainer,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.verified,
+                              size: 18,
+                              color: colorScheme.brightness == Brightness.light
+                                  ? const Color(
+                                      0xFF991B38,
+                                    ) // Merlot for light mode
+                                  : colorScheme
+                                        .onSecondaryContainer, // Original color for dark mode
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Expertly formulated to maximize engagement and intrigue.',
+                                style: TextStyle(
+                                  color: colorScheme.onSecondaryContainer,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
+                      SizedBox(height: sectionSpacing),
+                    ],
+                  ],
+
+                  // Input section
+                  _buildInputSection(colorScheme),
+
+                  SizedBox(height: sectionSpacing),
+
+                  // Custom instructions section
+                  if (showCustomInstructions) ...[
+                    _buildCustomInstructionsSection(colorScheme),
                     SizedBox(height: sectionSpacing),
                   ],
+
+                  if (shouldShowGenerateRow) ...[
+                    _buildGenerateRow(colorScheme),
+                    SizedBox(height: sectionSpacing),
+                  ],
+                  _buildResultsSection(colorScheme),
+
+                  const SizedBox(height: 40),
                 ],
-
-                // Input section
-                _buildInputSection(colorScheme),
-
-                SizedBox(height: sectionSpacing),
-
-                // Custom instructions section
-                if (showCustomInstructions) ...[
-                  _buildCustomInstructionsSection(colorScheme),
-                  SizedBox(height: sectionSpacing),
-                ],
-
-                if (shouldShowGenerateRow) ...[
-                  _buildGenerateRow(colorScheme),
-                  SizedBox(height: sectionSpacing),
-                ],
-                _buildResultsSection(colorScheme),
-
-                const SizedBox(height: 40),
-              ],
+              ),
             ),
-          ),
-          // Bottom gradient indicator
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: IgnorePointer(
-              child: AnimatedOpacity(
-                opacity: _showBottomGradient ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 200),
-                child: Container(
-                  height: 60,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        colorScheme.surface.withValues(alpha: 0.0),
-                        colorScheme.surface.withValues(alpha: 0.9),
-                        colorScheme.surface,
-                      ],
+            // Bottom gradient indicator
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: IgnorePointer(
+                child: AnimatedOpacity(
+                  opacity: _showBottomGradient ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 200),
+                  child: Container(
+                    height: 60,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          colorScheme.surface.withValues(alpha: 0.0),
+                          colorScheme.surface.withValues(alpha: 0.9),
+                          colorScheme.surface,
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
@@ -1219,6 +1347,12 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     if (isSubscribed) {
       return const SizedBox.shrink();
     }
+
+    // Signed-up free users no longer show warning banners here.
+    if (isLoggedIn) {
+      return const SizedBox.shrink();
+    }
+
     return Column(
       children: [
         // Trial expired banner
@@ -1230,18 +1364,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             subtitle: 'Sign up to keep using FlirtFix',
             buttonText: 'Sign Up',
             onPressed: _navigateToSignup,
-            type: BannerType.warning,
-          ),
-
-        // Out of credits banner
-        if (isLoggedIn && credits == 0)
-          _buildBanner(
-            colorScheme: colorScheme,
-            icon: Icons.credit_card_off_outlined,
-            title: 'Start your subscription',
-            subtitle: 'Unlimited replies with FlirtFix Elite',
-            buttonText: 'Subscribe',
-            onPressed: _navigateToPricing,
             type: BannerType.warning,
           ),
       ],
@@ -1487,8 +1609,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                   label,
                   style: TextStyle(
                     color: isActive ? activeColor : inactiveColor,
-                    fontWeight:
-                        isActive ? FontWeight.w600 : FontWeight.w500,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                     fontSize: 15,
                   ),
                 ),
@@ -1556,6 +1677,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           minLines: 2,
           maxLength: 250,
           useDarkOutlineBorder: true,
+          showDarkOutlineWhenUnfocused: false,
           buildCounter:
               (
                 BuildContext context, {
@@ -1709,7 +1831,10 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     SizedBox(width: 8),
                     Text(
                       'Analyze Profile',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
@@ -1810,9 +1935,18 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   }
 
   Widget _buildConversationInputSection(ColorScheme colorScheme) {
+    final hasConversationPreview =
+        (_isExtractingImage && _uploadedConversationImage != null) ||
+        (_uploadedConversationImage != null &&
+            _conversationCtrl.text.isNotEmpty);
+
     return Card(
       elevation: 0,
       color: colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide.none,
+      ),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -1864,7 +1998,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               ),
             ),
 
-            const SizedBox(height: 16),
+            if (hasConversationPreview) const SizedBox(height: 16),
 
             // Image preview - horizontal row layout
             if (_isExtractingImage && _uploadedConversationImage != null) ...[
@@ -2021,7 +2155,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     } else {
       final blended =
           Color.lerp(colorScheme.primary, colorScheme.secondary, 0.35) ??
-              colorScheme.primary;
+          colorScheme.primary;
       gradientColors = [colorScheme.primary, blended];
       shadowColor = colorScheme.primary.withValues(alpha: 0.35);
     }
@@ -2051,7 +2185,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
             foregroundColor: colorScheme.onPrimary,
-            disabledForegroundColor: colorScheme.onPrimary.withValues(alpha: 0.6),
+            disabledForegroundColor: colorScheme.onPrimary.withValues(
+              alpha: 0.6,
+            ),
             disabledBackgroundColor: Colors.transparent,
             shape: RoundedRectangleBorder(borderRadius: borderRadius),
             padding: const EdgeInsets.symmetric(horizontal: 18),
@@ -2074,9 +2210,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         _newMatchMode == NewMatchMode.recommended;
     final label = (isRecommended || _suggestions.isNotEmpty)
         ? 'Regenerate'
-        : (_situation == 'just_matched'
-              ? 'Craft Opening'
-              : 'Craft Response');
+        : (_situation == 'just_matched' ? 'Craft Opening' : 'Craft Response');
     return _buildPrimaryGradientButton(
       onPressed: (_isLoading || _isExtractingImage)
           ? null
@@ -2243,8 +2377,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                   border: Border.all(
                     color: colorScheme.secondary.withValues(alpha: 0.35),
                   ),
-                  color: colorScheme.surfaceContainerHighest
-                      .withValues(alpha: 0.6),
+                  color: colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.6,
+                  ),
                 ),
                 child: Icon(
                   CupertinoIcons.pen,
@@ -2276,8 +2411,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     }
 
     // Results
-    final resultsLabel =
-        _situation == 'just_matched' ? 'Your Approach' : 'Curated Responses';
+    final resultsLabel = _situation == 'just_matched'
+        ? 'Your Approach'
+        : 'Curated Responses';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2329,7 +2465,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 index: index,
                 suggestion: suggestion,
                 colorScheme: colorScheme,
-                onTap: () => _copySuggestion(suggestion.message),
+                onTap: suggestion.isLocked
+                    ? () => _showUpgradePopup(suggestion.lockedReplyId)
+                    : () => _copySuggestion(suggestion.message),
               ),
             ),
           );
@@ -2391,23 +2529,31 @@ class _SuggestionCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isDark ? colorScheme.secondary : Colors.transparent,
                   shape: BoxShape.circle,
-                  border: isDark ? null : Border.all(
-                    color: const Color(0xFFC4A462), // Champagne Gold
-                    width: 1.5,
-                  ),
-                  boxShadow: isDark ? [
-                    BoxShadow(
-                      color: colorScheme.secondary.withValues(alpha: 0.35),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ] : null,
+                  border: isDark
+                      ? null
+                      : Border.all(
+                          color: const Color(0xFFC4A462), // Champagne Gold
+                          width: 1.5,
+                        ),
+                  boxShadow: isDark
+                      ? [
+                          BoxShadow(
+                            color: colorScheme.secondary.withValues(
+                              alpha: 0.35,
+                            ),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : null,
                 ),
                 alignment: Alignment.center,
                 child: Text(
                   badgeLabel,
                   style: textTheme.labelSmall?.copyWith(
-                    color: isDark ? colorScheme.onSecondary : const Color(0xFFC4A462),
+                    color: isDark
+                        ? colorScheme.onSecondary
+                        : const Color(0xFFC4A462),
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.6,
                   ),
@@ -2428,56 +2574,104 @@ class _SuggestionCard extends StatelessWidget {
                   ),
                 ),
                 child: Icon(
-                  isDark ? Icons.copy_outlined : Icons.copy,
+                  suggestion.isLocked
+                      ? Icons.lock_outline
+                      : (isDark ? Icons.copy_outlined : Icons.copy),
                   size: 20,
                   color: isDark
                       ? colorScheme.onSurfaceVariant
-                      : const Color(0xFFC4A462), // Champagne Gold for light mode
+                      : const Color(0xFFC4A462),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            suggestion.message,
-            style: TextStyle(
-              fontSize: 15,
-              color: colorScheme.onSurface,
-              height: 1.4,
+          if (suggestion.isLocked) ...[
+            // Locked state: show preview text + fake blurred block
+            Text(
+              suggestion.blurPreview ?? '',
+              style: TextStyle(
+                fontSize: 15,
+                color: colorScheme.onSurface,
+                height: 1.4,
+              ),
             ),
-          ),
-          if ((suggestion.whyItWorks ?? '').trim().isNotEmpty) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 6),
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 6,
-              ),
+              height: 40,
               decoration: BoxDecoration(
-                color: colorScheme.tertiaryContainer,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
+                gradient: LinearGradient(
+                  colors: [
+                    colorScheme.surfaceContainerHighest,
+                    colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  ],
+                ),
               ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    Icons.lightbulb_outlined,
-                    size: 16,
-                    color: colorScheme.onTertiaryContainer,
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      suggestion.whyItWorks!.trim(),
+              child: Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.lock_outline,
+                      size: 16,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Tap to unlock',
                       style: TextStyle(
-                        fontSize: 12.5,
-                        color: colorScheme.onTertiaryContainer,
+                        fontSize: 12,
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
+          ] else ...[
+            Text(
+              suggestion.message,
+              style: TextStyle(
+                fontSize: 15,
+                color: colorScheme.onSurface,
+                height: 1.4,
+              ),
+            ),
+            if ((suggestion.whyItWorks ?? '').trim().isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: colorScheme.tertiaryContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.lightbulb_outlined,
+                      size: 16,
+                      color: colorScheme.onTertiaryContainer,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        suggestion.whyItWorks!.trim(),
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: colorScheme.onTertiaryContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ],
       ),
@@ -2512,9 +2706,7 @@ class _SuggestionCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.06),
               borderRadius: borderRadius,
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.12),
-              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.25),

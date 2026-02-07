@@ -11,6 +11,14 @@ class GenerateResponse {
   final String? message;
   final bool? isTrial;
   final bool? trialUsed;
+  // Blurred cliff fields
+  final bool? isLocked;
+  final int? lockedReplyId;
+  final List<String>? lockedPreview;
+  final bool? hasPendingUnlock;
+  // Free daily credit fields
+  final int? freeDailyCreditsRemaining;
+  final int? freeDailyCreditsLimit;
 
   GenerateResponse({
     required this.success,
@@ -24,6 +32,12 @@ class GenerateResponse {
     this.message,
     this.isTrial,
     this.trialUsed,
+    this.isLocked,
+    this.lockedReplyId,
+    this.lockedPreview,
+    this.hasPendingUnlock,
+    this.freeDailyCreditsRemaining,
+    this.freeDailyCreditsLimit,
   });
 
   factory GenerateResponse.fromJson(Map<String, dynamic> json) {
@@ -39,6 +53,14 @@ class GenerateResponse {
       message: json['message'],
       isTrial: json['is_trial'],
       trialUsed: json['trial_used'],
+      isLocked: json['is_locked'],
+      lockedReplyId: json['locked_reply_id'],
+      lockedPreview: (json['locked_preview'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList(),
+      hasPendingUnlock: json['has_pending_unlock'],
+      freeDailyCreditsRemaining: json['free_daily_credits_remaining'],
+      freeDailyCreditsLimit: json['free_daily_credits_limit'],
     );
   }
 }

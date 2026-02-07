@@ -42,6 +42,19 @@ class _PricingScreenState extends State<PricingScreen>
   bool _isRefreshingPurchases = false;
 
   static const String _handledTokensKey = 'handled_purchase_tokens';
+  static const int _tokenPreviewLength = 20;
+
+  String _tokenPreview(String token) {
+    if (token.isEmpty) {
+      return '<empty>';
+    }
+
+    final end = token.length < _tokenPreviewLength
+        ? token.length
+        : _tokenPreviewLength;
+    final preview = token.substring(0, end);
+    return token.length > _tokenPreviewLength ? '$preview...' : preview;
+  }
 
   @override
   void initState() {
@@ -75,7 +88,9 @@ class _PricingScreenState extends State<PricingScreen>
         _handledTokensKey,
         _handledPurchaseTokens.toList(),
       );
-      AppLogger.debug('Saved purchase token: ${token.substring(0, 20)}... (Total: ${_handledPurchaseTokens.length})');
+      AppLogger.debug(
+        'Saved purchase token: ${_tokenPreview(token)} (Total: ${_handledPurchaseTokens.length})',
+      );
     } catch (e) {
       AppLogger.error('Failed to save purchase token', e is Exception ? e : null);
     }
@@ -270,11 +285,12 @@ class _PricingScreenState extends State<PricingScreen>
     AppLogger.debug('Purchase update received: ${purchases.length} purchases');
 
     for (final purchase in purchases) {
+      final token = purchase.verificationData.serverVerificationData;
       AppLogger.debug(
         'Processing purchase: ${purchase.productID}, '
         'status: ${purchase.status}, '
         'pending: ${purchase.pendingCompletePurchase}, '
-        'token: ${purchase.verificationData.serverVerificationData.substring(0, 20)}...'
+        'token: ${_tokenPreview(token)}',
       );
 
       switch (purchase.status) {
@@ -370,7 +386,9 @@ class _PricingScreenState extends State<PricingScreen>
     final tokenKey = purchase.verificationData.serverVerificationData;
     final wasProcessing = _isProcessing;
 
-    AppLogger.debug('Verifying purchase: ${purchase.productID}, token: ${tokenKey.substring(0, 20)}...');
+    AppLogger.debug(
+      'Verifying purchase: ${purchase.productID}, token: ${_tokenPreview(tokenKey)}',
+    );
 
     // Check if we've already handled this purchase token
     if (_handledPurchaseTokens.contains(tokenKey)) {

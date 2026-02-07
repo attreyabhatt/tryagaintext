@@ -19,6 +19,9 @@ class AppState extends ChangeNotifier {
   int? _dailyOpenersLimit;
   int? _dailyRepliesRemaining;
   int? _dailyRepliesLimit;
+  // Free user daily credits
+  int? _freeDailyCreditsRemaining;
+  int? _freeDailyCreditsLimit;
   bool _isLoggedIn = false;
   bool _initialized = false;
   AppThemeMode _themeMode = AppThemeMode.premiumDarkNeonGold;
@@ -34,6 +37,9 @@ class AppState extends ChangeNotifier {
   int? get dailyOpenersLimit => _dailyOpenersLimit;
   int? get dailyRepliesRemaining => _dailyRepliesRemaining;
   int? get dailyRepliesLimit => _dailyRepliesLimit;
+  // Free daily credit getters
+  int? get freeDailyCreditsRemaining => _freeDailyCreditsRemaining;
+  int? get freeDailyCreditsLimit => _freeDailyCreditsLimit;
   bool get isLoggedIn => _isLoggedIn;
   bool get initialized => _initialized;
   AppThemeMode get themeMode => _themeMode;
@@ -79,6 +85,9 @@ class AppState extends ChangeNotifier {
     _dailyOpenersLimit = await AuthService.getStoredDailyOpenersLimit();
     _dailyRepliesRemaining = await AuthService.getStoredDailyRepliesRemaining();
     _dailyRepliesLimit = await AuthService.getStoredDailyRepliesLimit();
+    // Load free daily credits
+    _freeDailyCreditsRemaining = await AuthService.getStoredFreeDailyCreditsRemaining();
+    _freeDailyCreditsLimit = await AuthService.getStoredFreeDailyCreditsLimit();
     notifyListeners();
   }
 
@@ -106,6 +115,8 @@ class AppState extends ChangeNotifier {
     _dailyOpenersLimit = null;
     _dailyRepliesRemaining = null;
     _dailyRepliesLimit = null;
+    _freeDailyCreditsRemaining = null;
+    _freeDailyCreditsLimit = null;
     _isLoggedIn = false;
     notifyListeners();
   }

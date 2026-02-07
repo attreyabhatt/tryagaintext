@@ -26,6 +26,9 @@ class AuthService {
   static const String dailyOpenersLimitKey = 'daily_openers_limit';
   static const String dailyRepliesRemainingKey = 'daily_replies_remaining';
   static const String dailyRepliesLimitKey = 'daily_replies_limit';
+  // Free user daily credits
+  static const String freeDailyCreditsRemainingKey = 'free_daily_credits_remaining';
+  static const String freeDailyCreditsLimitKey = 'free_daily_credits_limit';
   static const String justSignedUpKey = 'just_signed_up';
 
   // Store auth token
@@ -131,6 +134,17 @@ class AuthService {
     return prefs.getInt(dailyRepliesLimitKey);
   }
 
+  // Free daily credits getters
+  static Future<int?> getStoredFreeDailyCreditsRemaining() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(freeDailyCreditsRemainingKey);
+  }
+
+  static Future<int?> getStoredFreeDailyCreditsLimit() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(freeDailyCreditsLimitKey);
+  }
+
   // Update stored credits
   static Future<void> updateStoredCredits(int credits) async {
     final prefs = await SharedPreferences.getInstance();
@@ -151,6 +165,8 @@ class AuthService {
     await prefs.remove(dailyOpenersLimitKey);
     await prefs.remove(dailyRepliesRemainingKey);
     await prefs.remove(dailyRepliesLimitKey);
+    await prefs.remove(freeDailyCreditsRemainingKey);
+    await prefs.remove(freeDailyCreditsLimitKey);
     await prefs.remove(guestIdKey);
     await prefs.remove(justSignedUpKey);
   }
@@ -362,6 +378,13 @@ class AuthService {
     }
     if (json['daily_replies_limit'] != null) {
       await prefs.setInt(dailyRepliesLimitKey, json['daily_replies_limit'] as int);
+    }
+    // Free user daily credits
+    if (json['free_daily_credits_remaining'] != null) {
+      await prefs.setInt(freeDailyCreditsRemainingKey, json['free_daily_credits_remaining'] as int);
+    }
+    if (json['free_daily_credits_limit'] != null) {
+      await prefs.setInt(freeDailyCreditsLimitKey, json['free_daily_credits_limit'] as int);
     }
   }
 }

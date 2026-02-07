@@ -15,6 +15,7 @@ class LuxuryTextField extends StatefulWidget {
   final InputCounterWidgetBuilder? buildCounter;
   final bool showShadow;
   final bool useDarkOutlineBorder;
+  final bool showDarkOutlineWhenUnfocused;
 
   const LuxuryTextField({
     super.key,
@@ -32,6 +33,7 @@ class LuxuryTextField extends StatefulWidget {
     this.buildCounter,
     this.showShadow = true,
     this.useDarkOutlineBorder = false,
+    this.showDarkOutlineWhenUnfocused = true,
   });
 
   @override
@@ -78,8 +80,9 @@ class _LuxuryTextFieldState extends State<LuxuryTextField> {
     final baseShadowColor = isLight
         ? const Color(0xFF9E9E9E).withValues(alpha: 0.12)
         : Colors.black.withValues(alpha: 0.25);
-    final focusShadowColor =
-        colorScheme.secondary.withValues(alpha: isLight ? 0.25 : 0.35);
+    final focusShadowColor = colorScheme.secondary.withValues(
+      alpha: isLight ? 0.25 : 0.35,
+    );
 
     final shadows = widget.showShadow
         ? <BoxShadow>[
@@ -95,21 +98,23 @@ class _LuxuryTextFieldState extends State<LuxuryTextField> {
                 blurRadius: 20,
                 offset: const Offset(0, 10),
                 spreadRadius: -6,
-            ),
+              ),
           ]
         : const <BoxShadow>[];
 
     final enabledBorderSide = isLight
         ? BorderSide.none
-        : (widget.useDarkOutlineBorder
-            ? BorderSide(color: const Color(0xFFC4A462).withValues(alpha: 0.3))
-            : BorderSide.none);
+        : (widget.useDarkOutlineBorder && widget.showDarkOutlineWhenUnfocused
+              ? BorderSide(
+                  color: const Color(0xFFC4A462).withValues(alpha: 0.3),
+                )
+              : BorderSide.none);
     final focusedBorderSide = BorderSide(
       color: isLight
           ? colorScheme.secondary
           : (widget.useDarkOutlineBorder
-              ? const Color(0xFFC4A462) // Champagne Gold for dark mode
-              : colorScheme.primary),
+                ? const Color(0xFFC4A462) // Champagne Gold for dark mode
+                : colorScheme.primary),
       width: 1,
     );
 
@@ -134,10 +139,7 @@ class _LuxuryTextFieldState extends State<LuxuryTextField> {
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
-      decoration: BoxDecoration(
-        borderRadius: borderRadius,
-        boxShadow: shadows,
-      ),
+      decoration: BoxDecoration(borderRadius: borderRadius, boxShadow: shadows),
       child: TextFormField(
         controller: widget.controller,
         focusNode: _focusNode,
