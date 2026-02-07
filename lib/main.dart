@@ -16,45 +16,47 @@ ThemeData buildPremiumDarkNeonTheme() {
   const secondary = Color(0xFFD4AF37);
   const tertiary = Color(0xFFB95A7B);
 
-  final colorScheme = ColorScheme.fromSeed(
-    seedColor: primary,
-    brightness: Brightness.dark,
-  ).copyWith(
-    primary: primary,
-    onPrimary: baseDark,
-    primaryContainer: const Color(0xFF4A0D26),
-    onPrimaryContainer: const Color(0xFFFFC2D4),
-    secondary: secondary,
-    onSecondary: baseDark,
-    secondaryContainer: const Color(0xFF3A2F0D),
-    onSecondaryContainer: const Color(0xFFFFE3A1),
-    tertiary: tertiary,
-    onTertiary: baseDark,
-    tertiaryContainer: const Color(0xFF3A1C2A),
-    onTertiaryContainer: const Color(0xFFF3C3D5),
-    surface: surface,
-    surfaceDim: const Color(0xFF0C0D10),
-    surfaceBright: const Color(0xFF191B22),
-    surfaceContainerLowest: const Color(0xFF0A0B0E),
-    surfaceContainerLow: surfaceLow,
-    surfaceContainer: const Color(0xFF1B1E25),
-    surfaceContainerHigh: const Color(0xFF21242C),
-    surfaceContainerHighest: const Color(0xFF272B35),
-    onSurface: const Color(0xFFF4F2EE),
-    onSurfaceVariant: const Color(0xFF8F9BB3),
-    outline: const Color(0xFF3A3F4A),
-    outlineVariant: const Color(0xFF2E323B),
-    shadow: Colors.black,
-    scrim: Colors.black,
-    inverseSurface: const Color(0xFFF4F2EE),
-    onInverseSurface: baseDark,
-    inversePrimary: const Color(0xFFFF86A8),
-  );
+  final colorScheme =
+      ColorScheme.fromSeed(
+        seedColor: primary,
+        brightness: Brightness.dark,
+      ).copyWith(
+        primary: primary,
+        onPrimary: baseDark,
+        primaryContainer: const Color(0xFF4A0D26),
+        onPrimaryContainer: const Color(0xFFFFC2D4),
+        secondary: secondary,
+        onSecondary: baseDark,
+        secondaryContainer: const Color(0xFF3A2F0D),
+        onSecondaryContainer: const Color(0xFFFFE3A1),
+        tertiary: tertiary,
+        onTertiary: baseDark,
+        tertiaryContainer: const Color(0xFF3A1C2A),
+        onTertiaryContainer: const Color(0xFFF3C3D5),
+        surface: surface,
+        surfaceDim: const Color(0xFF0C0D10),
+        surfaceBright: const Color(0xFF191B22),
+        surfaceContainerLowest: const Color(0xFF0A0B0E),
+        surfaceContainerLow: surfaceLow,
+        surfaceContainer: const Color(0xFF1B1E25),
+        surfaceContainerHigh: const Color(0xFF21242C),
+        surfaceContainerHighest: const Color(0xFF272B35),
+        onSurface: const Color(0xFFF4F2EE),
+        onSurfaceVariant: const Color(0xFF8F9BB3),
+        outline: const Color(0xFF3A3F4A),
+        outlineVariant: const Color(0xFF2E323B),
+        error: const Color(0xFFCF6679),
+        onError: const Color(0xFF1E1014),
+        errorContainer: const Color(0xFF401B24),
+        onErrorContainer: const Color(0xFFF7D4DC),
+        shadow: Colors.black,
+        scrim: Colors.black,
+        inverseSurface: const Color(0xFFF4F2EE),
+        onInverseSurface: baseDark,
+        inversePrimary: const Color(0xFFFF86A8),
+      );
 
-  final textTheme = _buildPremiumTextTheme(
-    colorScheme,
-    Brightness.dark,
-  );
+  final textTheme = _buildPremiumTextTheme(colorScheme, Brightness.dark);
 
   return ThemeData(
     useMaterial3: true,
@@ -87,9 +89,7 @@ ThemeData buildPremiumDarkNeonTheme() {
       style: FilledButton.styleFrom(
         elevation: 0,
         shadowColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
         textStyle: const TextStyle(fontWeight: FontWeight.w600),
       ),
@@ -98,18 +98,14 @@ ThemeData buildPremiumDarkNeonTheme() {
       style: ElevatedButton.styleFrom(
         elevation: 0,
         shadowColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
         textStyle: const TextStyle(fontWeight: FontWeight.w600),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         side: BorderSide(color: colorScheme.outline),
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
         textStyle: const TextStyle(fontWeight: FontWeight.w600),
@@ -225,9 +221,7 @@ class _MyAppState extends State<MyApp> {
                 ? ThemeMode.light
                 : ThemeMode.dark,
             builder: (context, child) {
-              return RepaintBoundary(
-                child: child ?? const SizedBox.shrink(),
-              );
+              return RepaintBoundary(child: child ?? const SizedBox.shrink());
             },
             navigatorObservers: [
               FirebaseAnalyticsObserver(analytics: _analytics),
@@ -250,45 +244,47 @@ class _MyAppState extends State<MyApp> {
     const stoneGrey = Color(0xFF8E8E93); // Stone
     const softBlush = Color(0xFFFAF0F2); // Soft Blush
 
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: primary,
-      brightness: Brightness.light,
-    ).copyWith(
-      primary: primary,
-      onPrimary: const Color(0xFFFFFFFF),
-      primaryContainer: softBlush,
-      onPrimaryContainer: baseLight,
-      secondary: secondary,
-      onSecondary: baseLight,
-      secondaryContainer: const Color(0xFFF2E7D2),
-      onSecondaryContainer: baseLight,
-      tertiary: tertiary,
-      onTertiary: baseLight,
-      tertiaryContainer: softBlush,
-      onTertiaryContainer: baseLight,
-      surface: surface,
-      surfaceDim: const Color(0xFFF1EEE9),
-      surfaceBright: surface,
-      surfaceContainerLowest: surface,
-      surfaceContainerLow: surfaceLow,
-      surfaceContainer: const Color(0xFFF7F4F0),
-      surfaceContainerHigh: surface,
-      surfaceContainerHighest: const Color(0xFFF2EEEA),
-      onSurface: baseLight,
-      onSurfaceVariant: stoneGrey,
-      outline: const Color(0xFFE6E1D9),
-      outlineVariant: const Color(0xFFEDE7E1),
-      shadow: const Color(0xFF9E9E9E),
-      scrim: Colors.black,
-      inverseSurface: baseLight,
-      onInverseSurface: background,
-      inversePrimary: tertiary,
-    );
+    final colorScheme =
+        ColorScheme.fromSeed(
+          seedColor: primary,
+          brightness: Brightness.light,
+        ).copyWith(
+          primary: primary,
+          onPrimary: const Color(0xFFFFFFFF),
+          primaryContainer: softBlush,
+          onPrimaryContainer: baseLight,
+          secondary: secondary,
+          onSecondary: baseLight,
+          secondaryContainer: const Color(0xFFF2E7D2),
+          onSecondaryContainer: baseLight,
+          tertiary: tertiary,
+          onTertiary: baseLight,
+          tertiaryContainer: softBlush,
+          onTertiaryContainer: baseLight,
+          surface: surface,
+          surfaceDim: const Color(0xFFF1EEE9),
+          surfaceBright: surface,
+          surfaceContainerLowest: surface,
+          surfaceContainerLow: surfaceLow,
+          surfaceContainer: const Color(0xFFF7F4F0),
+          surfaceContainerHigh: surface,
+          surfaceContainerHighest: const Color(0xFFF2EEEA),
+          onSurface: baseLight,
+          onSurfaceVariant: stoneGrey,
+          outline: const Color(0xFFE6E1D9),
+          outlineVariant: const Color(0xFFEDE7E1),
+          error: const Color(0xFF8C1D18),
+          onError: const Color(0xFFFFFFFF),
+          errorContainer: const Color(0xFFF2B8B5),
+          onErrorContainer: const Color(0xFF601410),
+          shadow: const Color(0xFF9E9E9E),
+          scrim: Colors.black,
+          inverseSurface: baseLight,
+          onInverseSurface: background,
+          inversePrimary: tertiary,
+        );
 
-    final textTheme = _buildPremiumTextTheme(
-      colorScheme,
-      Brightness.light,
-    );
+    final textTheme = _buildPremiumTextTheme(colorScheme, Brightness.light);
 
     return ThemeData(
       useMaterial3: true,
@@ -424,13 +420,9 @@ class _SplashScreenState extends State<SplashScreen>
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
     _controller.forward();
-    _breathOpacity = Tween<double>(
-      begin: 0.6,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _breathController,
-      curve: Curves.easeInOut,
-    ));
+    _breathOpacity = Tween<double>(begin: 0.6, end: 1.0).animate(
+      CurvedAnimation(parent: _breathController, curve: Curves.easeInOut),
+    );
     _breathController.repeat(reverse: true);
     _initializeApp();
   }

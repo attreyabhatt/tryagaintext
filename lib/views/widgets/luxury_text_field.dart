@@ -117,6 +117,18 @@ class _LuxuryTextFieldState extends State<LuxuryTextField> {
                 : colorScheme.primary),
       width: 1,
     );
+    final errorBorderSide = BorderSide(color: colorScheme.error, width: 1.1);
+    final focusedErrorBorderSide = BorderSide(
+      color: colorScheme.error,
+      width: 1.35,
+    );
+    final errorStyle =
+        widget.decoration.errorStyle ??
+        TextStyle(
+          color: colorScheme.error,
+          fontSize: 12.5,
+          fontWeight: FontWeight.w500,
+        );
 
     final decoration = widget.decoration.copyWith(
       filled: true,
@@ -133,6 +145,15 @@ class _LuxuryTextFieldState extends State<LuxuryTextField> {
         borderRadius: borderRadius,
         borderSide: focusedBorderSide,
       ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: borderRadius,
+        borderSide: errorBorderSide,
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: borderRadius,
+        borderSide: focusedErrorBorderSide,
+      ),
+      errorStyle: errorStyle,
       contentPadding:
           widget.decoration.contentPadding ?? const EdgeInsets.all(16),
     );
