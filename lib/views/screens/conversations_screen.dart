@@ -870,7 +870,16 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     }
   }
 
-  void _showGuestAccessCompleteSheet() {
+  void _showLuxuryAccessSheet({
+    required String headline,
+    required String body,
+    required String supportText,
+    required String primaryLabel,
+    required Future<void> Function() onPrimary,
+    String? secondaryLabel,
+    Future<void> Function()? onSecondary,
+    Color? secondaryForegroundColor,
+  }) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = colorScheme.brightness == Brightness.dark;
     final gradientEnd =
@@ -953,7 +962,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     ),
                     const SizedBox(height: 18),
                     Text(
-                      'Join the Inner Circle.',
+                      headline,
                       style: Theme.of(ctx).textTheme.headlineSmall?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -962,7 +971,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Create your free account to reveal this response and continue with FlirtFix.',
+                      body,
                       style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
                         color: Colors.white.withValues(alpha: 0.82),
                       ),
@@ -970,7 +979,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Takes less than 30 seconds.',
+                      supportText,
                       style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
                         color: colorScheme.secondary.withValues(alpha: 0.85),
                         fontWeight: FontWeight.w500,
@@ -999,7 +1008,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                         child: ElevatedButton(
                           onPressed: () async {
                             Navigator.pop(ctx);
-                            await _navigateToSignup();
+                            await onPrimary();
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
@@ -1013,26 +1022,30 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          child: const Text('Continue'),
+                          child: Text(primaryLabel),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: () async {
-                        Navigator.pop(ctx);
-                        await _navigateToAuth();
-                      },
-                      style: TextButton.styleFrom(
-                        foregroundColor: colorScheme.secondary.withValues(
-                          alpha: 0.9,
+                    if (secondaryLabel != null) ...[
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () async {
+                          Navigator.pop(ctx);
+                          if (onSecondary != null) {
+                            await onSecondary();
+                          }
+                        },
+                        style: TextButton.styleFrom(
+                          foregroundColor:
+                              secondaryForegroundColor ??
+                              colorScheme.secondary.withValues(alpha: 0.9),
+                          textStyle: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                        textStyle: Theme.of(ctx).textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
+                        child: Text(secondaryLabel),
                       ),
-                      child: const Text('Login to existing account'),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -1043,109 +1056,52 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     );
   }
 
-  void _showUpgradePopup(int? lockedReplyId) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = colorScheme.brightness == Brightness.dark;
+  void _showGuestAccessCompleteSheet() {
+    _showLuxuryAccessSheet(
+      headline: 'Join the Inner Circle.',
+      body:
+          'Create your free account to reveal this response and continue with FlirtFix.',
+      supportText: 'Takes less than 30 seconds.',
+      primaryLabel: 'Continue',
+      onPrimary: _navigateToSignup,
+      secondaryLabel: 'Login to existing account',
+      onSecondary: _navigateToAuth,
+    );
+  }
 
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (ctx) {
-        return Container(
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
-          decoration: BoxDecoration(
-            color: isDark
-                ? colorScheme.surfaceContainerHigh
-                : colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: colorScheme.secondaryContainer,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.lock_outline,
-                  size: 32,
-                  color: colorScheme.onSecondaryContainer,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Unlock this reply instantly',
-                style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Upgrade to Premium for unlimited replies',
-                style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () async {
-                    Navigator.pop(ctx);
-                    await _navigateToPricing();
-                    if (!mounted) return;
-                    final appState = AppStateScope.of(context);
-                    await appState.reloadFromStorage();
-                    if (appState.isSubscribed && lockedReplyId != null) {
-                      try {
-                        final unlocked = await _apiClient.unlockReply(
-                          lockedReplyId,
-                        );
-                        if (mounted) {
-                          setState(() {
-                            _suggestions = unlocked;
-                          });
-                          _animationController.reset();
-                          _animationController.forward();
-                        }
-                      } catch (e) {
-                        AppLogger.error(
-                          'Unlock reply failed',
-                          e is Exception ? e : null,
-                        );
-                      }
-                    }
-                  },
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: const Text(
-                    'Upgrade to Premium',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(
-                  'Maybe later',
-                  style: TextStyle(color: colorScheme.onSurfaceVariant),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+  Future<void> _navigateToPricingAndUnlockLockedReply(
+    int? lockedReplyId,
+  ) async {
+    await _navigateToPricing();
+    if (!mounted) return;
+    final appState = AppStateScope.of(context);
+    await appState.reloadFromStorage();
+    if (appState.isSubscribed && lockedReplyId != null) {
+      try {
+        final unlocked = await _apiClient.unlockReply(lockedReplyId);
+        if (mounted) {
+          setState(() {
+            _suggestions = unlocked;
+          });
+          _animationController.reset();
+          _animationController.forward();
+        }
+      } catch (e) {
+        AppLogger.error('Unlock reply failed', e is Exception ? e : null);
+      }
+    }
+  }
+
+  void _showUpgradePopup(int? lockedReplyId) {
+    _showLuxuryAccessSheet(
+      headline: 'Unlock this reply.',
+      body:
+          'Your preview is ready. Continue to Premium to reveal the full response.',
+      supportText: 'Instant unlock after checkout.',
+      primaryLabel: 'Continue',
+      onPrimary: () => _navigateToPricingAndUnlockLockedReply(lockedReplyId),
+      secondaryLabel: 'Maybe later',
+      secondaryForegroundColor: Colors.white.withValues(alpha: 0.7),
     );
   }
 
