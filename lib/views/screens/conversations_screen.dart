@@ -2007,7 +2007,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                               const SizedBox(width: 6),
                               Flexible(
                                 child: Text(
-                                  'Profile screenshot ready',
+                                  'Uploaded',
                                   style: TextStyle(
                                     color: colorScheme.onSurface,
                                     fontSize: 13,
@@ -2203,7 +2203,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                               const SizedBox(width: 6),
                               Flexible(
                                 child: Text(
-                                  'Conversation extracted',
+                                  'Uploaded',
                                   style: TextStyle(
                                     color: colorScheme.onSurface,
                                     fontSize: 13,
