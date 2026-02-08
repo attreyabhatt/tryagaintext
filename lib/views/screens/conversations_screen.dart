@@ -42,7 +42,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   static const String _ratingPromptShownKey = 'rating_prompt_shown';
   static const String _newMatchModeKey = 'new_match_mode';
   static const String _handledTokensKey = 'handled_purchase_tokens';
-  static const String _trialExpiredKey = 'guest_trial_expired';
   static const String _keepItShortKey = 'keep_it_short_need_reply';
   String _situation = 'stuck_after_reply';
   final String _selectedTone = 'Natural';
@@ -61,7 +60,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   late Animation<double> _fadeAnimation;
   late TabController _tabController;
 
-  bool _isTrialExpired = false;
   bool _isOpenerLimitExceeded = false;
   bool _isReplyLimitExceeded = false;
   final _apiClient = ApiClient();
@@ -94,7 +92,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     _tabController.addListener(_onTabChanged);
     _scrollController.addListener(_onScroll);
     _loadNewMatchModePreference();
-    _loadTrialExpiredState();
     _loadKeepItShortPreference();
     _setupPurchaseListener();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -144,15 +141,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       _newMatchMode = saved == NewMatchMode.recommended.name
           ? NewMatchMode.recommended
           : NewMatchMode.ai;
-    });
-  }
-
-  Future<void> _loadTrialExpiredState() async {
-    final prefs = await SharedPreferences.getInstance();
-    final isExpired = prefs.getBool(_trialExpiredKey) ?? false;
-    if (!mounted) return;
-    setState(() {
-      _isTrialExpired = isExpired;
     });
   }
 
@@ -314,7 +302,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       _newMatchMode = mode;
       _suggestions = [];
       _errorMessage = null;
-      _isTrialExpired = false;
       _isOpenerLimitExceeded = false;
       _isReplyLimitExceeded = false;
       _isLoading = false;
@@ -361,7 +348,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       _isLoading = true;
       _errorMessage = null;
       _suggestions = [];
-      _isTrialExpired = false;
       _isOpenerLimitExceeded = false;
       _isReplyLimitExceeded = false;
     });
@@ -412,17 +398,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
     if (!mounted) return;
     if (result == true) {
-      // Clear trial expired state when user logs in
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_trialExpiredKey);
-
-      if (!mounted) return;
       final appState = AppStateScope.of(context);
       await appState.reloadFromStorage();
       if (mounted) {
-        setState(() {
-          _isTrialExpired = false;
-        });
         final justSignedUp = await AuthService.consumeJustSignedUp();
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -540,12 +518,12 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     final requestId = ++_generateRequestId;
     final requestSituation = _situation;
     final requestMode = _newMatchMode;
+    final requestStartedAt = DateTime.now();
     HapticFeedback.mediumImpact();
     setState(() {
       _isLoading = true;
       _errorMessage = null;
       _suggestions = [];
-      _isTrialExpired = false; // reset flag on new attempt
       _isOpenerLimitExceeded = false;
       _isReplyLimitExceeded = false;
     });
@@ -587,8 +565,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       setState(() {
         _suggestions = suggestions;
         _isLoading = false;
-        _isTrialExpired =
-            false; // clear any prior trial-expired banner on success
         _isOpenerLimitExceeded = false;
         _isReplyLimitExceeded = false;
       });
@@ -600,6 +576,16 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         _animationController.forward();
       }
     } on ApiException catch (e) {
+      if (e.code == ApiErrorCode.trialExpired) {
+        await _handleCreditError(
+          e,
+          requestStartedAt: requestStartedAt,
+          requestId: requestId,
+          requestSituation: requestSituation,
+          requestMode: requestMode,
+        );
+        return;
+      }
       setState(() {
         _isLoading = false;
       });
@@ -716,7 +702,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     setState(() {
       _suggestions = [];
       _errorMessage = null;
-      _isTrialExpired = false;
       _isOpenerLimitExceeded = false;
       _isReplyLimitExceeded = false;
       _animationController.reset();
@@ -777,7 +762,24 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     );
   }
 
-  Future<void> _handleCreditError(ApiException e) async {
+  bool _isCurrentGenerateRequest({
+    required int requestId,
+    required String requestSituation,
+    required NewMatchMode requestMode,
+  }) {
+    return mounted &&
+        requestId == _generateRequestId &&
+        _situation == requestSituation &&
+        (requestSituation != 'just_matched' || _newMatchMode == requestMode);
+  }
+
+  Future<void> _handleCreditError(
+    ApiException e, {
+    DateTime? requestStartedAt,
+    int? requestId,
+    String? requestSituation,
+    NewMatchMode? requestMode,
+  }) async {
     if (e.code == ApiErrorCode.hasPendingUnlock) {
       final previews = e.lockedPreview ?? const <String>[];
       if (mounted) {
@@ -804,13 +806,43 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       return;
     }
     if (e.code == ApiErrorCode.trialExpired) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_trialExpiredKey, true);
-      if (mounted) {
+      if (!mounted) return;
+      final appState = AppStateScope.of(context);
+      if (appState.isLoggedIn) {
         setState(() {
-          _isTrialExpired = true;
+          _isLoading = false;
+          _errorMessage = e.message.isNotEmpty
+              ? e.message
+              : 'Please create your free account to continue.';
         });
+        return;
       }
+
+      if (requestStartedAt != null) {
+        const minimumLoading = Duration(milliseconds: 1500);
+        final elapsed = DateTime.now().difference(requestStartedAt);
+        final remaining = minimumLoading - elapsed;
+        if (remaining > Duration.zero) {
+          await Future.delayed(remaining);
+        }
+      }
+
+      if (!mounted) return;
+      if (requestId != null &&
+          requestSituation != null &&
+          requestMode != null &&
+          !_isCurrentGenerateRequest(
+            requestId: requestId,
+            requestSituation: requestSituation,
+            requestMode: requestMode,
+          )) {
+        return;
+      }
+
+      setState(() {
+        _isLoading = false;
+      });
+      _showGuestAccessCompleteSheet();
       return;
     }
     if (e.code == ApiErrorCode.fairUseExceeded) {
@@ -836,6 +868,179 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         });
       }
     }
+  }
+
+  void _showGuestAccessCompleteSheet() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = colorScheme.brightness == Brightness.dark;
+    final gradientEnd =
+        Color.lerp(colorScheme.primary, colorScheme.tertiary, 0.55) ??
+        colorScheme.primary;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.9),
+      isScrollControlled: true,
+      builder: (ctx) {
+        final bottomSafe = MediaQuery.of(ctx).padding.bottom;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(16, 0, 16, 12 + bottomSafe),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(28),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: isDark ? 0.62 : 0.72),
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.45),
+                      blurRadius: 26,
+                      offset: const Offset(0, 14),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 88,
+                      height: 88,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            colorScheme.secondary.withValues(alpha: 0.42),
+                            colorScheme.secondary.withValues(alpha: 0.08),
+                            Colors.transparent,
+                          ],
+                          stops: const [0, 0.55, 1],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colorScheme.secondary.withValues(alpha: 0.35),
+                            blurRadius: 24,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.35),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: colorScheme.secondary.withValues(alpha: 0.8),
+                              width: 1.2,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.lock_outline_rounded,
+                            size: 28,
+                            color: colorScheme.secondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Text(
+                      'Join the Inner Circle.',
+                      style: Theme.of(ctx).textTheme.headlineSmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Create your free account to reveal this response and continue with FlirtFix.',
+                      style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.82),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Takes less than 30 seconds.',
+                      style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.secondary.withValues(alpha: 0.85),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [colorScheme.primary, gradientEnd],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(999),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colorScheme.primary.withValues(alpha: 0.38),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            Navigator.pop(ctx);
+                            await _navigateToSignup();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            foregroundColor: colorScheme.onPrimary,
+                            textStyle: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          child: const Text('Continue'),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        await _navigateToAuth();
+                      },
+                      style: TextButton.styleFrom(
+                        foregroundColor: colorScheme.secondary.withValues(
+                          alpha: 0.9,
+                        ),
+                        textStyle: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      child: const Text('Login to existing account'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _showUpgradePopup(int? lockedReplyId) {
@@ -952,17 +1157,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
     if (!mounted) return;
     if (result == true) {
-      // Clear trial expired state when user signs up
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_trialExpiredKey);
-
-      if (!mounted) return;
       final appState = AppStateScope.of(context);
       await appState.reloadFromStorage();
       if (mounted) {
-        setState(() {
-          _isTrialExpired = false;
-        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -1071,7 +1268,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                   // Warning banners
                   _buildWarningBanners(
                     colorScheme,
-                    isLoggedIn,
                     isSubscribed,
                   ),
 
@@ -1314,7 +1510,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
   Widget _buildWarningBanners(
     ColorScheme colorScheme,
-    bool isLoggedIn,
     bool isSubscribed,
   ) {
     // Fair use exceeded banner for subscribers
@@ -1344,30 +1539,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       }
     }
 
-    if (isSubscribed) {
-      return const SizedBox.shrink();
-    }
-
-    // Signed-up free users no longer show warning banners here.
-    if (isLoggedIn) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      children: [
-        // Trial expired banner
-        if (!isLoggedIn && _isTrialExpired)
-          _buildBanner(
-            colorScheme: colorScheme,
-            icon: Icons.timer_off_outlined,
-            title: 'Limit reached',
-            subtitle: 'Sign up to keep using FlirtFix',
-            buttonText: 'Sign Up',
-            onPressed: _navigateToSignup,
-            type: BannerType.warning,
-          ),
-      ],
-    );
+    return const SizedBox.shrink();
   }
 
   Widget _buildBanner({
