@@ -12,6 +12,7 @@ class AppLogger {
   }
 
   static void error(String message, [Object? error, StackTrace? stackTrace]) {
+    if (kReleaseMode) return;
     _log('ERROR', message, error, stackTrace);
   }
 

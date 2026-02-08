@@ -774,13 +774,12 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
   Future<void> _logDebugState() async {
     final token = await AuthService.getToken();
-    final guestId = await AuthService.getOrCreateGuestId();
     if (!mounted) return;
     final appState = AppStateScope.of(context);
     AppLogger.debug(
       'Generate tapped | isLoggedIn=${appState.isLoggedIn} | isSubscribed=${appState.isSubscribed} '
-      '| tokenPresent=${token != null && token.isNotEmpty} | tokenLen=${token?.length ?? 0} '
-      '| guestId=$guestId | baseUrl=${_apiClient.baseUrl}',
+      '| tokenPresent=${token != null && token.isNotEmpty} '
+      '| baseUrl=${_apiClient.baseUrl}',
     );
   }
 
@@ -956,7 +955,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: colorScheme.secondary.withValues(alpha: 0.35),
+                            color: colorScheme.secondary.withValues(
+                              alpha: 0.35,
+                            ),
                             blurRadius: 24,
                             spreadRadius: 2,
                           ),
@@ -970,7 +971,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                             color: Colors.black.withValues(alpha: 0.35),
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: colorScheme.secondary.withValues(alpha: 0.8),
+                              color: colorScheme.secondary.withValues(
+                                alpha: 0.8,
+                              ),
                               width: 1.2,
                             ),
                           ),
@@ -1021,7 +1024,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                           borderRadius: BorderRadius.circular(999),
                           boxShadow: [
                             BoxShadow(
-                              color: colorScheme.primary.withValues(alpha: 0.38),
+                              color: colorScheme.primary.withValues(
+                                alpha: 0.38,
+                              ),
                               blurRadius: 20,
                               offset: const Offset(0, 10),
                             ),
@@ -1061,9 +1066,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                           foregroundColor:
                               secondaryForegroundColor ??
                               colorScheme.secondary.withValues(alpha: 0.9),
-                          textStyle: Theme.of(ctx).textTheme.bodySmall?.copyWith(
-                            fontWeight: FontWeight.w500,
-                          ),
+                          textStyle: Theme.of(ctx).textTheme.bodySmall
+                              ?.copyWith(fontWeight: FontWeight.w500),
                         ),
                         child: Text(secondaryLabel),
                       ),
@@ -1244,10 +1248,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Warning banners
-                  _buildWarningBanners(
-                    colorScheme,
-                    isSubscribed,
-                  ),
+                  _buildWarningBanners(colorScheme, isSubscribed),
 
                   const SizedBox(height: 8),
 
@@ -1420,9 +1421,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           ),
           const SizedBox(width: 8),
         ],
-        if (isLoggedIn &&
-            !isSubscribed &&
-            dailyCreditsRemaining != null) ...[
+        if (isLoggedIn && !isSubscribed && dailyCreditsRemaining != null) ...[
           // Credits badge
           GestureDetector(
             onTap: () {
@@ -1486,10 +1485,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     );
   }
 
-  Widget _buildWarningBanners(
-    ColorScheme colorScheme,
-    bool isSubscribed,
-  ) {
+  Widget _buildWarningBanners(ColorScheme colorScheme, bool isSubscribed) {
     // Fair use exceeded banner for subscribers
     if (isSubscribed) {
       final isOpenerTab = _situation == 'just_matched';
@@ -2143,7 +2139,10 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     const SizedBox(width: 8),
                     const Text(
                       'Analyze Chat',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),

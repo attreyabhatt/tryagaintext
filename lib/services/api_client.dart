@@ -51,10 +51,7 @@ class ApiClient {
         }),
       );
 
-      AppLogger.debug(
-        'POST $baseUrl/api/generate/ -> ${response.statusCode} '
-        '${response.body.substring(0, response.body.length > 300 ? 300 : response.body.length)}',
-      );
+      AppLogger.debug('POST $baseUrl/api/generate/ -> ${response.statusCode}');
 
       final data = _decodeJson(response.body);
       await AuthService.updateSubscriptionFromPayload(data);
@@ -141,8 +138,7 @@ class ApiClient {
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
       AppLogger.debug(
-        'POST $baseUrl/api/extract-image/ -> ${response.statusCode} '
-        '${response.body.substring(0, response.body.length > 300 ? 300 : response.body.length)}',
+        'POST $baseUrl/api/extract-image/ -> ${response.statusCode}',
       );
       final data = _decodeJson(response.body);
       await AuthService.updateSubscriptionFromPayload(data);
@@ -337,7 +333,7 @@ class ApiClient {
       );
 
       AppLogger.debug(
-        'Google Play purchase response: ${response.statusCode} ${response.body}',
+        'Google Play purchase response: status=${response.statusCode}',
       );
 
       final data = _decodeJson(response.body);
@@ -392,7 +388,7 @@ class ApiClient {
       );
 
       AppLogger.debug(
-        'Google Play subscription response: ${response.statusCode} ${response.body}',
+        'Google Play subscription response: status=${response.statusCode}',
       );
 
       final data = _decodeJson(response.body);

@@ -42,19 +42,6 @@ class _PricingScreenState extends State<PricingScreen>
   bool _isRefreshingPurchases = false;
 
   static const String _handledTokensKey = 'handled_purchase_tokens';
-  static const int _tokenPreviewLength = 20;
-
-  String _tokenPreview(String token) {
-    if (token.isEmpty) {
-      return '<empty>';
-    }
-
-    final end = token.length < _tokenPreviewLength
-        ? token.length
-        : _tokenPreviewLength;
-    final preview = token.substring(0, end);
-    return token.length > _tokenPreviewLength ? '$preview...' : preview;
-  }
 
   @override
   void initState() {
@@ -89,10 +76,13 @@ class _PricingScreenState extends State<PricingScreen>
         _handledPurchaseTokens.toList(),
       );
       AppLogger.debug(
-        'Saved purchase token: ${_tokenPreview(token)} (Total: ${_handledPurchaseTokens.length})',
+        'Saved handled purchase token (total=${_handledPurchaseTokens.length})',
       );
     } catch (e) {
-      AppLogger.error('Failed to save purchase token', e is Exception ? e : null);
+      AppLogger.error(
+        'Failed to save purchase token',
+        e is Exception ? e : null,
+      );
     }
   }
 
@@ -116,7 +106,9 @@ class _PricingScreenState extends State<PricingScreen>
     AppLogger.debug('Setting up purchase stream listener...');
     _purchaseSubscription = _inAppPurchase.purchaseStream.listen(
       (purchases) {
-        AppLogger.debug('Purchase stream fired with ${purchases.length} purchases');
+        AppLogger.debug(
+          'Purchase stream fired with ${purchases.length} purchases',
+        );
         _handlePurchaseUpdates(purchases);
       },
       onError: (error) {
@@ -125,8 +117,7 @@ class _PricingScreenState extends State<PricingScreen>
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Purchase error: ${error.toString()}'),
-              backgroundColor:
-                  Theme.of(context).colorScheme.errorContainer,
+              backgroundColor: Theme.of(context).colorScheme.errorContainer,
             ),
           );
         }
@@ -169,7 +160,10 @@ class _PricingScreenState extends State<PricingScreen>
 
       AppLogger.debug('Pending purchase check completed');
     } catch (e) {
-      AppLogger.error('Failed to check pending purchases', e is Exception ? e : null);
+      AppLogger.error(
+        'Failed to check pending purchases',
+        e is Exception ? e : null,
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -191,8 +185,7 @@ class _PricingScreenState extends State<PricingScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Billing is not available on this device.'),
-          backgroundColor:
-              Theme.of(context).colorScheme.errorContainer,
+          backgroundColor: Theme.of(context).colorScheme.errorContainer,
         ),
       );
       return;
@@ -202,8 +195,7 @@ class _PricingScreenState extends State<PricingScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Loading products. Please try again.'),
-          backgroundColor:
-              Theme.of(context).colorScheme.tertiaryContainer,
+          backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
         ),
       );
       return;
@@ -213,8 +205,7 @@ class _PricingScreenState extends State<PricingScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Product not available. Please try again later.'),
-          backgroundColor:
-              Theme.of(context).colorScheme.errorContainer,
+          backgroundColor: Theme.of(context).colorScheme.errorContainer,
         ),
       );
       return;
@@ -279,18 +270,14 @@ class _PricingScreenState extends State<PricingScreen>
     _processPurchase(plan);
   }
 
-  Future<void> _handlePurchaseUpdates(
-    List<PurchaseDetails> purchases,
-  ) async {
+  Future<void> _handlePurchaseUpdates(List<PurchaseDetails> purchases) async {
     AppLogger.debug('Purchase update received: ${purchases.length} purchases');
 
     for (final purchase in purchases) {
-      final token = purchase.verificationData.serverVerificationData;
       AppLogger.debug(
         'Processing purchase: ${purchase.productID}, '
         'status: ${purchase.status}, '
-        'pending: ${purchase.pendingCompletePurchase}, '
-        'token: ${_tokenPreview(token)}',
+        'pending: ${purchase.pendingCompletePurchase}',
       );
 
       switch (purchase.status) {
@@ -310,8 +297,7 @@ class _PricingScreenState extends State<PricingScreen>
                 content: const Text(
                   'Payment declined. Please try another card.',
                 ),
-                backgroundColor:
-                    Theme.of(context).colorScheme.errorContainer,
+                backgroundColor: Theme.of(context).colorScheme.errorContainer,
                 behavior: SnackBarBehavior.floating,
               ),
             );
@@ -354,9 +340,13 @@ class _PricingScreenState extends State<PricingScreen>
           // This must happen FIRST, before any async operations that could fail or timeout
           // Google Play requires acknowledgement within 3 days or auto-refunds
           if (purchase.pendingCompletePurchase) {
-            AppLogger.debug('Immediately completing purchase to unlock Google Play account: ${purchase.productID}');
+            AppLogger.debug(
+              'Immediately completing purchase to unlock Google Play account: ${purchase.productID}',
+            );
             await _inAppPurchase.completePurchase(purchase);
-            AppLogger.debug('Purchase completed with Google Play: ${purchase.productID}');
+            AppLogger.debug(
+              'Purchase completed with Google Play: ${purchase.productID}',
+            );
           }
 
           // Now verify and deliver credits (can be done after completion)
@@ -378,21 +368,21 @@ class _PricingScreenState extends State<PricingScreen>
   }
 
   Future<bool> _verifyAndDeliverPurchase(
-    PurchaseDetails purchase,
-    {required bool showFailure}
-  ) async {
+    PurchaseDetails purchase, {
+    required bool showFailure,
+  }) async {
     if (!mounted) return false;
 
     final tokenKey = purchase.verificationData.serverVerificationData;
     final wasProcessing = _isProcessing;
 
-    AppLogger.debug(
-      'Verifying purchase: ${purchase.productID}, token: ${_tokenPreview(tokenKey)}',
-    );
+    AppLogger.debug('Verifying purchase: ${purchase.productID}');
 
     // Check if we've already handled this purchase token
     if (_handledPurchaseTokens.contains(tokenKey)) {
-      AppLogger.debug('Purchase token already handled, skipping verification: ${purchase.productID}');
+      AppLogger.debug(
+        'Purchase token already handled, skipping verification: ${purchase.productID}',
+      );
       // Purchase already handled, don't process again
       // But we should still complete it if needed to remove from Google Play queue
       return true;
@@ -423,8 +413,7 @@ class _PricingScreenState extends State<PricingScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Purchase verification failed.'),
-          backgroundColor:
-              Theme.of(context).colorScheme.errorContainer,
+          backgroundColor: Theme.of(context).colorScheme.errorContainer,
         ),
       );
     }
@@ -465,8 +454,7 @@ class _PricingScreenState extends State<PricingScreen>
                 ),
               ],
             ),
-            backgroundColor:
-                Theme.of(context).colorScheme.secondaryContainer,
+            backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 4),
           ),
@@ -503,8 +491,7 @@ class _PricingScreenState extends State<PricingScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Purchase failed: ${e.toString()}'),
-            backgroundColor:
-                Theme.of(context).colorScheme.errorContainer,
+            backgroundColor: Theme.of(context).colorScheme.errorContainer,
           ),
         );
       }
@@ -715,7 +702,9 @@ class _PricingScreenState extends State<PricingScreen>
                                   ),
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(
-                              color: colorScheme.secondary.withValues(alpha: 0.22),
+                              color: colorScheme.secondary.withValues(
+                                alpha: 0.22,
+                              ),
                             ),
                           ),
                           child: Column(
@@ -748,7 +737,9 @@ class _PricingScreenState extends State<PricingScreen>
                             borderRadius: BorderRadius.circular(999),
                             boxShadow: [
                               BoxShadow(
-                                color: colorScheme.primary.withValues(alpha: 0.4),
+                                color: colorScheme.primary.withValues(
+                                  alpha: 0.4,
+                                ),
                                 blurRadius: 20,
                                 offset: const Offset(0, 4),
                               ),
@@ -909,9 +900,21 @@ class _PricingScreenState extends State<PricingScreen>
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                _buildAvatarIcon(Icons.person_outline, const Offset(0, 0), colorScheme),
-                _buildAvatarIcon(Icons.person_outline, const Offset(22, 0), colorScheme),
-                _buildAvatarIcon(Icons.person_outline, const Offset(44, 0), colorScheme),
+                _buildAvatarIcon(
+                  Icons.person_outline,
+                  const Offset(0, 0),
+                  colorScheme,
+                ),
+                _buildAvatarIcon(
+                  Icons.person_outline,
+                  const Offset(22, 0),
+                  colorScheme,
+                ),
+                _buildAvatarIcon(
+                  Icons.person_outline,
+                  const Offset(44, 0),
+                  colorScheme,
+                ),
               ],
             ),
           ),
@@ -977,11 +980,7 @@ class _PricingScreenState extends State<PricingScreen>
           ],
         ),
         alignment: Alignment.center,
-        child: Icon(
-          icon,
-          size: 18,
-          color: colorScheme.onPrimary,
-        ),
+        child: Icon(icon, size: 18, color: colorScheme.onPrimary),
       ),
     );
   }
