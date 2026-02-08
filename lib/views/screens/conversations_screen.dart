@@ -68,6 +68,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   File? _uploadedProfileImage;
   NewMatchMode _newMatchMode = NewMatchMode.ai;
   int _generateRequestId = 0;
+  int _conversationExtractionRequestId = 0;
   StreamSubscription<List<PurchaseDetails>>? _purchaseSubscription;
   bool _purchaseListenerReady = false;
   bool _isRefreshingPurchases = false;
@@ -616,6 +617,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       );
 
       if (image == null) return;
+      final extractionRequestId = ++_conversationExtractionRequestId;
 
       setState(() {
         _isExtractingImage = true;
@@ -624,19 +626,39 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
       final extractedText = await _apiClient.extractFromImage(File(image.path));
 
-      if (!mounted) return;
+      if (!mounted ||
+          extractionRequestId != _conversationExtractionRequestId ||
+          _uploadedConversationImage == null) {
+        return;
+      }
       setState(() {
         _conversationCtrl.text = extractedText;
         _isExtractingImage = false;
       });
     } catch (e) {
       if (!mounted) return;
+      if (!_isExtractingImage) {
+        return;
+      }
       setState(() {
         _isExtractingImage = false;
         _uploadedConversationImage = null;
       });
       _showError('Failed to extract text from image. Please try again.');
     }
+  }
+
+  void _cancelConversationImageUpload() {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _conversationExtractionRequestId++;
+      _isExtractingImage = false;
+      _uploadedConversationImage = null;
+      _conversationCtrl.clear();
+      _suggestions = [];
+      _errorMessage = null;
+      _animationController.reset();
+    });
   }
 
   Future<void> _uploadProfileImage() async {
@@ -1096,7 +1118,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     _showLuxuryAccessSheet(
       headline: 'Unlock this reply.',
       body:
-          'Your preview is ready. Continue to Premium to reveal the full response.',
+          'Your daily limit of 3/3 reached. Continue to Premium to reveal the full response.',
       supportText: 'Instant unlock after checkout.',
       primaryLabel: 'Continue',
       onPrimary: () => _navigateToPricingAndUnlockLockedReply(lockedReplyId),
@@ -2100,31 +2122,32 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             ),
             const SizedBox(height: 12),
 
-            // Upload button
-            OutlinedButton(
-              onPressed: _isExtractingImage ? null : _uploadScreenshot,
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 44),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                backgroundColor: colorScheme.surfaceContainerHigh,
-                foregroundColor: colorScheme.onSurface,
-                side: BorderSide(color: colorScheme.outline),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            // Upload button (only show if no image uploaded)
+            if (_uploadedConversationImage == null)
+              OutlinedButton(
+                onPressed: _isExtractingImage ? null : _uploadScreenshot,
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 44),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  backgroundColor: colorScheme.surfaceContainerHigh,
+                  foregroundColor: colorScheme.onSurface,
+                  side: BorderSide(color: colorScheme.outline),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.photo_camera_outlined, size: 18),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Analyze Chat',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
+                  ],
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.photo_camera_outlined, size: 18),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Analyze Chat',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            ),
 
             if (hasConversationPreview) const SizedBox(height: 16),
 
@@ -2159,12 +2182,25 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ),
+                    IconButton(
+                      onPressed: _cancelConversationImageUpload,
+                      icon: Icon(
+                        Icons.close_outlined,
+                        size: 18,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 16),
-            ] else if (_uploadedConversationImage != null &&
-                _conversationCtrl.text.isNotEmpty) ...[
+            ] else if (_uploadedConversationImage != null) ...[
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -2216,9 +2252,11 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            _conversationCtrl.text.length > 80
-                                ? '${_conversationCtrl.text.substring(0, 80)}...'
-                                : _conversationCtrl.text,
+                            _conversationCtrl.text.isEmpty
+                                ? 'Tap "Craft Response" to generate suggestions'
+                                : (_conversationCtrl.text.length > 80
+                                      ? '${_conversationCtrl.text.substring(0, 80)}...'
+                                      : _conversationCtrl.text),
                             style: TextStyle(
                               color: colorScheme.onSurfaceVariant,
                               fontSize: 12,
