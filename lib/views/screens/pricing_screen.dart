@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
@@ -10,7 +11,6 @@ import '../../utils/app_logger.dart';
 import 'login_screen.dart';
 import 'signup_screen.dart';
 import '../widgets/premium_gradient_button.dart';
-import '../widgets/gradient_icon.dart';
 import '../widgets/thinking_indicator.dart';
 
 class PricingScreen extends StatefulWidget {
@@ -523,14 +523,28 @@ class _PricingScreenState extends State<PricingScreen>
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isLight = theme.brightness == Brightness.light;
-    final plans = PricingPlan.allPlans;
     final appState = AppStateScope.of(context);
+    final plans = PricingPlan.allPlans;
+    final plan = plans.isNotEmpty ? plans.first : null;
+    final isSelected = plan != null && _selectedPlan?.id == plan.id;
+    final isProcessing = _isProcessing && isSelected;
+    final baseBackground = isLight
+        ? colorScheme.surfaceDim
+        : colorScheme.surfaceContainerLowest;
+    final cardBackground = isLight
+        ? colorScheme.surface
+        : colorScheme.surfaceContainer;
+    final cardBorderColor = isLight
+        ? colorScheme.secondary.withValues(alpha: 0.2)
+        : colorScheme.secondary.withValues(alpha: 0.3);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Colors.transparent,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
         leading: widget.showCloseButton
             ? IconButton(
                 icon: Icon(Icons.close_outlined, color: colorScheme.onSurface),
@@ -540,225 +554,258 @@ class _PricingScreenState extends State<PricingScreen>
                 },
               )
             : null,
-        title: Text(
-          'FlirtFix Elite',
-          style: theme.textTheme.titleLarge?.copyWith(
-            color: colorScheme.onSurface,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header Section
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(28),
-                  boxShadow: [
-                    BoxShadow(
-                      color: isLight
-                          ? const Color(0xFF9E9E9E).withValues(alpha: 0.14)
-                          : colorScheme.primary.withValues(alpha: 0.18),
-                      blurRadius: isLight ? 30 : 24,
-                      offset: const Offset(0, 12),
-                      spreadRadius: isLight ? -6 : 0,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: GradientIcon(
-                        icon: Icons.all_inclusive_outlined,
-                        size: 28,
-                        gradient: LinearGradient(
-                          colors: [
-                            colorScheme.secondary,
-                            Color.lerp(
-                                  colorScheme.secondary,
-                                  colorScheme.primary,
-                                  0.4,
-                                ) ??
-                                colorScheme.secondary,
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Limitless Conversation.',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        color: colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Remove all constraints. Enjoy unrestricted access to AI-crafted dialogue and priority analysis. Perfect your approach.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onPrimaryContainer.withValues(alpha: 0.85),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (appState.isLoggedIn) ...[
-                      FilledButton.tonalIcon(
-                        onPressed: _isProcessing
-                            ? null
-                            : () {
-                                HapticFeedback.selectionClick();
-                                _refreshPendingPurchases();
-                              },
-                        icon: AnimatedRotation(
-                          turns: _isRefreshingPurchases ? 1 : 0,
-                          duration: const Duration(milliseconds: 600),
-                          curve: Curves.easeInOut,
-                          child: const Icon(Icons.refresh_outlined, size: 18),
-                        ),
-                        label: Text(
-                          _isRefreshingPurchases ? 'Refreshing...' : 'Refresh purchases',
-                        ),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: colorScheme.onPrimaryContainer.withValues(alpha: 0.08),
-                          foregroundColor: colorScheme.onPrimaryContainer,
-                        ),
-                      ),
-                    ] else ...[
-                      Text(
-                        'Manage your membership privileges.',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onPrimaryContainer.withValues(alpha: 0.75),
-                        ),
-                      ),
-                    ],
-                  ],
+        actions: [
+          if (appState.isLoggedIn)
+            IconButton(
+              tooltip: _isRefreshingPurchases
+                  ? 'Refreshing...'
+                  : 'Refresh purchases',
+              onPressed: _isProcessing
+                  ? null
+                  : () {
+                      HapticFeedback.selectionClick();
+                      _refreshPendingPurchases();
+                    },
+              icon: AnimatedRotation(
+                turns: _isRefreshingPurchases ? 1 : 0,
+                duration: const Duration(milliseconds: 650),
+                curve: Curves.easeInOut,
+                child: Icon(
+                  Icons.refresh_outlined,
+                  color: colorScheme.onSurface,
                 ),
               ),
-
-              const SizedBox(height: 32),
-
-              // Features List
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: isLight
-                          ? const Color(0xFF9E9E9E).withValues(alpha: 0.1)
-                          : colorScheme.shadow.withValues(alpha: 0.08),
-                      blurRadius: isLight ? 25 : 16,
-                      offset: isLight
-                          ? const Offset(0, 10)
-                          : const Offset(0, 6),
-                      spreadRadius: isLight ? -5 : 0,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'WHAT YOU GET',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 2.0,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildFeatureItem(
-                      Icons.flash_on_outlined,
-                      'Unlimited crafted replies & refinements',
-                      colorScheme,
-                    ),
-                    _buildFeatureItem(
-                      Icons.image_search_outlined,
-                      'Fast OCR from screenshots',
-                      colorScheme,
-                    ),
-                    _buildFeatureItem(
-                      Icons.chat_bubble_outline,
-                      'Tailored openers from images',
-                      colorScheme,
-                    ),
-                    _buildFeatureItem(
-                      Icons.verified_outlined,
-                      'Priority access & updates',
-                      colorScheme,
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 32),
-
-              // Pricing Plans
-              ...plans.asMap().entries.map((entry) {
-                final plan = entry.value;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: _buildPricingCard(plan, theme),
-                );
-              }),
-
-              const SizedBox(height: 24),
-
-              // Disclaimer
-              Text(
-                'Weekly subscription - Cancel anytime in Google Play - Fair-use applies',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: colorScheme.onSurfaceVariant,
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: 40),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFeatureItem(
-    IconData icon,
-    String text,
-    ColorScheme colorScheme,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: colorScheme.primary, size: 20),
+        ],
+      ),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(0, -0.2),
+                  radius: 1.2,
+                  colors: [
+                    Color.lerp(baseBackground, colorScheme.surface, 0.06) ??
+                        baseBackground,
+                    baseBackground,
+                  ],
+                  stops: const [0.0, 1.0],
+                ),
+              ),
+            ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(fontSize: 15, color: colorScheme.onSurface),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Align(
+                alignment: const Alignment(0, -0.28),
+                child: ImageFiltered(
+                  imageFilter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
+                  child: Container(
+                    width: 420,
+                    height: 420,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: colorScheme.primaryContainer.withValues(
+                        alpha: isLight ? 0.56 : 0.4,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(22, 24, 22, 24),
+                    decoration: BoxDecoration(
+                      color: cardBackground,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: cardBorderColor),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colorScheme.shadow.withValues(
+                            alpha: isLight ? 0.14 : 0.35,
+                          ),
+                          blurRadius: isLight ? 28 : 34,
+                          offset: const Offset(0, 14),
+                        ),
+                        BoxShadow(
+                          color: colorScheme.primaryContainer.withValues(
+                            alpha: isLight ? 0.16 : 0.2,
+                          ),
+                          blurRadius: isLight ? 44 : 50,
+                          spreadRadius: -4,
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'ELITE INTELLIGENCE',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colorScheme.secondary,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 2.0,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'THE UNFAIR\nADVANTAGE.',
+                          style: theme.textTheme.headlineLarge?.copyWith(
+                            fontSize: 42,
+                            height: 0.9,
+                            color: colorScheme.onSurface,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Unlock the only AI capable of deep psychological analysis and subtext reading.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            height: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        _buildPremiumFeature(
+                          icon: Icons.diamond_outlined,
+                          title: 'Deep Reasoning Engine',
+                          subtitle:
+                              'Openers analyzed by our most advanced, human-level model.',
+                          badgeText: 'PRO MODEL',
+                          colorScheme: colorScheme,
+                        ),
+                        _buildPremiumFeature(
+                          icon: Icons.bolt_outlined,
+                          title: 'Unrestricted Flow',
+                          subtitle:
+                              'Unlimited replies. Zero timers. Complete creative freedom.',
+                          colorScheme: colorScheme,
+                        ),
+                        _buildPremiumFeature(
+                          icon: Icons.psychology_outlined,
+                          title: 'Adaptive Tonality',
+                          subtitle:
+                              'Switch between Charming, Cocky, or Sincere modes instantly.',
+                          colorScheme: colorScheme,
+                        ),
+                        _buildPremiumFeature(
+                          icon: Icons.visibility_outlined,
+                          title: 'Instant Context',
+                          subtitle:
+                              'Seamless screenshot analysis without the wait.',
+                          colorScheme: colorScheme,
+                        ),
+                        const SizedBox(height: 18),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: isLight
+                                ? colorScheme.surfaceContainerHighest
+                                : colorScheme.surfaceContainerLow.withValues(
+                                    alpha: 0.72,
+                                  ),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: colorScheme.secondary.withValues(alpha: 0.22),
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                plan != null
+                                    ? _weeklyPriceLabel(plan)
+                                    : '\$6.99 / week',
+                                style: theme.textTheme.headlineMedium?.copyWith(
+                                  fontFamily: 'Roboto',
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -0.3,
+                                  color: colorScheme.primary,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Less than a coffee a day.',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(999),
+                            boxShadow: [
+                              BoxShadow(
+                                color: colorScheme.primary.withValues(alpha: 0.4),
+                                blurRadius: 20,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: PremiumGradientButton(
+                            onPressed: (plan == null || isProcessing)
+                                ? null
+                                : () => _handlePurchase(plan),
+                            height: 54,
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(999),
+                            ),
+                            colors: isLight
+                                ? [colorScheme.primary, colorScheme.primary]
+                                : [colorScheme.primary, colorScheme.tertiary],
+                            child: isProcessing
+                                ? SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: BreathingPulseIndicator(
+                                      size: 18,
+                                      color: colorScheme.onPrimary,
+                                    ),
+                                  )
+                                : const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.lock_open_outlined, size: 20),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Unlock Elite Access',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        _buildSocialProofBadge(colorScheme),
+                        const SizedBox(height: 14),
+                        Text(
+                          'Cancel anytime via Google Play. Secure processing.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            height: 1.45,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -766,218 +813,181 @@ class _PricingScreenState extends State<PricingScreen>
     );
   }
 
-  Widget _buildPricingCard(PricingPlan plan, ThemeData theme) {
-    final colorScheme = theme.colorScheme;
-    final isLight = theme.brightness == Brightness.light;
-    final isSelected = _selectedPlan?.id == plan.id;
-    final isProcessing = _isProcessing && isSelected;
-    final surfaceColor = isSelected
-        ? colorScheme.secondaryContainer
-        : (plan.isPopular ? colorScheme.primaryContainer : colorScheme.surface);
-    final borderColor =
-        plan.isPopular ? colorScheme.primary : colorScheme.outlineVariant;
-    final shadowColor = isLight
-        ? const Color(0xFF9E9E9E).withValues(
-            alpha: plan.isPopular ? 0.16 : 0.1,
-          )
-        : colorScheme.shadow.withValues(
-            alpha: plan.isPopular ? 0.18 : 0.08,
-          );
-    final shadowBlur = isLight
-        ? (plan.isPopular ? 28.0 : 24.0)
-        : (plan.isPopular ? 20.0 : 12.0);
-    final shadowOffset = isLight ? const Offset(0, 12) : const Offset(0, 8);
-    final shadowSpread = isLight ? -6.0 : 0.0;
-
-    return AnimatedScale(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOut,
-      scale: isSelected ? 1.01 : 1.0,
-      child: Container(
-        decoration: BoxDecoration(
-          color: surfaceColor,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: borderColor,
-            width: plan.isPopular ? 1.5 : 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: shadowColor,
-              blurRadius: shadowBlur,
-              offset: shadowOffset,
-              spreadRadius: shadowSpread,
+  Widget _buildPremiumFeature({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required ColorScheme colorScheme,
+    String? badgeText,
+  }) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: colorScheme.secondaryContainer.withValues(alpha: 0.65),
             ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            // Popular Badge
-            if (plan.isPopular)
-              Positioned(
-                top: 0,
-                right: 20,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary,
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(12),
-                      bottomRight: Radius.circular(12),
+            child: Icon(icon, size: 18, color: colorScheme.secondary),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
+                    if (badgeText != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorScheme.secondary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: colorScheme.secondary.withValues(alpha: 0.4),
+                          ),
+                        ),
+                        child: Text(
+                          badgeText,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colorScheme.secondary,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    height: 1.45,
                   ),
-                  child: Text(
-                    'MOST POPULAR',
-                    style: TextStyle(
-                      color: colorScheme.onPrimary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.6,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSocialProofBadge(ColorScheme colorScheme) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow.withValues(alpha: 0.58),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 88,
+            height: 34,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                _buildAvatarIcon(Icons.person_outline, const Offset(0, 0), colorScheme),
+                _buildAvatarIcon(Icons.person_outline, const Offset(22, 0), colorScheme),
+                _buildAvatarIcon(Icons.person_outline, const Offset(44, 0), colorScheme),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: List.generate(
+                    5,
+                    (_) => Icon(
+                      Icons.star_rounded,
+                      size: 14,
+                      color: colorScheme.secondary,
                     ),
                   ),
                 ),
-              ),
-
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Plan Name and Savings
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      if (plan.savingsText != null)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colorScheme.tertiaryContainer,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            plan.savingsText!,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: colorScheme.onTertiaryContainer,
-                            ),
-                          ),
-                        ),
-                      if (plan.savingsText != null) const SizedBox(height: 8),
-                      Text(
-                        plan.priceString,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.primary,
-                        ),
-                      ),
-                      if (plan.billingPeriod != null)
-                        Text(
-                          plan.billingPeriod!,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                    ],
+                const SizedBox(height: 4),
+                Text(
+                  'Trusted by 10,000+ men to land more dates.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    height: 1.3,
                   ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-                  const SizedBox(height: 20),
-
-                  if (plan.tagline != null) ...[
-                    Text(
-                      plan.tagline!,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-
-                  // Features
-                  ...plan.features.map(
-                    (feature) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.check_circle_outlined,
-                            color: colorScheme.primary,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              feature,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Purchase Button
-                  PremiumGradientButton(
-                    onPressed:
-                        isProcessing ? null : () => _handlePurchase(plan),
-                    height: 52,
-                    child: isProcessing
-                        ? SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: BreathingPulseIndicator(
-                              size: 18,
-                              color: colorScheme.onPrimary,
-                            ),
-                          )
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                widget.guestConversionMode &&
-                                        !AppStateScope.of(context).isLoggedIn
-                                    ? Icons.person_add_outlined
-                                    : Icons.shopping_cart_outlined,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                widget.guestConversionMode &&
-                                        !AppStateScope.of(context).isLoggedIn
-                                    ? 'Apply for Access'
-                                    : 'Begin Membership',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                  ),
-                ],
-              ),
+  Widget _buildAvatarIcon(
+    IconData icon,
+    Offset offset,
+    ColorScheme colorScheme,
+  ) {
+    final secondaryBlend =
+        Color.lerp(colorScheme.secondary, colorScheme.primary, 0.35) ??
+        colorScheme.secondary;
+    return Positioned(
+      left: offset.dx,
+      top: offset.dy,
+      child: Container(
+        width: 34,
+        height: 34,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [colorScheme.primary, secondaryBlend],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          shape: BoxShape.circle,
+          border: Border.all(color: colorScheme.surface, width: 1.4),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.primary.withValues(alpha: 0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
+        alignment: Alignment.center,
+        child: Icon(
+          icon,
+          size: 18,
+          color: colorScheme.onPrimary,
+        ),
       ),
     );
+  }
+
+  String _weeklyPriceLabel(PricingPlan plan) {
+    return '\$${plan.price.toStringAsFixed(2)} / week';
   }
 
   @override
