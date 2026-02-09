@@ -1119,10 +1119,17 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   }
 
   void _showUpgradePopup(int? lockedReplyId) {
+    final appState = AppStateScope.of(context);
+    final freeDailyLimit = appState.freeDailyCreditsLimit;
+    final limitLabel = freeDailyLimit != null
+        ? '$freeDailyLimit/$freeDailyLimit'
+        : '3/3';
+    final resetTime = _getTimeUntilMidnightUtc();
+
     _showLuxuryAccessSheet(
       headline: 'Unlock this reply.',
       body:
-          'Your daily limit of 3/3 reached. Continue to Premium to reveal the full response.',
+          'Your daily limit of $limitLabel reached. Resets in $resetTime. Continue to Premium to reveal the full response.',
       supportText: 'Instant unlock after checkout.',
       primaryLabel: 'Continue',
       onPrimary: () => _navigateToPricingAndUnlockLockedReply(lockedReplyId),
