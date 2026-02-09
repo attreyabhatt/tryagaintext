@@ -39,8 +39,24 @@ class AuthService {
 
   // Store auth token
   static Future<void> _storeToken(String token) async {
+    if (!kIsWeb) {
+      try {
+        await _secureStorage.write(key: tokenKey, value: token);
+      } catch (e) {
+        AppLogger.error('Secure token write failed', e is Exception ? e : null);
+      }
+    }
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(tokenKey, token);
+  }
+
+  // Store a fresh auth token returned by the backend.
+  static Future<void> storeTokenFromServer(String token) async {
+    final sanitized = token.trim();
+    if (sanitized.isEmpty) {
+      return;
+    }
+    await _storeToken(sanitized);
   }
 
   // Store user data
@@ -81,8 +97,36 @@ class AuthService {
 
   // Get stored token
   static Future<String?> getToken() async {
+    if (!kIsWeb) {
+      try {
+        final secureToken = await _secureStorage.read(key: tokenKey);
+        if (secureToken != null && secureToken.isNotEmpty) {
+          return secureToken;
+        }
+      } catch (e) {
+        AppLogger.error('Secure token read failed', e is Exception ? e : null);
+      }
+    }
+
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(tokenKey);
+    final legacyToken = prefs.getString(tokenKey);
+    if (legacyToken == null || legacyToken.isEmpty) {
+      return null;
+    }
+
+    if (!kIsWeb) {
+      // Migrate legacy token from SharedPreferences to secure storage.
+      try {
+        await _secureStorage.write(key: tokenKey, value: legacyToken);
+        await prefs.remove(tokenKey);
+      } catch (e) {
+        AppLogger.error(
+          'Secure token migration failed',
+          e is Exception ? e : null,
+        );
+      }
+    }
+    return legacyToken;
   }
 
   // Get stored user
@@ -162,6 +206,16 @@ class AuthService {
 
   // Clear all stored data
   static Future<void> clearStoredData() async {
+    if (!kIsWeb) {
+      try {
+        await _secureStorage.delete(key: tokenKey);
+      } catch (e) {
+        AppLogger.error(
+          'Secure token delete failed',
+          e is Exception ? e : null,
+        );
+      }
+    }
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(tokenKey);
     await prefs.remove(userKey);

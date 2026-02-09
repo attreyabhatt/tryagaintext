@@ -270,6 +270,10 @@ class ApiClient {
 
       final data = _decodeJson(response.body);
       if (data['success'] == true) {
+        final rotatedToken = data['token']?.toString();
+        if (rotatedToken != null && rotatedToken.trim().isNotEmpty) {
+          await AuthService.storeTokenFromServer(rotatedToken);
+        }
         return null;
       }
 
