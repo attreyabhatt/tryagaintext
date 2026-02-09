@@ -19,7 +19,6 @@ import 'signup_screen.dart';
 import 'package:flirtfix/views/screens/pricing_screen.dart';
 import 'package:flirtfix/views/screens/profile_screen.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../widgets/luxury_text_field.dart';
 import '../widgets/gradient_icon.dart';
 import '../widgets/thinking_indicator.dart';
 
@@ -43,8 +42,26 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   static const String _newMatchModeKey = 'new_match_mode';
   static const String _handledTokensKey = 'handled_purchase_tokens';
   static const String _keepItShortKey = 'keep_it_short_need_reply';
+  static const List<String> _toneOptions = <String>[
+    'Default',
+    'Flirty',
+    'Witty',
+    'Romantic',
+    'Cocky Funny',
+  ];
+  static const List<String> _characterOptions = <String>[
+    'None',
+    'Tommy Shelby',
+    'Elliot Anderson',
+    'Logan Roy',
+    'Lawyer',
+    'Doctor',
+  ];
+  static const String _defaultTone = 'Default';
+  static const String _defaultCharacter = 'None';
   String _situation = 'stuck_after_reply';
-  final String _selectedTone = 'Natural';
+  String _selectedTone = _defaultTone;
+  String _selectedCharacter = _defaultCharacter;
   final _conversationCtrl = TextEditingController();
   final _customInstructionsCtrl = TextEditingController();
   final _newMatchCustomInstructionsCtrl = TextEditingController();
@@ -456,48 +473,57 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     );
   }
 
-  String _getCombinedCustomInstructions() {
-    String instructions = _customInstructionsCtrl.text.trim();
+  String _composeInstructions({
+    required String baseInstructions,
+    required bool includeCommandSettings,
+  }) {
+    const hiddenInstructions =
+        "dont use em dashes or dashes. Do not put single quotes around words unless necessary.";
+    final parts = <String>[
+      if (baseInstructions.trim().isNotEmpty) baseInstructions.trim(),
+      if (includeCommandSettings && !_isDefaultCharacterSelection)
+        'Write with a $_selectedCharacter persona.',
+      if (includeCommandSettings && !_isDefaultToneSelection)
+        'Use a ${_selectedTone.toLowerCase()} tone.',
+      if (includeCommandSettings && _keepItShort) 'Keep it short.',
+      hiddenInstructions,
+    ];
+    return parts.join(' ');
+  }
 
-    // Add hidden instructions for Need Reply tab
-    if (_situation != 'just_matched') {
-      const hiddenInstructions =
-          "dont use em dashes or dashes. Do not put single quotes around words unless necessary.";
+  bool get _isDefaultToneSelection {
+    final normalized = _selectedTone.trim().toLowerCase();
+    return normalized == _defaultTone.toLowerCase() || normalized == 'natural';
+  }
 
-      if (instructions.isEmpty) {
-        instructions = hiddenInstructions;
-      } else {
-        instructions = "$instructions. $hiddenInstructions";
-      }
+  bool get _isDefaultCharacterSelection {
+    final normalized = _selectedCharacter.trim().toLowerCase();
+    return normalized == _defaultCharacter.toLowerCase() ||
+        normalized == 'standard';
+  }
 
-      // Also add "Keep it Short" if toggle is enabled (currently hidden in UI)
-      if (_keepItShort) {
-        instructions = "$instructions Keep it Short";
-      }
+  String _toneForBackend() {
+    if (_isDefaultToneSelection) {
+      return 'Natural';
     }
+    return _selectedTone;
+  }
 
-    return instructions;
+  String _getCombinedCustomInstructions() {
+    return _composeInstructions(
+      baseInstructions: _customInstructionsCtrl.text,
+      includeCommandSettings: true,
+    );
   }
 
   String _getCombinedCustomInstructionsForOpeners() {
-    String instructions = '';
-
-    // Get user's custom instructions if feature is enabled
-    if (_enableNewMatchCustomInstructions) {
-      instructions = _newMatchCustomInstructionsCtrl.text.trim();
-    }
-
-    // Add hidden instructions for New Match tab (openers)
-    const hiddenInstructions =
-        "dont use em dashes or dashes. Do not put single quotes around words unless necessary.";
-
-    if (instructions.isEmpty) {
-      instructions = hiddenInstructions;
-    } else {
-      instructions = "$instructions. $hiddenInstructions";
-    }
-
-    return instructions;
+    final openersCustomInstructions = _enableNewMatchCustomInstructions
+        ? _newMatchCustomInstructionsCtrl.text
+        : '';
+    return _composeInstructions(
+      baseInstructions: openersCustomInstructions,
+      includeCommandSettings: _enableNewMatchCustomInstructions,
+    );
   }
 
   Future<void> _generateSuggestions() async {
@@ -551,7 +577,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           lastText: _conversationCtrl.text,
           situation: _situation,
           herInfo: '',
-          tone: _selectedTone,
+          tone: _toneForBackend(),
           customInstructions: combinedInstructions,
         );
       }
@@ -1785,121 +1811,359 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     }
   }
 
-  Widget _buildCustomInstructionsSection(ColorScheme colorScheme) {
-    final controller = _situation == 'just_matched'
+  TextEditingController _activeInstructionsController() {
+    return _situation == 'just_matched'
         ? _newMatchCustomInstructionsCtrl
         : _customInstructionsCtrl;
+  }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(
-            children: [
-              Icon(
-                Icons.edit_note_outlined,
-                size: 18,
-                color: colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Custom Instructions',
-                style: TextStyle(
-                  color: colorScheme.onSurfaceVariant,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+  String _buildCommandHintText() {
+    final activeSettings = <String>[
+      if (!_isDefaultCharacterSelection) _selectedCharacter,
+      if (!_isDefaultToneSelection) _selectedTone,
+      if (_keepItShort) 'Short',
+    ];
+    if (activeSettings.isEmpty) {
+      return 'Any specific instructions?';
+    }
+    return '(${activeSettings.join(' | ')}) Add details...';
+  }
+
+  Future<void> _setKeepItShort(bool value) async {
+    HapticFeedback.heavyImpact();
+    setState(() {
+      _keepItShort = value;
+    });
+    await _saveKeepItShortPreference(value);
+  }
+
+  Future<void> _showTonePicker(ColorScheme colorScheme) async {
+    final selectedTone = await _showCommandOptionSheet(
+      colorScheme: colorScheme,
+      title: 'Select Tone',
+      helperText: 'Select a style or type your own above.',
+      options: _toneOptions,
+      selectedValue: _selectedTone,
+    );
+    if (selectedTone == null || selectedTone == _selectedTone) {
+      return;
+    }
+    HapticFeedback.heavyImpact();
+    setState(() {
+      _selectedTone = selectedTone;
+    });
+  }
+
+  Future<void> _showCharacterPicker(ColorScheme colorScheme) async {
+    final selectedCharacter = await _showCommandOptionSheet(
+      colorScheme: colorScheme,
+      title: 'Select Character',
+      helperText: 'Select a persona or type your own above.',
+      options: _characterOptions,
+      selectedValue: _selectedCharacter,
+    );
+    if (selectedCharacter == null || selectedCharacter == _selectedCharacter) {
+      return;
+    }
+    HapticFeedback.heavyImpact();
+    setState(() {
+      _selectedCharacter = selectedCharacter;
+    });
+  }
+
+  Future<String?> _showCommandOptionSheet({
+    required ColorScheme colorScheme,
+    required String title,
+    String? helperText,
+    required List<String> options,
+    required String selectedValue,
+  }) {
+    final isDark = colorScheme.brightness == Brightness.dark;
+    final selectedChipBackground = isDark
+        ? colorScheme.secondary.withValues(alpha: 0.16)
+        : colorScheme.secondary.withValues(alpha: 0.14);
+    final selectedChipBorder = isDark
+        ? colorScheme.secondary.withValues(alpha: 0.92)
+        : colorScheme.secondary.withValues(alpha: 0.86);
+    final unselectedChipBorder = isDark
+        ? Colors.white.withValues(alpha: 0.18)
+        : colorScheme.outlineVariant.withValues(alpha: 0.62);
+    final chipBackground = isDark
+        ? Colors.white.withValues(alpha: 0.06)
+        : colorScheme.surface.withValues(alpha: 0.86);
+    final sheetBackgroundColor = isDark
+        ? Colors.black.withValues(alpha: 0.62)
+        : colorScheme.surfaceContainerHighest.withValues(alpha: 0.94);
+    final sheetBorderColor = isDark
+        ? Colors.white.withValues(alpha: 0.1)
+        : colorScheme.outlineVariant.withValues(alpha: 0.52);
+    final titleColor = isDark ? Colors.white : colorScheme.onSurface;
+    final helperColor = isDark
+        ? Colors.white.withValues(alpha: 0.78)
+        : colorScheme.onSurfaceVariant;
+    final chipLabelColor = isDark
+        ? Colors.white.withValues(alpha: 0.96)
+        : colorScheme.onSurface;
+
+    return showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: isDark ? 0.18 : 0.08),
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        final bottomSafe = MediaQuery.of(sheetContext).padding.bottom;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(16, 0, 16, 12 + bottomSafe),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(28),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: sheetBackgroundColor,
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(
+                    color: sheetBorderColor,
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.14),
+                      blurRadius: isDark ? 26 : 20,
+                      offset: const Offset(0, 14),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 22),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            color: titleColor,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                        if (helperText != null) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            helperText,
+                            style: TextStyle(
+                              color: helperColor,
+                              fontSize: 13,
+                              height: 1.35,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: options.map((option) {
+                            final isSelected = selectedValue == option;
+                            return ChoiceChip(
+                              label: Text(option),
+                              selected: isSelected,
+                              onSelected: (_) =>
+                                  Navigator.of(sheetContext).pop(option),
+                              showCheckmark: false,
+                              labelStyle: TextStyle(
+                                fontSize: 13,
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
+                                color: chipLabelColor,
+                              ),
+                              backgroundColor: chipBackground,
+                              selectedColor: selectedChipBackground,
+                              side: BorderSide(
+                                color: isSelected
+                                    ? selectedChipBorder
+                                    : unselectedChipBorder,
+                                width: isSelected ? 1.2 : 1,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(22),
+                              ),
+                              visualDensity: VisualDensity.compact,
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(width: 6),
-              Text(
-                '(optional)',
-                style: TextStyle(
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        LuxuryTextField(
-          controller: controller,
-          maxLines: 2,
-          minLines: 2,
-          maxLength: 250,
-          useDarkOutlineBorder: true,
-          showDarkOutlineWhenUnfocused: false,
-          buildCounter:
-              (
-                BuildContext context, {
-                required int currentLength,
-                required bool isFocused,
-                int? maxLength,
-              }) {
-                return null;
-              },
-          decoration: InputDecoration(
-            hintText: _situation == 'just_matched'
-                ? 'e.g., mention her dog, write a poem, comment on her bio'
-                : 'e.g., roast her, talk like a pirate, she is a writer',
-            hintStyle: TextStyle(
-              color: colorScheme.onSurfaceVariant,
-              fontSize: 14,
             ),
-            suffixIcon: controller.text.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear_outlined, size: 18),
-                    onPressed: () {
-                      setState(() {
-                        controller.clear();
-                      });
-                    },
-                  )
-                : null,
           ),
-          onChanged: (_) => setState(() {}),
-        ),
-        if (_situation != 'just_matched') _buildKeepItShortToggle(colorScheme),
-      ],
+        );
+      },
     );
   }
 
-  Widget _buildKeepItShortToggle(ColorScheme colorScheme) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildCommandIconButton({
+    required ColorScheme colorScheme,
+    required IconData icon,
+    required bool isActive,
+    required VoidCallback onPressed,
+    required String tooltip,
+  }) {
+    final iconColor = isActive
+        ? colorScheme.secondary
+        : colorScheme.onSurfaceVariant;
+    return SizedBox(
+      width: 36,
+      height: 36,
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          Row(
-            children: [
-              Icon(
-                Icons.short_text_outlined,
-                size: 18,
-                color: colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Keep it short',
-                style: TextStyle(
-                  color: colorScheme.onSurfaceVariant,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+          IconButton(
+            onPressed: onPressed,
+            icon: Icon(icon, size: 20, color: iconColor),
+            tooltip: tooltip,
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          ),
+          if (isActive)
+            Positioned(
+              bottom: 2,
+              child: Container(
+                width: 5,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: colorScheme.secondary,
+                  shape: BoxShape.circle,
                 ),
               ),
-            ],
+            ),
+        ],
+      ),
+    );
+
+  }
+
+  Widget _buildCustomInstructionsSection(ColorScheme colorScheme) {
+    final controller = _activeInstructionsController();
+    final isDark = colorScheme.brightness == Brightness.dark;
+    final containerColor = isDark
+        ? colorScheme.surfaceContainer
+        : colorScheme.surfaceContainerHighest;
+    final borderColor = isDark
+        ? colorScheme.outline.withValues(alpha: 0.9)
+        : colorScheme.outlineVariant.withValues(alpha: 0.95);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+      decoration: BoxDecoration(
+        color: containerColor,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [
+                  colorScheme.surfaceContainer,
+                  colorScheme.surfaceContainerHigh.withValues(alpha: 0.9),
+                ]
+              : [
+                  colorScheme.surfaceContainerHighest,
+                  colorScheme.surfaceContainer.withValues(alpha: 0.75),
+                ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: isDark ? 0.22 : 0.08),
+            blurRadius: isDark ? 14 : 10,
+            offset: const Offset(0, 4),
           ),
-          Switch(
-            value: _keepItShort,
-            onChanged: (value) {
-              HapticFeedback.selectionClick();
-              setState(() {
-                _keepItShort = value;
-              });
-              _saveKeepItShortPreference(value);
-            },
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: controller,
+            minLines: 2,
+            maxLines: 2,
+            maxLength: 250,
+            style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
+            decoration: InputDecoration(
+              hintText: _buildCommandHintText(),
+              hintStyle: TextStyle(
+                color: colorScheme.onSurfaceVariant,
+                fontSize: 13,
+              ),
+              filled: false,
+              isDense: true,
+              border: InputBorder.none,
+              counterText: '',
+              contentPadding: const EdgeInsets.only(
+                left: 8,
+                right: 8,
+                top: 8,
+                bottom: 8,
+              ),
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
+            height: 1,
+            color: colorScheme.outline.withValues(alpha: 0.7),
+          ),
+          Row(
+            children: [
+              _buildCommandIconButton(
+                colorScheme: colorScheme,
+                icon: Icons.theater_comedy_outlined,
+                isActive: !_isDefaultCharacterSelection,
+                onPressed: () {
+                  _showCharacterPicker(colorScheme);
+                },
+                tooltip: 'Character',
+              ),
+              _buildCommandIconButton(
+                colorScheme: colorScheme,
+                icon: Icons.tune_outlined,
+                isActive: !_isDefaultToneSelection,
+                onPressed: () {
+                  _showTonePicker(colorScheme);
+                },
+                tooltip: 'Tone',
+              ),
+              const Spacer(),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Keep it short',
+                    style: TextStyle(
+                      color: _keepItShort
+                          ? colorScheme.secondary
+                          : colorScheme.onSurfaceVariant,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Transform.scale(
+                    scale: 0.82,
+                    child: Switch(
+                      value: _keepItShort,
+                      onChanged: _setKeepItShort,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ],
       ),
@@ -2901,3 +3165,7 @@ class _SuggestionCard extends StatelessWidget {
     );
   }
 }
+
+
+
+
