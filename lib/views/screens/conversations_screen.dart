@@ -12,6 +12,7 @@ import 'dart:io';
 import '../../state/app_state.dart';
 import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
+import '../../services/review_prompt_service.dart';
 import '../../models/suggestion.dart';
 import '../../utils/app_logger.dart';
 import 'login_screen.dart';
@@ -38,7 +39,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     fontWeight: FontWeight.w600,
   );
   static const bool _enableNewMatchCustomInstructions = false;
-  static const String _ratingPromptShownKey = 'rating_prompt_shown';
   static const String _newMatchModeKey = 'new_match_mode';
   static const String _handledTokensKey = 'handled_purchase_tokens';
   static const String _keepItShortKey = 'keep_it_short_need_reply';
@@ -52,7 +52,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   static const List<String> _characterOptions = <String>[
     'None',
     'Tommy Shelby',
-    'Elliot Anderson',
+    'Sherlock Holmes',
     'Logan Roy',
     'Lawyer',
     'Doctor',
@@ -80,6 +80,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   bool _isOpenerLimitExceeded = false;
   bool _isReplyLimitExceeded = false;
   final _apiClient = ApiClient();
+  final ReviewPromptService _reviewPromptService = ReviewPromptService();
   final InAppPurchase _inAppPurchase = InAppPurchase.instance;
   File? _uploadedConversationImage;
   File? _uploadedProfileImage;
@@ -91,6 +92,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   bool _isRefreshingPurchases = false;
   bool _suppressActivationSnackbar = false;
   bool _hasShownSubscriptionActivated = false;
+  bool _isShowingReviewPrompt = false;
   final Set<String> _handledPurchaseTokens = {};
   final Set<String> _processingPurchaseTokens = {};
 
@@ -596,11 +598,17 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         _isReplyLimitExceeded = false;
       });
 
-      await AppStateScope.of(context).reloadFromStorage();
+      final appState = AppStateScope.of(context);
+      await appState.reloadFromStorage();
+      await _recordZeroCreditsDayIfNeeded();
+      if (!mounted) return;
 
       if (suggestions.isNotEmpty) {
         HapticFeedback.heavyImpact();
         _animationController.forward();
+        if (requestSituation != 'just_matched') {
+          await _handleNeedReplySuccessReviewSignal();
+        }
       }
     } on ApiException catch (e) {
       if (e.code == ApiErrorCode.trialExpired) {
@@ -907,6 +915,10 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           }
         });
       }
+      if (mounted) {
+        await AppStateScope.of(context).reloadFromStorage();
+      }
+      await _recordZeroCreditsDayIfNeeded();
       return;
     }
     if (e.code == ApiErrorCode.insufficientCredits) {
@@ -918,6 +930,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               : 'Subscription required. Please subscribe to continue.';
         });
       }
+      await _recordZeroCreditsDayIfNeeded();
     }
   }
 
@@ -1218,28 +1231,421 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         duration: const Duration(seconds: 2),
       ),
     );
-    await _maybeShowRatingPrompt();
+    await _handleCopyReviewSignal();
   }
 
-  Future<void> _maybeShowRatingPrompt() async {
-    final prefs = await SharedPreferences.getInstance();
-    final hasShown = prefs.getBool(_ratingPromptShownKey) ?? false;
-    if (hasShown) {
+  bool get _supportsAndroidReviewFlow =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
+  Future<void> _handleCopyReviewSignal() async {
+    if (!_supportsAndroidReviewFlow || !mounted) {
       return;
     }
-    await prefs.setBool(_ratingPromptShownKey, true);
-    if (!mounted) return;
+    final decision = await _reviewPromptService.recordCopyAndGetDecision();
+    await _maybeShowPulseCheck(decision);
+  }
 
+  Future<void> _maybeShowPulseCheck(ReviewPromptDecision decision) async {
+    if (!mounted || !decision.shouldShow || _isShowingReviewPrompt) {
+      return;
+    }
+
+    _isShowingReviewPrompt = true;
+    try {
+      await _showPulseCheck(decision);
+    } finally {
+      _isShowingReviewPrompt = false;
+    }
+  }
+
+  Future<void> _showPulseCheck(ReviewPromptDecision decision) async {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = colorScheme.brightness == Brightness.dark;
+    final action = await showModalBottomSheet<_PulseCheckAction>(
+      context: context,
+      backgroundColor: colorScheme.surfaceContainer,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border(
+              top: BorderSide(
+                color: colorScheme.secondary.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.auto_awesome, color: colorScheme.secondary, size: 28),
+              const SizedBox(height: 14),
+              Text(
+                decision.headline,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                decision.subtext,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 22),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final textScale = MediaQuery.textScalerOf(context).scale(1);
+                  final useVerticalButtons =
+                      constraints.maxWidth < 360 || textScale > 1.05;
+
+                  final negativeButton = OutlinedButton(
+                    onPressed: () async {
+                      Navigator.of(
+                        sheetContext,
+                      ).pop(_PulseCheckAction.negative);
+                    },
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 52),
+                      side: BorderSide(color: colorScheme.outline),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Needs Calibration',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: colorScheme.onSurfaceVariant),
+                    ),
+                  );
+
+                  final positiveButton = DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isDark
+                            ? [const Color(0xFFFF2D6D), const Color(0xFFB95A7B)]
+                            : [const Color(0xFF991B38), const Color(0xFFC22E53)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colorScheme.primary.withValues(alpha: 0.28),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        Navigator.of(
+                          sheetContext,
+                        ).pop(_PulseCheckAction.positive);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(0, 52),
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        decision.positiveLabel,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: colorScheme.onPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  );
+
+                  if (useVerticalButtons) {
+                    return Column(
+                      children: [
+                        SizedBox(width: double.infinity, child: negativeButton),
+                        const SizedBox(height: 12),
+                        SizedBox(width: double.infinity, child: positiveButton),
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    children: [
+                      Expanded(child: negativeButton),
+                      const SizedBox(width: 12),
+                      Expanded(child: positiveButton),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (action == _PulseCheckAction.negative) {
+      try {
+        final messenger = ScaffoldMessenger.of(context);
+        final secondaryContainer =
+            Theme.of(context).colorScheme.secondaryContainer;
+        await Future<void>.delayed(const Duration(milliseconds: 180));
+        if (!mounted) return;
+        final submitted = await _showFeedbackForm(decision);
+        if (!submitted) {
+          return;
+        }
+        await _reviewPromptService.markNegativeFeedbackSubmitted();
+        if (!mounted) return;
+        messenger.showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Feedback received. We are calibrating.',
+            ),
+            backgroundColor: secondaryContainer,
+          ),
+        );
+      } catch (_) {
+        // Ignore transient UI/state errors in feedback branch.
+      }
+    } else if (action == _PulseCheckAction.positive) {
+      await _handlePositiveReviewPath();
+    }
+  }
+
+  Future<void> _handlePositiveReviewPath() async {
+    if (!_supportsAndroidReviewFlow) {
+      return;
+    }
+    await _reviewPromptService.markGoogleReviewLaunched();
     final review = InAppReview.instance;
     try {
       if (await review.isAvailable()) {
         await review.requestReview();
-      } else {
-        await review.openStoreListing();
       }
-    } catch (e) {
-      await review.openStoreListing();
+    } catch (_) {
+      // Swallow errors; completion is marked to avoid reprompting.
     }
+  }
+
+  Future<bool> _showFeedbackForm(ReviewPromptDecision decision) async {
+    final appState = AppStateScope.of(context);
+    final emailController = TextEditingController(
+      text: appState.user?.email ?? '',
+    );
+    final messageController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool isSubmitting = false;
+    String? errorMessage;
+
+    final submitted = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        final bottomInset = MediaQuery.of(sheetContext).viewInsets.bottom;
+        final colorScheme = Theme.of(sheetContext).colorScheme;
+        return FractionallySizedBox(
+          heightFactor: 0.72,
+          child: StatefulBuilder(
+            builder: (sheetContext, setSheetState) {
+              return SafeArea(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(20, 20, 20, 16 + bottomInset),
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Refine Strategy',
+                          style: Theme.of(sheetContext).textTheme.headlineSmall
+                              ?.copyWith(color: colorScheme.onSurface),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Tell us what went wrong. Your feedback calibrates the model.',
+                          style: Theme.of(sheetContext).textTheme.bodyMedium
+                              ?.copyWith(color: colorScheme.onSurfaceVariant),
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: messageController,
+                          minLines: 5,
+                          maxLines: 7,
+                          decoration: InputDecoration(
+                            hintText: 'The reply was too aggressive...',
+                            fillColor: colorScheme.surfaceContainerHighest,
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Please share what went wrong.';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: const InputDecoration(
+                            hintText: 'you@example.com',
+                            labelText: 'Email',
+                          ),
+                          validator: (value) {
+                            final email = (value ?? '').trim();
+                            if (email.isEmpty) {
+                              return 'Please enter your email.';
+                            }
+                            if (!_isValidEmail(email)) {
+                              return 'Please enter a valid email.';
+                            }
+                            return null;
+                          },
+                        ),
+                        if (errorMessage != null) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            errorMessage!,
+                            style: TextStyle(color: colorScheme.error),
+                          ),
+                        ],
+                        const Spacer(),
+                        SizedBox(
+                          width: double.infinity,
+                          child: TextButton(
+                            onPressed: isSubmitting
+                                ? null
+                                : () async {
+                                    try {
+                                      if (!(formKey.currentState?.validate() ??
+                                          false)) {
+                                        return;
+                                      }
+                                      setSheetState(() {
+                                        isSubmitting = true;
+                                        errorMessage = null;
+                                      });
+
+                                      final ok = await _apiClient.reportIssue(
+                                        reason: 'feedback',
+                                        title:
+                                            'Pulse Feedback - ${_reviewReasonTag(decision.reason)}',
+                                        subject: messageController.text.trim(),
+                                        email: emailController.text.trim(),
+                                      );
+
+                                      if (!sheetContext.mounted) {
+                                        return;
+                                      }
+                                      if (ok) {
+                                        final navigator = Navigator.of(
+                                          sheetContext,
+                                        );
+                                        if (navigator.canPop()) {
+                                          navigator.pop(true);
+                                        }
+                                        return;
+                                      }
+                                      setSheetState(() {
+                                        isSubmitting = false;
+                                        errorMessage =
+                                            'Could not send feedback. Please try again.';
+                                      });
+                                    } catch (_) {
+                                      if (!sheetContext.mounted) {
+                                        return;
+                                      }
+                                      setSheetState(() {
+                                        isSubmitting = false;
+                                        errorMessage =
+                                            'Could not send feedback. Please try again.';
+                                      });
+                                    }
+                                  },
+                            child: isSubmitting
+                                ? SizedBox(
+                                    height: 18,
+                                    width: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: colorScheme.secondary,
+                                    ),
+                                  )
+                                : Text(
+                                    'Transmit Feedback',
+                                    style: TextStyle(
+                                      color: colorScheme.secondary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+    return submitted ?? false;
+  }
+
+  String _reviewReasonTag(ReviewTriggerReason? reason) {
+    switch (reason) {
+      case ReviewTriggerReason.milestone3:
+        return 'milestone_3';
+      case ReviewTriggerReason.milestone50:
+        return 'milestone_50';
+      case ReviewTriggerReason.comeback:
+        return 'comeback';
+      case null:
+        return 'unknown';
+    }
+  }
+
+  bool _isValidEmail(String email) {
+    return RegExp(r'^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,4}$').hasMatch(email);
+  }
+
+  Future<void> _recordZeroCreditsDayIfNeeded() async {
+    if (!_supportsAndroidReviewFlow || !mounted) {
+      return;
+    }
+    final appState = AppStateScope.of(context);
+    await _reviewPromptService.recordZeroCreditsDayIfNeeded(
+      isSubscribed: appState.isSubscribed,
+      freeDailyCreditsRemaining: appState.freeDailyCreditsRemaining,
+    );
+  }
+
+  Future<void> _handleNeedReplySuccessReviewSignal() async {
+    if (!_supportsAndroidReviewFlow || !mounted) {
+      return;
+    }
+    final appState = AppStateScope.of(context);
+    final decision = await _reviewPromptService.recordNeedReplySuccessAndGetDecision(
+      isSubscribed: appState.isSubscribed,
+    );
+    await _maybeShowPulseCheck(decision);
   }
 
   @override
@@ -2936,6 +3342,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 enum BannerType { error, warning, info }
 
 enum NewMatchMode { recommended, ai }
+
+enum _PulseCheckAction { negative, positive }
 
 class _SuggestionCard extends StatelessWidget {
   final int index;

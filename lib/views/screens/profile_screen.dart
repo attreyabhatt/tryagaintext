@@ -119,8 +119,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    const ReportIssueScreen(),
+                                builder: (context) => const ReportIssueScreen(),
                               ),
                             );
                           },
@@ -179,18 +178,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  cardShadow,
-                ],
+                boxShadow: [cardShadow],
               ),
               child: Row(
                 children: [
                   CircleAvatar(
                     radius: 28,
-                    backgroundColor:
-                        colorScheme.primary.withValues(alpha: 0.15),
-                    child:
-                        Icon(Icons.person_outline, color: colorScheme.primary),
+                    backgroundColor: colorScheme.primary.withValues(alpha: 0.15),
+                    child: Icon(Icons.person_outline, color: colorScheme.primary),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -209,9 +204,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 4),
                         Text(
                           appState.isLoggedIn ? 'Member Access' : 'Preview Access',
-                          style: TextStyle(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
+                          style: TextStyle(color: colorScheme.onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -225,9 +218,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  cardShadow,
-                ],
+                boxShadow: [cardShadow],
               ),
               child: Row(
                 children: [
@@ -249,12 +240,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          appState.isSubscribed
-                              ? 'Active • Elite'
-                              : 'Inactive',
-                          style: TextStyle(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
+                          appState.isSubscribed ? 'Active - Elite' : 'Inactive',
+                          style: TextStyle(color: colorScheme.onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -280,9 +267,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  cardShadow,
-                ],
+                boxShadow: [cardShadow],
               ),
               child: Column(
                 children: [
