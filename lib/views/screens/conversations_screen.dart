@@ -771,27 +771,31 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     showDialog(
       context: context,
       builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.all(16),
-          child: Stack(
-            children: [
-              InteractiveViewer(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.file(imageFile, fit: BoxFit.contain),
+        final screenSize = MediaQuery.of(context).size;
+        return Material(
+          color: Colors.transparent,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => Navigator.pop(context),
+            child: Center(
+              child: GestureDetector(
+                onTap: () {},
+                child: SizedBox(
+                  width: screenSize.width * 0.5,
+                  height: screenSize.height * 0.5,
+                  child: Stack(
+                    children: [
+                      InteractiveViewer(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.file(imageFile, fit: BoxFit.contain),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close_outlined),
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
+            ),
           ),
         );
       },
