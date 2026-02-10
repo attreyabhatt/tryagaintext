@@ -1268,125 +1268,128 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (sheetContext) {
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border(
-              top: BorderSide(
-                color: colorScheme.secondary.withValues(alpha: 0.3),
-                width: 1,
+        return SafeArea(
+          top: false,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border(
+                top: BorderSide(
+                  color: colorScheme.secondary.withValues(alpha: 0.3),
+                  width: 1,
+                ),
               ),
             ),
-          ),
-          padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.auto_awesome, color: colorScheme.secondary, size: 28),
-              const SizedBox(height: 14),
-              Text(
-                decision.headline,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: colorScheme.onSurface,
+            padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.auto_awesome, color: colorScheme.secondary, size: 28),
+                const SizedBox(height: 14),
+                Text(
+                  decision.headline,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: colorScheme.onSurface,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                decision.subtext,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+                const SizedBox(height: 8),
+                Text(
+                  decision.subtext,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 22),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final textScale = MediaQuery.textScalerOf(context).scale(1);
-                  final useVerticalButtons =
-                      constraints.maxWidth < 360 || textScale > 1.05;
+                const SizedBox(height: 22),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final textScale = MediaQuery.textScalerOf(context).scale(1);
+                    final useVerticalButtons =
+                        constraints.maxWidth < 360 || textScale > 1.05;
 
-                  final negativeButton = OutlinedButton(
-                    onPressed: () async {
-                      Navigator.of(
-                        sheetContext,
-                      ).pop(_PulseCheckAction.negative);
-                    },
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, 52),
-                      side: BorderSide(color: colorScheme.outline),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      'Needs Calibration',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: colorScheme.onSurfaceVariant),
-                    ),
-                  );
-
-                  final positiveButton = DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: isDark
-                            ? [const Color(0xFFFF2D6D), const Color(0xFFB95A7B)]
-                            : [const Color(0xFF991B38), const Color(0xFFC22E53)],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colorScheme.primary.withValues(alpha: 0.28),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: ElevatedButton(
+                    final negativeButton = OutlinedButton(
                       onPressed: () async {
                         Navigator.of(
                           sheetContext,
-                        ).pop(_PulseCheckAction.positive);
+                        ).pop(_PulseCheckAction.negative);
                       },
-                      style: ElevatedButton.styleFrom(
+                      style: OutlinedButton.styleFrom(
                         minimumSize: const Size(0, 52),
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
+                        side: BorderSide(color: colorScheme.outline),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       child: Text(
-                        decision.positiveLabel,
+                        'Needs Calibration',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: colorScheme.onPrimary,
-                          fontWeight: FontWeight.w700,
+                        style: TextStyle(color: colorScheme.onSurfaceVariant),
+                      ),
+                    );
+
+                    final positiveButton = DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: isDark
+                              ? [const Color(0xFFFF2D6D), const Color(0xFFB95A7B)]
+                              : [const Color(0xFF991B38), const Color(0xFFC22E53)],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colorScheme.primary.withValues(alpha: 0.28),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          Navigator.of(
+                            sheetContext,
+                          ).pop(_PulseCheckAction.positive);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(0, 52),
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          decision.positiveLabel,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: colorScheme.onPrimary,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-                    ),
-                  );
+                    );
 
-                  if (useVerticalButtons) {
-                    return Column(
+                    if (useVerticalButtons) {
+                      return Column(
+                        children: [
+                          SizedBox(width: double.infinity, child: negativeButton),
+                          const SizedBox(height: 12),
+                          SizedBox(width: double.infinity, child: positiveButton),
+                        ],
+                      );
+                    }
+
+                    return Row(
                       children: [
-                        SizedBox(width: double.infinity, child: negativeButton),
-                        const SizedBox(height: 12),
-                        SizedBox(width: double.infinity, child: positiveButton),
+                        Expanded(child: negativeButton),
+                        const SizedBox(width: 12),
+                        Expanded(child: positiveButton),
                       ],
                     );
-                  }
-
-                  return Row(
-                    children: [
-                      Expanded(child: negativeButton),
-                      const SizedBox(width: 12),
-                      Expanded(child: positiveButton),
-                    ],
-                  );
-                },
-              ),
-            ],
+                  },
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -1421,6 +1424,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         // Ignore transient UI/state errors in feedback branch.
       }
     } else if (action == _PulseCheckAction.positive) {
+      await Future<void>.delayed(const Duration(milliseconds: 180));
       await _handlePositiveReviewPath();
     }
   }
@@ -1429,14 +1433,16 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     if (!_supportsAndroidReviewFlow) {
       return;
     }
-    await _reviewPromptService.markGoogleReviewLaunched();
     final review = InAppReview.instance;
     try {
-      if (await review.isAvailable()) {
-        await review.requestReview();
+      final isAvailable = await review.isAvailable();
+      if (!isAvailable) {
+        return;
       }
+      await review.requestReview();
+      await _reviewPromptService.markGoogleReviewLaunched();
     } catch (_) {
-      // Swallow errors; completion is marked to avoid reprompting.
+      // Swallow errors; caller should remain uninterrupted.
     }
   }
 
