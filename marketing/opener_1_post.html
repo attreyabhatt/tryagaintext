@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlirtFix - Opener #1</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: #1a1a1a;
+  }
+
+  .post {
+    width: 1080px;
+    height: 1350px;
+    position: relative;
+    overflow: hidden;
+    background: #0E0F12;
+    font-family: 'Manrope', sans-serif;
+  }
+
+  /* Radial gradient background - matches pricing page */
+  .bg-gradient {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      ellipse at 50% 35%,
+      rgba(18, 20, 26, 1) 0%,
+      #0E0F12 100%
+    );
+  }
+
+  /* Blurred accent circle - matches pricing page's ImageFiltered blur */
+  .accent-blur {
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    background: rgba(74, 13, 38, 0.40);
+    filter: blur(100px);
+    pointer-events: none;
+  }
+
+  /* Secondary gold glow */
+  .accent-blur-gold {
+    position: absolute;
+    bottom: 200px;
+    right: -80px;
+    width: 350px;
+    height: 350px;
+    border-radius: 50%;
+    background: rgba(58, 47, 13, 0.35);
+    filter: blur(120px);
+    pointer-events: none;
+  }
+
+  /* Content wrapper */
+  .content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    padding: 60px 56px;
+  }
+
+  /* Top label - matches "ELITE INTELLIGENCE" style */
+  .top-label {
+    font-family: 'Manrope', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: #D4AF37;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  /* Opener number badge */
+  .opener-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 32px;
+    border-radius: 999px;
+    background: rgba(212, 175, 55, 0.10);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    margin-bottom: 48px;
+  }
+
+  .opener-badge span {
+    font-family: 'Manrope', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #D4AF37;
+    text-transform: uppercase;
+  }
+
+  /* Main card - matches pricing page card style */
+  .card {
+    width: 100%;
+    padding: 48px 44px;
+    background: #1B1E25;
+    border-radius: 24px;
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    box-shadow:
+      0 14px 34px rgba(0, 0, 0, 0.35),
+      0 0 50px -4px rgba(74, 13, 38, 0.20);
+    margin-top: 70px;
+  }
+
+  /* Chat bubble area */
+  .chat-area {
+    margin-bottom: 36px;
+  }
+
+  .chat-label {
+    font-family: 'Manrope', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #8F9BB3;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 16px;
+  }
+
+  /* Message bubble - styled like a dating app message */
+  .message-bubble {
+    position: relative;
+    background: linear-gradient(135deg, #FF2D6D, #B95A7B);
+    border-radius: 22px 22px 6px 22px;
+    padding: 28px 32px;
+    max-width: 92%;
+    margin-left: auto;
+  }
+
+  .message-bubble p {
+    font-family: 'Manrope', sans-serif;
+    font-size: 26px;
+    font-weight: 500;
+    line-height: 1.45;
+    color: #F4F2EE;
+  }
+
+  .message-bubble .name-highlight {
+    color: #FFE3A1;
+    font-weight: 700;
+  }
+
+  /* Typing indicator dots */
+  .typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 16px;
+    padding-left: 8px;
+  }
+
+  .typing-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #8F9BB3;
+    opacity: 0.5;
+  }
+
+  .typing-text {
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    color: #8F9BB3;
+    margin-left: 4px;
+    font-style: italic;
+  }
+
+  /* Divider line */
+  .divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(212, 175, 55, 0.25) 50%,
+      transparent 100%
+    );
+    margin: 32px 0;
+  }
+
+  /* Why it works section */
+  .why-section {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .why-icon {
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: rgba(58, 47, 13, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .why-icon svg {
+    width: 22px;
+    height: 22px;
+    fill: #D4AF37;
+  }
+
+  .why-content h3 {
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #D4AF37;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .why-content p {
+    font-family: 'Manrope', sans-serif;
+    font-size: 20px;
+    font-weight: 400;
+    color: #8F9BB3;
+    line-height: 1.55;
+  }
+
+  /* Bottom section */
+  .bottom-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 100px;
+  }
+
+  /* CTA button - matches pricing page gradient button */
+  .cta-button {
+    width: 100%;
+    padding: 20px 40px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #FF2D6D, #B95A7B);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 4px 20px rgba(255, 45, 109, 0.4);
+    margin-bottom: 28px;
+  }
+
+  .cta-button svg {
+    width: 22px;
+    height: 22px;
+    fill: #0E0F12;
+  }
+
+  .cta-button span {
+    font-family: 'Manrope', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: #0E0F12;
+    letter-spacing: 0.5px;
+  }
+
+  /* Logo / brand */
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .brand-logo {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    object-fit: contain;
+  }
+
+  .brand-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: #F4F2EE;
+    letter-spacing: 1px;
+  }
+
+  .brand-tagline {
+    font-family: 'Manrope', sans-serif;
+    font-size: 13px;
+    color: #8F9BB3;
+    margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+
+<div class="post">
+  <!-- Background layers -->
+  <div class="bg-gradient"></div>
+  <div class="accent-blur"></div>
+  <div class="accent-blur-gold"></div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- Top badge -->
+    <div class="opener-badge">
+      <span>Opener #1</span>
+    </div>
+
+    <!-- Main card -->
+    <div class="card">
+      <!-- Chat area -->
+      <div class="chat-area">
+        <div class="chat-label">Your opening message</div>
+        <div class="message-bubble">
+          <p>"Hey <span class="name-highlight">&lt;name&gt;</span>, you know what's interesting about your pictures?"</p>
+        </div>
+        <div class="typing-indicator">
+          <div class="typing-dot"></div>
+          <div class="typing-dot" style="opacity: 0.35;"></div>
+          <div class="typing-dot" style="opacity: 0.2;"></div>
+          <span class="typing-text">She's typing...</span>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="divider"></div>
+
+      <!-- Why it works -->
+      <div class="why-section">
+        <div class="why-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        </div>
+        <div class="why-content">
+          <h3>Why it works</h3>
+          <p>Everyone wants to know what makes them interesting. It creates instant curiosity and an irresistible urge to reply.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom section -->
+    <div class="bottom-section">
+      <!-- CTA -->
+      <div class="cta-button">
+        <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+        <span>Get More Openers in the App</span>
+      </div>
+
+      <!-- Brand -->
+      <div class="brand">
+        <img src="../assets/images/icons/appstore_transparent.png" alt="FlirtFix" class="brand-logo">
+        <span class="brand-name">FlirtFix</span>
+      </div>
+      <div class="brand-tagline">The unfair advantage.</div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>
