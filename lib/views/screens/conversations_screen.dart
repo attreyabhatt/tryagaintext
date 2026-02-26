@@ -20,7 +20,6 @@ import 'login_screen.dart';
 import 'signup_screen.dart';
 import 'package:flirtfix/views/screens/pricing_screen.dart';
 import 'package:flirtfix/views/screens/profile_screen.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../widgets/gradient_icon.dart';
 import '../widgets/thinking_indicator.dart';
 
@@ -1906,64 +1905,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         ],
       ),
       actions: [
-        if (!isLoggedIn) ...[
-          IconButton(
-            icon: FaIcon(
-              FontAwesomeIcons.crown,
-              color: colorScheme.secondary,
-              size: 20,
-            ),
-            onPressed: () {
-              HapticFeedback.lightImpact();
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const PricingScreen(
-                    showCloseButton: true,
-                    guestConversionMode: true,
-                  ),
-                ),
-              );
-            },
-          ),
-          const SizedBox(width: 8),
-        ],
-        if (isLoggedIn && !isSubscribed && dailyCreditsRemaining != null) ...[
-          // Credits badge
-          GestureDetector(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              _navigateToPricing();
-            },
-            child: Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: colorScheme.secondaryContainer,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.bolt_outlined,
-                    size: 16,
-                    color: colorScheme.onSecondaryContainer,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '$dailyCreditsRemaining',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSecondaryContainer,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
         // Profile button
         IconButton(
           onPressed: () {
