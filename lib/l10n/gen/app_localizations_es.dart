@@ -406,6 +406,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get languageEnglish => 'Inglés';
 
   @override
+  String get languageSpanish => 'Espa\u00f1ol';
+
+  @override
   String get subscriptionActivated => '¡Suscripción activada!';
 
   @override

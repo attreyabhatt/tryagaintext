@@ -830,6 +830,12 @@ abstract class AppLocalizations {
   /// **'English'**
   String get languageEnglish;
 
+  /// No description provided for @languageSpanish.
+  ///
+  /// In en, this message translates to:
+  /// **'Spanish'**
+  String get languageSpanish;
+
   /// No description provided for @subscriptionActivated.
   ///
   /// In en, this message translates to:
