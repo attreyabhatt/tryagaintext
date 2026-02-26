@@ -6,9 +6,7 @@ class AccountDeletionService {
   ///
   /// This implementation calls the backend API endpoint to delete the account.
   /// The backend handles password verification and deletes all user data.
-  static Future<bool> deleteAccount({
-    required String password,
-  }) async {
+  static Future<bool> deleteAccount({required String password}) async {
     final apiClient = ApiClient();
 
     try {
@@ -20,20 +18,20 @@ class AccountDeletionService {
         return true;
       }
 
-      throw Exception('Account deletion failed');
+      throw Exception('account_deletion_failed');
     } catch (e) {
       if (e is ApiException) {
         // Pass through API exceptions with specific error messages
         if (e.message.contains('Invalid password')) {
-          throw Exception('Invalid password');
+          throw Exception('invalid_password');
         }
         throw Exception(e.message);
       }
 
       if (e.toString().contains('Invalid password')) {
-        throw Exception('Invalid password');
+        throw Exception('invalid_password');
       }
-      throw Exception('Account deletion failed. Please try again.');
+      throw Exception('account_deletion_failed');
     }
   }
 

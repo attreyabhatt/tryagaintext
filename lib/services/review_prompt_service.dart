@@ -2,29 +2,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 enum ReviewTriggerReason { milestone3, milestone50, comeback }
 
+enum ReviewPromptVariant { qualityCheck, systemStatus, redemption }
+
 class ReviewPromptDecision {
   final bool shouldShow;
   final ReviewTriggerReason? reason;
-  final String headline;
-  final String subtext;
-  final String positiveLabel;
+  final ReviewPromptVariant? variant;
 
   const ReviewPromptDecision._({
     required this.shouldShow,
     required this.reason,
-    required this.headline,
-    required this.subtext,
-    required this.positiveLabel,
+    required this.variant,
   });
 
   const ReviewPromptDecision.none()
-    : this._(
-        shouldShow: false,
-        reason: null,
-        headline: '',
-        subtext: '',
-        positiveLabel: '',
-      );
+    : this._(shouldShow: false, reason: null, variant: null);
 
   factory ReviewPromptDecision.qualityCheck({
     required ReviewTriggerReason reason,
@@ -32,9 +24,7 @@ class ReviewPromptDecision {
     return ReviewPromptDecision._(
       shouldShow: true,
       reason: reason,
-      headline: 'Quality Check',
-      subtext: 'Is the AI helping your conversation flow?',
-      positiveLabel: 'Results are Solid',
+      variant: ReviewPromptVariant.qualityCheck,
     );
   }
 
@@ -44,9 +34,7 @@ class ReviewPromptDecision {
     return ReviewPromptDecision._(
       shouldShow: true,
       reason: reason,
-      headline: 'System Status',
-      subtext: 'You have generated over 50 responses. Still accurate?',
-      positiveLabel: 'Analysis is Perfect',
+      variant: ReviewPromptVariant.systemStatus,
     );
   }
 
@@ -56,9 +44,7 @@ class ReviewPromptDecision {
     return ReviewPromptDecision._(
       shouldShow: true,
       reason: reason,
-      headline: 'Has the analysis improved?',
-      subtext: 'Tell us if the responses are better now.',
-      positiveLabel: 'Yes, Much Better',
+      variant: ReviewPromptVariant.redemption,
     );
   }
 }
@@ -66,7 +52,8 @@ class ReviewPromptDecision {
 class ReviewPromptService {
   static const String keyHasLaunchedGoogleReview = 'has_launched_google_review';
   static const String keyReviewTotalCopies = 'review_total_copies';
-  static const String keyReviewPromptedMilestones = 'review_prompted_milestones';
+  static const String keyReviewPromptedMilestones =
+      'review_prompted_milestones';
   static const String keyLastNegativeFeedbackTimeMs =
       'last_negative_feedback_time_ms';
   static const String keyLastZeroCreditsUtcDay = 'last_zero_credits_utc_day';
@@ -75,9 +62,7 @@ class ReviewPromptService {
   static const int _milestone50 = 50;
   static const Duration _negativeSnoozeDuration = Duration(days: 60);
 
-  Future<ReviewPromptDecision> recordCopyAndGetDecision({
-    DateTime? now,
-  }) async {
+  Future<ReviewPromptDecision> recordCopyAndGetDecision({DateTime? now}) async {
     final prefs = await SharedPreferences.getInstance();
     final timestamp = now ?? DateTime.now();
     final totalCopies = (prefs.getInt(keyReviewTotalCopies) ?? 0) + 1;
@@ -98,7 +83,8 @@ class ReviewPromptService {
       totalCopies: totalCopies,
     );
 
-    if (totalCopies >= _milestone3 && !promptedMilestones.contains(_milestone3)) {
+    if (totalCopies >= _milestone3 &&
+        !promptedMilestones.contains(_milestone3)) {
       promptedMilestones.add(_milestone3);
       await _savePromptedMilestones(prefs, promptedMilestones);
       return ReviewPromptDecision.qualityCheck(

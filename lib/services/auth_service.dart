@@ -285,10 +285,7 @@ class AuthService {
       return authResponse;
     } catch (e) {
       AppLogger.error('Registration error', e is Exception ? e : null);
-      return AuthResponse(
-        success: false,
-        error: 'Network error. Please try again.',
-      );
+      return AuthResponse(success: false, error: 'network_error');
     }
   }
 
@@ -331,10 +328,7 @@ class AuthService {
       return authResponse;
     } catch (e) {
       AppLogger.error('Login error', e is Exception ? e : null);
-      return AuthResponse(
-        success: false,
-        error: 'Network error. Please try again.',
-      );
+      return AuthResponse(success: false, error: 'network_error');
     }
   }
 
@@ -343,7 +337,7 @@ class AuthService {
     try {
       final token = await getToken();
       if (token == null) {
-        return ProfileResponse(success: false, error: 'Not authenticated');
+        return ProfileResponse(success: false, error: 'not_authenticated');
       }
       final deviceFingerprint = await getOrCreateDeviceFingerprint();
 
@@ -376,10 +370,7 @@ class AuthService {
       return profileResponse;
     } catch (e) {
       AppLogger.error('Profile fetch error', e is Exception ? e : null);
-      return ProfileResponse(
-        success: false,
-        error: 'Network error. Please try again.',
-      );
+      return ProfileResponse(success: false, error: 'network_error');
     }
   }
 

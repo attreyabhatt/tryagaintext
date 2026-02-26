@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../l10n/l10n.dart';
 import '../../services/api_client.dart';
 import '../widgets/luxury_text_field.dart';
 import '../widgets/thinking_indicator.dart';
@@ -25,7 +26,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
     if (_newController.text != _confirmController.text) {
       setState(() {
-        _errorMessage = 'Passwords do not match';
+        _errorMessage = context.l10n.validationPasswordsDoNotMatch;
       });
       return;
     }
@@ -44,16 +45,19 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     if (!mounted) return;
 
     if (error == null) {
+      final l10n = context.l10n;
       await showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Password updated'),
-          content: const Text('Your password has been changed successfully.'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(l10n.changePasswordUpdatedTitle),
+          content: Text(l10n.changePasswordUpdatedMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
+              child: Text(l10n.commonOk),
             ),
           ],
         ),
@@ -63,7 +67,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       }
     } else {
       setState(() {
-        _errorMessage = error;
+        _errorMessage = _mapChangePasswordError(error);
       });
     }
 
@@ -78,13 +82,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final l10n = context.l10n;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text('Change Password'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: Text(l10n.changePasswordTitle), centerTitle: true),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -96,12 +98,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 LuxuryTextField(
                   controller: _currentController,
                   obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Current password',
+                  decoration: InputDecoration(
+                    labelText: l10n.changePasswordCurrentLabel,
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Enter your current password';
+                      return l10n.changePasswordValidationCurrent;
                     }
                     return null;
                   },
@@ -110,15 +112,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 LuxuryTextField(
                   controller: _newController,
                   obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'New password',
+                  decoration: InputDecoration(
+                    labelText: l10n.changePasswordNewLabel,
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Enter a new password';
+                      return l10n.changePasswordValidationNew;
                     }
                     if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
+                      return l10n.validationPasswordMinLength;
                     }
                     return null;
                   },
@@ -127,12 +129,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 LuxuryTextField(
                   controller: _confirmController,
                   obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Confirm new password',
+                  decoration: InputDecoration(
+                    labelText: l10n.changePasswordConfirmLabel,
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Confirm your new password';
+                      return l10n.changePasswordValidationConfirm;
                     }
                     return null;
                   },
@@ -163,19 +165,19 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                child: _isSubmitting
-                    ? SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: BreathingPulseIndicator(
-                          size: 18,
-                          color: colorScheme.onPrimary,
-                        ),
-                      )
-                    : const Text(
-                        'Update Password',
-                        style: TextStyle(
-                          fontSize: 16,
+                  child: _isSubmitting
+                      ? SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: BreathingPulseIndicator(
+                            size: 18,
+                            color: colorScheme.onPrimary,
+                          ),
+                        )
+                      : Text(
+                          l10n.changePasswordUpdateButton,
+                          style: TextStyle(
+                            fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -194,5 +196,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     _newController.dispose();
     _confirmController.dispose();
     super.dispose();
+  }
+
+  String _mapChangePasswordError(String code) {
+    final l10n = context.l10n;
+    return switch (code) {
+      'network_error' => l10n.errorNetworkTryAgain,
+      'password_update_failed' => l10n.changePasswordUpdateFailed,
+      _ => code,
+    };
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../l10n/l10n.dart';
 import '../../state/app_state.dart';
 import '../../services/auth_service.dart';
 import 'forgot_password_screen.dart';
@@ -44,14 +45,14 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.of(context).pop(true);
         } else {
           setState(() {
-            _errorMessage = response.error ?? 'Login failed';
+            _errorMessage = _mapAuthError(response.error);
           });
         }
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Network error. Please try again.';
+          _errorMessage = context.l10n.errorNetworkTryAgain;
         });
       }
     } finally {
@@ -68,13 +69,14 @@ class _LoginScreenState extends State<LoginScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final l10n = context.l10n;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Private Access'),
+        title: Text(l10n.loginPrivateAccessTitle),
         centerTitle: true,
       ),
       body: GestureDetector(
@@ -96,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         Column(
                           children: [
                             Text(
-                              'Welcome.',
+                              l10n.loginWelcome,
                               style: textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: colorScheme.onSurface,
@@ -104,7 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Access your personal dating concierge.',
+                              l10n.loginSubtitle,
                               style: textTheme.bodyMedium?.copyWith(
                                 color: colorScheme.onSurfaceVariant,
                               ),
@@ -125,13 +127,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                 controller: _usernameController,
                                 keyboardType: TextInputType.emailAddress,
                                 decoration: InputDecoration(
-                                  labelText: 'Member ID / Email',
-                                  hintText: 'Enter your member ID or email',
+                                  labelText: l10n.loginMemberIdOrEmailLabel,
+                                  hintText: l10n.loginMemberIdOrEmailHint,
                                   prefixIcon: Container(
                                     margin: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: colorScheme.primary
-                                          .withValues(alpha: 0.15),
+                                      color: colorScheme.primary.withValues(
+                                        alpha: 0.15,
+                                      ),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Icon(
@@ -141,9 +144,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                                 validator: (value) {
-                                  if (value == null ||
-                                      value.trim().isEmpty) {
-                                    return 'Please enter your email';
+                                  if (value == null || value.trim().isEmpty) {
+                                    return l10n.validationEnterEmail;
                                   }
                                   return null;
                                 },
@@ -156,13 +158,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                 controller: _passwordController,
                                 obscureText: _obscurePassword,
                                 decoration: InputDecoration(
-                                  labelText: 'Passcode',
-                                  hintText: 'Enter your passcode',
+                                  labelText: l10n.loginPasscodeLabel,
+                                  hintText: l10n.loginPasscodeHint,
                                   prefixIcon: Container(
                                     margin: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: colorScheme.primary
-                                          .withValues(alpha: 0.15),
+                                      color: colorScheme.primary.withValues(
+                                        alpha: 0.15,
+                                      ),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Icon(
@@ -186,7 +189,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Please enter your password';
+                                    return l10n.validationEnterPassword;
                                   }
                                   return null;
                                 },
@@ -210,9 +213,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                           );
                                         },
                                   child: Text(
-                                    'Forgot passcode?',
-                                    style:
-                                        TextStyle(color: colorScheme.secondary),
+                                    l10n.loginForgotPasscode,
+                                    style: TextStyle(
+                                      color: colorScheme.secondary,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -226,7 +230,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   decoration: BoxDecoration(
                                     color: colorScheme.errorContainer,
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: colorScheme.error),
+                                    border: Border.all(
+                                      color: colorScheme.error,
+                                    ),
                                   ),
                                   child: Row(
                                     children: [
@@ -268,12 +274,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ),
                                       ),
                                       const SizedBox(width: 12),
-                                      const Text('Accessing...'),
+                                      Text(l10n.loginAccessing),
                                     ] else ...[
-                                      const Icon(Icons.login_outlined, size: 20),
+                                      const Icon(
+                                        Icons.login_outlined,
+                                        size: 20,
+                                      ),
                                       const SizedBox(width: 8),
-                                      const Text(
-                                        'Access',
+                                      Text(
+                                        l10n.loginAccessButton,
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
@@ -299,7 +308,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       horizontal: 16,
                                     ),
                                     child: Text(
-                                      'OR',
+                                      l10n.commonOr,
                                       style: TextStyle(
                                         color: colorScheme.onSurfaceVariant,
                                         fontWeight: FontWeight.w500,
@@ -323,15 +332,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                     : () async {
                                         HapticFeedback.selectionClick();
                                         // Capture references before async gap
-                                        final appState = AppStateScope.of(context);
+                                        final appState = AppStateScope.of(
+                                          context,
+                                        );
                                         final navigator = Navigator.of(context);
 
-                                        final result = await navigator.push<bool>(
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                const SignupScreen(),
-                                          ),
-                                        );
+                                        final result = await navigator
+                                            .push<bool>(
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    const SignupScreen(),
+                                              ),
+                                            );
                                         if (!mounted) return;
                                         if (result == true) {
                                           await appState.reloadFromStorage();
@@ -359,7 +371,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      'Become a Member',
+                                      l10n.signupBecomeMember,
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
@@ -378,12 +390,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ? null
                                     : () {
                                         HapticFeedback.selectionClick();
-                                        Navigator.of(
-                                          context,
-                                        ).pop(false); // Return false to indicate skip
+                                        Navigator.of(context).pop(
+                                          false,
+                                        ); // Return false to indicate skip
                                       },
                                 child: Text(
-                                  'Preview Experience',
+                                  l10n.loginPreviewExperience,
                                   style: TextStyle(
                                     color: colorScheme.onSurfaceVariant,
                                     fontSize: 14,
@@ -403,6 +415,14 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
+  }
+
+  String _mapAuthError(String? code) {
+    final l10n = context.l10n;
+    return switch (code) {
+      'network_error' => l10n.errorNetworkTryAgain,
+      _ => code ?? l10n.authLoginFailed,
+    };
   }
 
   @override

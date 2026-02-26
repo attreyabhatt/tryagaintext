@@ -1,32 +1,33 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../l10n/l10n.dart';
 
 /// Message sets for different loading contexts
-const List<String> extractionMessages = [
-  'Reading the conversation',
-  'Picking up the context',
-  'Understanding the vibe',
+List<String> extractionMessages(BuildContext context) => [
+  context.l10n.thinkingExtractionReadingConversation,
+  context.l10n.thinkingExtractionPickingContext,
+  context.l10n.thinkingExtractionUnderstandingVibe,
 ];
 
-const List<String> replyMessages = [
-  'Crafting the perfect reply',
-  'Reading between the lines',
-  'Finding the right words',
-  'Analyzing her energy',
-  'Working some magic',
+List<String> replyMessages(BuildContext context) => [
+  context.l10n.thinkingReplyCraftingPerfectReply,
+  context.l10n.thinkingReplyReadingBetweenLines,
+  context.l10n.thinkingReplyFindingRightWords,
+  context.l10n.thinkingReplyAnalyzingEnergy,
+  context.l10n.thinkingReplyWorkingMagic,
 ];
 
-const List<String> openerMessages = [
-  'Finding conversation starters',
-  'Crafting your opening line',
-  'Studying her profile',
-  'Looking for common ground',
-  'Creating your first impression',
+List<String> openerMessages(BuildContext context) => [
+  context.l10n.thinkingOpenerFindingStarters,
+  context.l10n.thinkingOpenerCraftingOpeningLine,
+  context.l10n.thinkingOpenerStudyingProfile,
+  context.l10n.thinkingOpenerLookingCommonGround,
+  context.l10n.thinkingOpenerCreatingFirstImpression,
 ];
 
-const List<String> recommendedMessages = [
-  'Loading proven openers',
-  'Grabbing the good stuff',
+List<String> recommendedMessages(BuildContext context) => [
+  context.l10n.thinkingRecommendedLoadingOpeners,
+  context.l10n.thinkingRecommendedGrabbingGoodStuff,
 ];
 
 /// A Claude-style thinking indicator with animated dots and rotating messages.
@@ -77,14 +78,18 @@ class _ThinkingIndicatorState extends State<ThinkingIndicator>
       return TweenSequence<double>([
         // Fade in
         TweenSequenceItem(
-          tween: Tween(begin: 0.3, end: 1.0)
-              .chain(CurveTween(curve: Curves.easeOut)),
+          tween: Tween(
+            begin: 0.3,
+            end: 1.0,
+          ).chain(CurveTween(curve: Curves.easeOut)),
           weight: 1,
         ),
         // Fade out
         TweenSequenceItem(
-          tween: Tween(begin: 1.0, end: 0.3)
-              .chain(CurveTween(curve: Curves.easeIn)),
+          tween: Tween(
+            begin: 1.0,
+            end: 0.3,
+          ).chain(CurveTween(curve: Curves.easeIn)),
           weight: 1,
         ),
       ]).animate(
@@ -233,13 +238,17 @@ class _ThinkingIndicatorCompactState extends State<ThinkingIndicatorCompact>
 
       return TweenSequence<double>([
         TweenSequenceItem(
-          tween: Tween(begin: 0.3, end: 1.0)
-              .chain(CurveTween(curve: Curves.easeOut)),
+          tween: Tween(
+            begin: 0.3,
+            end: 1.0,
+          ).chain(CurveTween(curve: Curves.easeOut)),
           weight: 1,
         ),
         TweenSequenceItem(
-          tween: Tween(begin: 1.0, end: 0.3)
-              .chain(CurveTween(curve: Curves.easeIn)),
+          tween: Tween(
+            begin: 1.0,
+            end: 0.3,
+          ).chain(CurveTween(curve: Curves.easeIn)),
           weight: 1,
         ),
       ]).animate(
@@ -295,10 +304,7 @@ class _ThinkingIndicatorCompactState extends State<ThinkingIndicatorCompact>
             duration: const Duration(milliseconds: 200),
             child: Text(
               widget.messages[_currentMessageIndex],
-              style: TextStyle(
-                color: textColor,
-                fontSize: widget.fontSize,
-              ),
+              style: TextStyle(color: textColor, fontSize: widget.fontSize),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -374,7 +380,8 @@ class _AnimatedLoadingTextState extends State<AnimatedLoadingText> {
     await Future.delayed(const Duration(milliseconds: 200));
     if (!mounted) return;
     setState(() {
-      _currentMessageIndex = (_currentMessageIndex + 1) % widget.messages.length;
+      _currentMessageIndex =
+          (_currentMessageIndex + 1) % widget.messages.length;
     });
     await Future.delayed(const Duration(milliseconds: 50));
     if (!mounted) return;
@@ -435,12 +442,14 @@ class _BreathingLogoIndicatorState extends State<BreathingLogoIndicator>
     super.initState();
     _controller = AnimationController(duration: widget.duration, vsync: this)
       ..repeat(reverse: true);
-    _scale = Tween<double>(begin: 0.94, end: 1.04).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-    _glow = Tween<double>(begin: 0.25, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scale = Tween<double>(
+      begin: 0.94,
+      end: 1.04,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _glow = Tween<double>(
+      begin: 0.25,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -473,9 +482,7 @@ class _BreathingLogoIndicatorState extends State<BreathingLogoIndicator>
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: widget.glowColor.withValues(
-                  alpha: 0.2 + (0.35 * glow),
-                ),
+                color: widget.glowColor.withValues(alpha: 0.2 + (0.35 * glow)),
                 blurRadius: widget.size * (0.35 + glow),
                 spreadRadius: widget.size * 0.05 * glow,
               ),
@@ -521,7 +528,8 @@ class BreathingPulseIndicator extends StatefulWidget {
   });
 
   @override
-  State<BreathingPulseIndicator> createState() => _BreathingPulseIndicatorState();
+  State<BreathingPulseIndicator> createState() =>
+      _BreathingPulseIndicatorState();
 }
 
 class _BreathingPulseIndicatorState extends State<BreathingPulseIndicator>
@@ -535,12 +543,14 @@ class _BreathingPulseIndicatorState extends State<BreathingPulseIndicator>
     super.initState();
     _controller = AnimationController(duration: widget.duration, vsync: this)
       ..repeat(reverse: true);
-    _scale = Tween<double>(begin: 0.88, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-    _glow = Tween<double>(begin: 0.2, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scale = Tween<double>(
+      begin: 0.88,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _glow = Tween<double>(
+      begin: 0.2,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -581,9 +591,7 @@ class _BreathingPulseIndicatorState extends State<BreathingPulseIndicator>
               ),
               boxShadow: [
                 BoxShadow(
-                  color: widget.color.withValues(
-                    alpha: 0.2 + (0.45 * glow),
-                  ),
+                  color: widget.color.withValues(alpha: 0.2 + (0.45 * glow)),
                   blurRadius: widget.size * (0.35 + glow),
                   spreadRadius: widget.size * 0.08 * glow,
                 ),

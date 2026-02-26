@@ -1,39 +1,51 @@
 import 'package:flutter/material.dart';
+import '../../l10n/l10n.dart';
 import '../../data/policies/privacy_policy_content.dart';
 import '../../data/policies/terms_of_use_content.dart';
 import '../../data/policies/refund_policy_content.dart';
 
 class PolicyViewerScreen extends StatelessWidget {
-  final String title;
   final String policyType;
 
-  const PolicyViewerScreen({
-    super.key,
-    required this.title,
-    required this.policyType,
-  });
+  const PolicyViewerScreen({super.key, required this.policyType});
 
-  List<PolicySection> _getPolicySections() {
+  List<PolicySection> _getPolicySections(BuildContext context) {
+    final l10n = context.l10n;
     switch (policyType) {
       case 'privacy':
-        return privacyPolicySections;
+        return privacyPolicySections(l10n);
       case 'terms':
-        return termsOfUseSections;
+        return termsOfUseSections(l10n);
       case 'refund':
-        return refundPolicySections;
+        return refundPolicySections(l10n);
       default:
         return [];
     }
   }
 
-  String _getEffectiveDate() {
+  String _getEffectiveDate(BuildContext context) {
+    final l10n = context.l10n;
     switch (policyType) {
       case 'privacy':
-        return privacyPolicyEffectiveDate;
+        return privacyPolicyEffectiveDate(l10n);
       case 'terms':
-        return termsOfUseEffectiveDate;
+        return termsOfUseEffectiveDate(l10n);
       case 'refund':
-        return refundPolicyEffectiveDate;
+        return refundPolicyEffectiveDate(l10n);
+      default:
+        return '';
+    }
+  }
+
+  String _getTitle(BuildContext context) {
+    final l10n = context.l10n;
+    switch (policyType) {
+      case 'privacy':
+        return l10n.policyPrivacyTitle;
+      case 'terms':
+        return l10n.policyTermsTitle;
+      case 'refund':
+        return l10n.policyRefundTitle;
       default:
         return '';
     }
@@ -42,8 +54,10 @@ class PolicyViewerScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final sections = _getPolicySections();
-    final effectiveDate = _getEffectiveDate();
+    final l10n = context.l10n;
+    final sections = _getPolicySections(context);
+    final effectiveDate = _getEffectiveDate(context);
+    final title = _getTitle(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -60,7 +74,7 @@ class PolicyViewerScreen extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(bottom: 24),
                 child: Text(
-                  'Effective Date: $effectiveDate',
+                  l10n.policyEffectiveDate(effectiveDate),
                   style: TextStyle(
                     color: colorScheme.onSurfaceVariant,
                     fontSize: 12,
@@ -112,7 +126,9 @@ class PolicyViewerScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 14,
                             height: 1.6,
-                            color: colorScheme.onSurface.withValues(alpha: 0.87),
+                            color: colorScheme.onSurface.withValues(
+                              alpha: 0.87,
+                            ),
                           ),
                         ),
                     ],

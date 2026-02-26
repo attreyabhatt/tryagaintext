@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../l10n/l10n.dart';
 import '../../models/pricing_plan.dart';
 import '../../services/api_client.dart';
 import '../../state/app_state.dart';
@@ -114,9 +115,10 @@ class _PricingScreenState extends State<PricingScreen>
       onError: (error) {
         AppLogger.error('Purchase stream error: $error');
         if (mounted) {
+          final l10n = context.l10n;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Purchase error: ${error.toString()}'),
+              content: Text(l10n.pricingPurchaseError(error.toString())),
               backgroundColor: Theme.of(context).colorScheme.errorContainer,
             ),
           );
@@ -181,10 +183,11 @@ class _PricingScreenState extends State<PricingScreen>
   }
 
   Future<void> _handlePurchase(PricingPlan plan) async {
+    final l10n = context.l10n;
     if (!_isBillingAvailable) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Billing is not available on this device.'),
+          content: Text(l10n.pricingBillingUnavailable),
           backgroundColor: Theme.of(context).colorScheme.errorContainer,
         ),
       );
@@ -194,7 +197,7 @@ class _PricingScreenState extends State<PricingScreen>
     if (_isLoadingProducts) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Loading products. Please try again.'),
+          content: Text(l10n.pricingLoadingProductsTryAgain),
           backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
         ),
       );
@@ -204,7 +207,7 @@ class _PricingScreenState extends State<PricingScreen>
     if (!_productsById.containsKey(plan.id)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Product not available. Please try again later.'),
+          content: Text(l10n.pricingProductUnavailable),
           backgroundColor: Theme.of(context).colorScheme.errorContainer,
         ),
       );
@@ -235,18 +238,16 @@ class _PricingScreenState extends State<PricingScreen>
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          title: const Text('Sign In Required'),
-          content: const Text(
-            'Please sign in to start your subscription and link it to your account.',
-          ),
+          title: Text(l10n.pricingSignInRequiredTitle),
+          content: Text(l10n.pricingSignInRequiredMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
+              child: Text(l10n.commonCancel),
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Sign In'),
+              child: Text(l10n.commonSignIn),
             ),
           ],
         ),
@@ -292,11 +293,10 @@ class _PricingScreenState extends State<PricingScreen>
         case PurchaseStatus.error:
           if (mounted) {
             HapticFeedback.heavyImpact();
+            final l10n = context.l10n;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text(
-                  'Payment declined. Please try another card.',
-                ),
+                content: Text(l10n.pricingPaymentDeclinedToast),
                 backgroundColor: Theme.of(context).colorScheme.errorContainer,
                 behavior: SnackBarBehavior.floating,
               ),
@@ -307,21 +307,19 @@ class _PricingScreenState extends State<PricingScreen>
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                title: const Text('Payment declined'),
-                content: const Text(
-                  'Your payment was declined. Please try another card or payment method.',
-                ),
+                title: Text(l10n.pricingPaymentDeclinedTitle),
+                content: Text(l10n.pricingPaymentDeclinedMessage),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('Close'),
+                    child: Text(l10n.commonClose),
                   ),
                   ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context);
                       _refreshPendingPurchases();
                     },
-                    child: const Text('Try another card'),
+                    child: Text(l10n.pricingTryAnotherCard),
                   ),
                 ],
               ),
@@ -412,7 +410,7 @@ class _PricingScreenState extends State<PricingScreen>
     if (showFailure && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Purchase verification failed.'),
+          content: Text(context.l10n.pricingVerificationFailed),
           backgroundColor: Theme.of(context).colorScheme.errorContainer,
         ),
       );
@@ -448,9 +446,7 @@ class _PricingScreenState extends State<PricingScreen>
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    'Your previous purchase was approved and your subscription is active.',
-                  ),
+                  child: Text(context.l10n.pricingPreviousPurchaseApproved),
                 ),
               ],
             ),
@@ -475,7 +471,7 @@ class _PricingScreenState extends State<PricingScreen>
     try {
       final product = _productsById[plan.id];
       if (product == null) {
-        throw Exception('Product not found');
+        throw Exception('product_not_found');
       }
 
       final purchaseParam = PurchaseParam(productDetails: product);
@@ -484,13 +480,20 @@ class _PricingScreenState extends State<PricingScreen>
       );
 
       if (!started && mounted) {
-        throw Exception('Could not start purchase flow');
+        throw Exception('purchase_flow_not_started');
       }
     } catch (e) {
       if (mounted) {
+        final l10n = context.l10n;
+        final raw = e.toString().replaceAll('Exception: ', '');
+        final reason = switch (raw) {
+          'product_not_found' => l10n.pricingProductNotFound,
+          'purchase_flow_not_started' => l10n.pricingCouldNotStartPurchaseFlow,
+          _ => raw,
+        };
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Purchase failed: ${e.toString()}'),
+            content: Text(l10n.pricingPurchaseFailed(reason)),
             backgroundColor: Theme.of(context).colorScheme.errorContainer,
           ),
         );
@@ -509,6 +512,7 @@ class _PricingScreenState extends State<PricingScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final l10n = context.l10n;
     final isLight = theme.brightness == Brightness.light;
     final appState = AppStateScope.of(context);
     final plans = PricingPlan.allPlans;
@@ -545,8 +549,8 @@ class _PricingScreenState extends State<PricingScreen>
           if (appState.isLoggedIn)
             IconButton(
               tooltip: _isRefreshingPurchases
-                  ? 'Refreshing...'
-                  : 'Refresh purchases',
+                  ? l10n.pricingRefreshing
+                  : l10n.pricingRefreshPurchases,
               onPressed: _isProcessing
                   ? null
                   : () {
@@ -636,7 +640,7 @@ class _PricingScreenState extends State<PricingScreen>
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          'ELITE INTELLIGENCE',
+                          l10n.pricingHeroLabel,
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: colorScheme.secondary,
                             fontWeight: FontWeight.w700,
@@ -645,7 +649,7 @@ class _PricingScreenState extends State<PricingScreen>
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'THE UNFAIR\nADVANTAGE.',
+                          l10n.pricingHeroTitle,
                           style: theme.textTheme.headlineLarge?.copyWith(
                             fontSize: 42,
                             height: 0.9,
@@ -655,7 +659,7 @@ class _PricingScreenState extends State<PricingScreen>
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Unlock the only AI capable of deep psychological analysis and subtext reading.',
+                          l10n.pricingHeroSubtitle,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: colorScheme.onSurfaceVariant,
                             height: 1.5,
@@ -664,31 +668,27 @@ class _PricingScreenState extends State<PricingScreen>
                         const SizedBox(height: 32),
                         _buildPremiumFeature(
                           icon: Icons.diamond_outlined,
-                          title: 'Deep Reasoning Engine',
-                          subtitle:
-                              'Openers analyzed by our most advanced, human-level model.',
-                          badgeText: 'PRO MODEL',
+                          title: l10n.pricingFeatureReasoningTitle,
+                          subtitle: l10n.pricingFeatureReasoningSubtitle,
+                          badgeText: l10n.pricingFeatureReasoningBadge,
                           colorScheme: colorScheme,
                         ),
                         _buildPremiumFeature(
                           icon: Icons.bolt_outlined,
-                          title: 'Unrestricted Flow',
-                          subtitle:
-                              'Unlimited replies. Zero timers. Complete creative freedom.',
+                          title: l10n.pricingFeatureFlowTitle,
+                          subtitle: l10n.pricingFeatureFlowSubtitle,
                           colorScheme: colorScheme,
                         ),
                         _buildPremiumFeature(
                           icon: Icons.psychology_outlined,
-                          title: 'Adaptive Tonality',
-                          subtitle:
-                              'Switch between Charming, Cocky, or Sincere modes instantly.',
+                          title: l10n.pricingFeatureTonalityTitle,
+                          subtitle: l10n.pricingFeatureTonalitySubtitle,
                           colorScheme: colorScheme,
                         ),
                         _buildPremiumFeature(
                           icon: Icons.visibility_outlined,
-                          title: 'Instant Context',
-                          subtitle:
-                              'Seamless screenshot analysis without the wait.',
+                          title: l10n.pricingFeatureContextTitle,
+                          subtitle: l10n.pricingFeatureContextSubtitle,
                           colorScheme: colorScheme,
                         ),
                         const SizedBox(height: 18),
@@ -712,7 +712,7 @@ class _PricingScreenState extends State<PricingScreen>
                               Text(
                                 plan != null
                                     ? _weeklyPriceLabel(plan)
-                                    : '\$6.99 / week',
+                                    : l10n.pricingWeeklyFallback,
                                 style: theme.textTheme.headlineMedium?.copyWith(
                                   fontFamily: 'Roboto',
                                   fontWeight: FontWeight.w900,
@@ -722,7 +722,7 @@ class _PricingScreenState extends State<PricingScreen>
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                'Less than a coffee a day.',
+                                l10n.pricingCoffeeLine,
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: colorScheme.onSurfaceVariant,
                                   fontWeight: FontWeight.w500,
@@ -765,14 +765,17 @@ class _PricingScreenState extends State<PricingScreen>
                                       color: colorScheme.onPrimary,
                                     ),
                                   )
-                                : const Row(
+                                : Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(Icons.lock_open_outlined, size: 20),
-                                      SizedBox(width: 8),
+                                      const Icon(
+                                        Icons.lock_open_outlined,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 8),
                                       Text(
-                                        'Unlock Elite Access',
-                                        style: TextStyle(
+                                        l10n.pricingUnlockEliteAccess,
+                                        style: const TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
                                         ),
@@ -785,7 +788,7 @@ class _PricingScreenState extends State<PricingScreen>
                         _buildSocialProofBadge(colorScheme),
                         const SizedBox(height: 14),
                         Text(
-                          'Cancel anytime via Google Play. Secure processing.',
+                          l10n.pricingCancelAnytime,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: colorScheme.onSurfaceVariant,
                             height: 1.45,
@@ -935,7 +938,7 @@ class _PricingScreenState extends State<PricingScreen>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Trusted by 10,000+ men to land more dates.',
+                  context.l10n.pricingSocialProof,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                     height: 1.3,
@@ -986,7 +989,7 @@ class _PricingScreenState extends State<PricingScreen>
   }
 
   String _weeklyPriceLabel(PricingPlan plan) {
-    return '\$${plan.price.toStringAsFixed(2)} / week';
+    return context.l10n.pricingWeeklyPrice(plan.price.toStringAsFixed(2));
   }
 
   @override

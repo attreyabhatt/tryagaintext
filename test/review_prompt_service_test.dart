@@ -22,7 +22,7 @@ void main() {
     expect(second.shouldShow, isFalse);
     expect(third.shouldShow, isTrue);
     expect(third.reason, ReviewTriggerReason.milestone3);
-    expect(third.headline, 'Quality Check');
+    expect(third.variant, ReviewPromptVariant.qualityCheck);
   });
 
   test('milestone 50 prompt recovers when exact count was skipped', () async {
@@ -70,23 +70,26 @@ void main() {
     expect(decision.shouldShow, isFalse);
   });
 
-  test('negative feedback allows redemption after 60 days and 50 copies', () async {
-    final now = DateTime.utc(2026, 2, 10, 16);
-    final sixtyOneDaysAgo = now.subtract(const Duration(days: 61));
+  test(
+    'negative feedback allows redemption after 60 days and 50 copies',
+    () async {
+      final now = DateTime.utc(2026, 2, 10, 16);
+      final sixtyOneDaysAgo = now.subtract(const Duration(days: 61));
 
-    SharedPreferences.setMockInitialValues(<String, Object>{
-      ReviewPromptService.keyReviewTotalCopies: 50,
-      ReviewPromptService.keyLastNegativeFeedbackTimeMs:
-          sixtyOneDaysAgo.millisecondsSinceEpoch,
-      ReviewPromptService.keyReviewPromptedMilestones: <String>['3'],
-    });
-    service = ReviewPromptService();
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        ReviewPromptService.keyReviewTotalCopies: 50,
+        ReviewPromptService.keyLastNegativeFeedbackTimeMs:
+            sixtyOneDaysAgo.millisecondsSinceEpoch,
+        ReviewPromptService.keyReviewPromptedMilestones: <String>['3'],
+      });
+      service = ReviewPromptService();
 
-    final decision = await service.recordCopyAndGetDecision(now: now);
-    expect(decision.shouldShow, isTrue);
-    expect(decision.reason, ReviewTriggerReason.milestone50);
-    expect(decision.headline, 'Has the analysis improved?');
-  });
+      final decision = await service.recordCopyAndGetDecision(now: now);
+      expect(decision.shouldShow, isTrue);
+      expect(decision.reason, ReviewTriggerReason.milestone50);
+      expect(decision.variant, ReviewPromptVariant.redemption);
+    },
+  );
 
   test('comeback prompt can trigger again on same day', () async {
     final now = DateTime.utc(2026, 2, 10, 17);
@@ -115,26 +118,29 @@ void main() {
     expect(second.reason, ReviewTriggerReason.comeback);
   });
 
-  test('negative users must also reach 50 copies before comeback re-ask', () async {
-    final now = DateTime.utc(2026, 2, 10, 18);
-    final yesterday = now.subtract(const Duration(days: 1));
-    final sixtyOneDaysAgo = now.subtract(const Duration(days: 61));
-    final yesterdayKey =
-        '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}';
+  test(
+    'negative users must also reach 50 copies before comeback re-ask',
+    () async {
+      final now = DateTime.utc(2026, 2, 10, 18);
+      final yesterday = now.subtract(const Duration(days: 1));
+      final sixtyOneDaysAgo = now.subtract(const Duration(days: 61));
+      final yesterdayKey =
+          '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}';
 
-    SharedPreferences.setMockInitialValues(<String, Object>{
-      ReviewPromptService.keyReviewTotalCopies: 40,
-      ReviewPromptService.keyLastZeroCreditsUtcDay: yesterdayKey,
-      ReviewPromptService.keyLastNegativeFeedbackTimeMs:
-          sixtyOneDaysAgo.millisecondsSinceEpoch,
-    });
-    service = ReviewPromptService();
+      SharedPreferences.setMockInitialValues(<String, Object>{
+        ReviewPromptService.keyReviewTotalCopies: 40,
+        ReviewPromptService.keyLastZeroCreditsUtcDay: yesterdayKey,
+        ReviewPromptService.keyLastNegativeFeedbackTimeMs:
+            sixtyOneDaysAgo.millisecondsSinceEpoch,
+      });
+      service = ReviewPromptService();
 
-    final decision = await service.recordNeedReplySuccessAndGetDecision(
-      isSubscribed: false,
-      now: now,
-    );
+      final decision = await service.recordNeedReplySuccessAndGetDecision(
+        isSubscribed: false,
+        now: now,
+      );
 
-    expect(decision.shouldShow, isFalse);
-  });
+      expect(decision.shouldShow, isFalse);
+    },
+  );
 }

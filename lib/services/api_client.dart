@@ -277,10 +277,10 @@ class ApiClient {
         return null;
       }
 
-      return data['error']?.toString() ?? 'Password update failed';
+      return data['error']?.toString() ?? 'password_update_failed';
     } catch (e) {
       AppLogger.error('Change password error', e is Exception ? e : null);
-      return 'Network error. Please try again.';
+      return 'network_error';
     }
   }
 
@@ -299,17 +299,14 @@ class ApiClient {
       }
 
       // Extract error message from response
-      final errorMsg = data['error']?.toString() ?? 'Account deletion failed';
+      final errorMsg = data['error']?.toString() ?? 'account_deletion_failed';
       throw ApiException(errorMsg, ApiErrorCode.server);
     } catch (e) {
       if (e is ApiException) {
         rethrow;
       }
       AppLogger.error('Delete account error', e is Exception ? e : null);
-      throw ApiException(
-        'Network error. Please try again.',
-        ApiErrorCode.network,
-      );
+      throw ApiException('network_error', ApiErrorCode.network);
     }
   }
 
@@ -369,10 +366,10 @@ class ApiClient {
         return null;
       }
 
-      return data['error']?.toString() ?? 'Password reset failed';
+      return data['error']?.toString() ?? 'password_reset_failed';
     } catch (e) {
       AppLogger.error('Password reset error', e is Exception ? e : null);
-      return 'Network error. Please try again.';
+      return 'network_error';
     }
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../l10n/l10n.dart';
 import '../../services/account_deletion_service.dart';
 import 'login_screen.dart';
 import '../widgets/luxury_text_field.dart';
@@ -26,23 +27,22 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
   }
 
   Future<void> _deleteAccount() async {
+    final l10n = context.l10n;
     // Show final confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Are you absolutely sure?'),
-        content: const Text(
-          'This action cannot be undone. All your data will be permanently deleted.',
-        ),
-          actions: [
-            TextButton(
+        title: Text(l10n.deleteAccountConfirmDialogTitle),
+        content: Text(l10n.deleteAccountConfirmDialogMessage),
+        actions: [
+          TextButton(
             onPressed: () {
               HapticFeedback.selectionClick();
               Navigator.pop(context, false);
             },
-            child: const Text('Cancel'),
-            ),
-            FilledButton(
+            child: Text(l10n.commonCancel),
+          ),
+          FilledButton(
             onPressed: () {
               HapticFeedback.mediumImpact();
               Navigator.pop(context, true);
@@ -50,7 +50,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
-            child: const Text('Delete Account'),
+            child: Text(l10n.deleteAccountTitle),
           ),
         ],
       ),
@@ -79,16 +79,22 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Account deleted successfully'),
-          backgroundColor:
-              Theme.of(context).colorScheme.secondaryContainer,
+          content: Text(l10n.deleteAccountSuccess),
+          backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
         ),
       );
     } catch (e) {
       if (!mounted) return;
+      final l10n = context.l10n;
+      final raw = e.toString().replaceAll('Exception: ', '').trim();
+      final mapped = switch (raw) {
+        'invalid_password' => l10n.deleteAccountErrorInvalidPassword,
+        'account_deletion_failed' => l10n.deleteAccountErrorFailed,
+        _ => raw,
+      };
       setState(() {
         _isLoading = false;
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
+        _errorMessage = mapped;
       });
     }
   }
@@ -96,10 +102,11 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Delete Account'),
+        title: Text(l10n.deleteAccountTitle),
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       ),
       body: SingleChildScrollView(
@@ -125,7 +132,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Warning: Permanent Action',
+                      l10n.deleteAccountWarningTitle,
                       style: TextStyle(
                         color: colorScheme.onErrorContainer,
                         fontSize: 18,
@@ -141,7 +148,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
 
             // Warning messages
             Text(
-              'Deleting your account will:',
+              l10n.deleteAccountWarningIntro,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -151,18 +158,16 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
 
             const SizedBox(height: 12),
 
-            _buildWarningItem('Permanently delete all your chat history'),
-            _buildWarningItem('Remove your profile and account data'),
-            _buildWarningItem('This action cannot be undone'),
-            _buildWarningItem(
-              'Active subscriptions must be canceled separately in Google Play',
-            ),
+            _buildWarningItem(l10n.deleteAccountWarningChatHistory),
+            _buildWarningItem(l10n.deleteAccountWarningProfileData),
+            _buildWarningItem(l10n.deleteAccountWarningIrreversible),
+            _buildWarningItem(l10n.deleteAccountWarningSubscription),
 
             const SizedBox(height: 32),
 
             // Password field
             Text(
-              'Enter your password to confirm',
+              l10n.deleteAccountEnterPassword,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -177,7 +182,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
               obscureText: _obscurePassword,
               enabled: !_isLoading,
               decoration: InputDecoration(
-                hintText: 'Password',
+                hintText: l10n.commonPasswordHint,
                 prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
                   icon: Icon(
@@ -221,9 +226,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                           _isConfirmed = value ?? false;
                         });
                       },
-                title: const Text(
-                  'I understand all my data will be permanently deleted',
-                ),
+                title: Text(l10n.deleteAccountCheckboxConfirm),
                 controlAffinity: ListTileControlAffinity.leading,
                 contentPadding: EdgeInsets.zero,
               ),
@@ -256,8 +259,8 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                           color: colorScheme.onError,
                         ),
                       )
-                    : const Text(
-                        'Delete My Account',
+                    : Text(
+                        l10n.deleteAccountDeleteButton,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -271,15 +274,15 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
             // Cancel button
             SizedBox(
               width: double.infinity,
-            child: TextButton(
+              child: TextButton(
                 onPressed: _isLoading
                     ? null
                     : () {
                         HapticFeedback.selectionClick();
                         Navigator.pop(context);
                       },
-                child: const Text('Cancel'),
-            ),
+                child: Text(l10n.commonCancel),
+              ),
             ),
           ],
         ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flirtfix/l10n/gen/app_localizations.dart';
+import '../../l10n/l10n.dart';
 import '../../state/app_state.dart';
 import 'change_password_screen.dart';
 import 'delete_account_screen.dart';
@@ -15,6 +17,14 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  String _localeLabel(BuildContext context, Locale locale) {
+    final l10n = context.l10n;
+    return switch (locale.languageCode) {
+      'en' => l10n.languageEnglish,
+      _ => locale.languageCode.toUpperCase(),
+    };
+  }
+
   Future<void> _signOut() async {
     await AppStateScope.of(context).logout();
     if (mounted) {
@@ -31,14 +41,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  void _openPolicy(String policyType, String title) {
+  void _openPolicy(String policyType) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PolicyViewerScreen(
-          title: title,
-          policyType: policyType,
-        ),
+        builder: (context) => PolicyViewerScreen(policyType: policyType),
       ),
     );
   }
@@ -46,10 +53,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _openDeleteAccount() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const DeleteAccountScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const DeleteAccountScreen()),
     );
+  }
+
+  Future<void> _openLanguagePicker() async {
+    final appState = AppStateScope.of(context);
+    final l10n = context.l10n;
+    final supportedLocales = AppLocalizations.supportedLocales;
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        final currentCode = appState.localeOverride?.languageCode;
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: Text(l10n.languageSystem),
+                trailing: currentCode == null ? const Icon(Icons.check) : null,
+                onTap: () => Navigator.pop(context, 'system'),
+              ),
+              ...supportedLocales.map((locale) {
+                final code = locale.languageCode;
+                return ListTile(
+                  title: Text(_localeLabel(context, locale)),
+                  trailing: currentCode == code
+                      ? const Icon(Icons.check)
+                      : null,
+                  onTap: () => Navigator.pop(context, code),
+                );
+              }),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (choice == null) return;
+    if (choice == 'system') {
+      await appState.setLocaleOverride(null);
+      return;
+    }
+    await appState.setLocaleOverride(Locale(choice));
   }
 
   @override
@@ -57,15 +106,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final l10n = context.l10n;
     final appState = AppStateScope.of(context);
     final user = appState.user;
     final email = user?.email ?? '';
     final username = user?.username ?? '';
     final memberName = username.isNotEmpty
         ? username
-        : (email.isNotEmpty ? email.split('@').first : 'Guest');
+        : (email.isNotEmpty ? email.split('@').first : l10n.profileGuest);
     final isLightMode = appState.themeMode == AppThemeMode.premiumLightGold;
-    final ambienceLabel = isLightMode ? 'Royal Romance' : 'Midnight Gold';
+    final ambienceLabel = isLightMode
+        ? l10n.profileAmbienceRoyalRomance
+        : l10n.profileAmbienceMidnightGold;
     final isLight = theme.brightness == Brightness.light;
     final cardShadow = isLight
         ? BoxShadow(
@@ -83,7 +135,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: Text(l10n.profileTitle),
         centerTitle: true,
         actions: [
           IconButton(
@@ -102,9 +154,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Help & Policies',
-                          style: TextStyle(
+                        Text(
+                          l10n.profileHelpPolicies,
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -112,7 +164,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 16),
                         ListTile(
                           leading: const Icon(Icons.report_outlined),
-                          title: const Text('Report an Issue'),
+                          title: Text(l10n.reportIssueTitle),
                           onTap: () {
                             HapticFeedback.selectionClick();
                             Navigator.pop(context);
@@ -126,34 +178,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         ListTile(
                           leading: const Icon(Icons.privacy_tip_outlined),
-                          title: const Text('Privacy Policy'),
+                          title: Text(l10n.policyPrivacyTitle),
                           onTap: () {
                             HapticFeedback.selectionClick();
                             Navigator.pop(context);
-                            _openPolicy('privacy', 'Privacy Policy');
+                            _openPolicy('privacy');
                           },
                         ),
                         ListTile(
                           leading: const Icon(Icons.description_outlined),
-                          title: const Text('Terms of Use'),
+                          title: Text(l10n.policyTermsTitle),
                           onTap: () {
                             HapticFeedback.selectionClick();
                             Navigator.pop(context);
-                            _openPolicy('terms', 'Terms of Use');
+                            _openPolicy('terms');
                           },
                         ),
                         ListTile(
                           leading: const Icon(Icons.receipt_long_outlined),
-                          title: const Text('Refund Policy'),
+                          title: Text(l10n.policyRefundTitle),
                           onTap: () {
                             HapticFeedback.selectionClick();
                             Navigator.pop(context);
-                            _openPolicy('refund', 'Refund Policy');
+                            _openPolicy('refund');
                           },
                         ),
                         ListTile(
                           leading: const Icon(Icons.delete_outline),
-                          title: const Text('Delete Account'),
+                          title: Text(l10n.deleteAccountTitle),
                           onTap: () {
                             HapticFeedback.selectionClick();
                             Navigator.pop(context);
@@ -184,8 +236,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   CircleAvatar(
                     radius: 28,
-                    backgroundColor: colorScheme.primary.withValues(alpha: 0.15),
-                    child: Icon(Icons.person_outline, color: colorScheme.primary),
+                    backgroundColor: colorScheme.primary.withValues(
+                      alpha: 0.15,
+                    ),
+                    child: Icon(
+                      Icons.person_outline,
+                      color: colorScheme.primary,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -194,8 +251,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         Text(
                           appState.isLoggedIn
-                              ? 'Member: $memberName'
-                              : 'Guest Preview',
+                              ? l10n.profileMember(memberName)
+                              : l10n.profileGuestPreview,
                           style: textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                             color: colorScheme.onSurface,
@@ -203,7 +260,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          appState.isLoggedIn ? 'Member Access' : 'Preview Access',
+                          appState.isLoggedIn
+                              ? l10n.profileMemberAccess
+                              : l10n.profilePreviewAccess,
                           style: TextStyle(color: colorScheme.onSurfaceVariant),
                         ),
                       ],
@@ -231,16 +290,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Membership Status',
-                          style: TextStyle(
+                        Text(
+                          l10n.profileMembershipStatus,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          appState.isSubscribed ? 'Active - Elite' : 'Inactive',
+                          appState.isSubscribed
+                              ? l10n.profileMembershipActive
+                              : l10n.profileMembershipInactive,
                           style: TextStyle(color: colorScheme.onSurfaceVariant),
                         ),
                       ],
@@ -256,7 +317,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       );
                     },
-                    child: Text(appState.isSubscribed ? 'Manage' : 'Subscribe'),
+                    child: Text(
+                      appState.isSubscribed
+                          ? l10n.profileManage
+                          : l10n.profileSubscribe,
+                    ),
                   ),
                 ],
               ),
@@ -273,7 +338,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   SwitchListTile.adaptive(
                     secondary: const Icon(Icons.light_mode_outlined),
-                    title: const Text('Ambience'),
+                    title: Text(l10n.profileAmbience),
                     subtitle: Text(ambienceLabel),
                     value: isLightMode,
                     onChanged: (value) {
@@ -287,8 +352,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   const Divider(height: 1),
                   ListTile(
+                    leading: const Icon(Icons.language_outlined),
+                    title: Text(l10n.profileLanguage),
+                    subtitle: Text(
+                      appState.localeOverride == null
+                          ? l10n.languageSystem
+                          : _localeLabel(context, appState.localeOverride!),
+                    ),
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      _openLanguagePicker();
+                    },
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
                     leading: const Icon(Icons.lock_reset_outlined),
-                    title: const Text('Security Settings'),
+                    title: Text(l10n.profileSecuritySettings),
                     onTap: () {
                       HapticFeedback.selectionClick();
                       Navigator.push(
@@ -302,7 +381,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.logout_outlined),
-                    title: const Text('Sign out'),
+                    title: Text(l10n.profileSignOut),
                     onTap: () {
                       HapticFeedback.selectionClick();
                       _signOut();

@@ -8,6 +8,7 @@ enum AppThemeMode { premiumLightGold, premiumDarkNeonGold }
 
 class AppState extends ChangeNotifier {
   static const String _themeModeKey = 'app_theme_mode';
+  static const String _localeOverrideCodeKey = 'app_locale_override_code';
   User? _user;
   int _credits = 0;
   bool _isSubscribed = false;
@@ -25,6 +26,7 @@ class AppState extends ChangeNotifier {
   bool _isLoggedIn = false;
   bool _initialized = false;
   AppThemeMode _themeMode = AppThemeMode.premiumDarkNeonGold;
+  Locale? _localeOverride;
 
   User? get user => _user;
   int get credits => _credits;
@@ -43,9 +45,11 @@ class AppState extends ChangeNotifier {
   bool get isLoggedIn => _isLoggedIn;
   bool get initialized => _initialized;
   AppThemeMode get themeMode => _themeMode;
+  Locale? get localeOverride => _localeOverride;
 
   Future<void> initialize() async {
     await _loadThemePreference();
+    await _loadLocalePreference();
     await reloadFromStorage();
     if (_isLoggedIn) {
       await refreshUserData();
@@ -72,13 +76,46 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  Future<void> setLocaleOverride(Locale? locale) async {
+    _localeOverride = locale;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    if (locale == null) {
+      await prefs.remove(_localeOverrideCodeKey);
+      return;
+    }
+    await prefs.setString(_localeOverrideCodeKey, locale.toLanguageTag());
+  }
+
+  Future<void> _loadLocalePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_localeOverrideCodeKey);
+    if (raw == null || raw.trim().isEmpty) {
+      _localeOverride = null;
+      return;
+    }
+
+    final parts = raw.split(RegExp('[-_]'));
+    if (parts.isEmpty || parts.first.isEmpty) {
+      _localeOverride = null;
+      return;
+    }
+
+    final languageCode = parts.first;
+    final countryCode = parts.length > 1 && parts[1].isNotEmpty
+        ? parts[1]
+        : null;
+    _localeOverride = Locale(languageCode, countryCode);
+  }
+
   Future<void> reloadFromStorage() async {
     _isLoggedIn = await AuthService.isLoggedIn();
     _user = await AuthService.getStoredUser();
     _credits = await AuthService.getStoredCredits();
     _isSubscribed = await AuthService.getStoredSubscriptionStatus();
     _subscriptionExpiry = await AuthService.getStoredSubscriptionExpiry();
-    _subscriberWeeklyRemaining = await AuthService.getStoredSubscriberWeeklyRemaining();
+    _subscriberWeeklyRemaining =
+        await AuthService.getStoredSubscriberWeeklyRemaining();
     _subscriberWeeklyLimit = await AuthService.getStoredSubscriberWeeklyLimit();
     // Load daily limits
     _dailyOpenersRemaining = await AuthService.getStoredDailyOpenersRemaining();
@@ -86,7 +123,8 @@ class AppState extends ChangeNotifier {
     _dailyRepliesRemaining = await AuthService.getStoredDailyRepliesRemaining();
     _dailyRepliesLimit = await AuthService.getStoredDailyRepliesLimit();
     // Load free daily credits
-    _freeDailyCreditsRemaining = await AuthService.getStoredFreeDailyCreditsRemaining();
+    _freeDailyCreditsRemaining =
+        await AuthService.getStoredFreeDailyCreditsRemaining();
     _freeDailyCreditsLimit = await AuthService.getStoredFreeDailyCreditsLimit();
     notifyListeners();
   }
@@ -130,8 +168,7 @@ class AppStateScope extends InheritedNotifier<AppState> {
   });
 
   static AppState of(BuildContext context) {
-    final scope =
-        context.dependOnInheritedWidgetOfExactType<AppStateScope>();
+    final scope = context.dependOnInheritedWidgetOfExactType<AppStateScope>();
     if (scope == null || scope.notifier == null) {
       throw StateError('AppStateScope not found in widget tree');
     }

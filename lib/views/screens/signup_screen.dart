@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../l10n/l10n.dart';
 import '../../services/auth_service.dart';
 import '../widgets/luxury_text_field.dart';
 import '../widgets/premium_gradient_button.dart';
@@ -27,7 +28,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
     if (_passwordController.text != _confirmPasswordController.text) {
       setState(() {
-        _errorMessage = 'Passwords do not match';
+        _errorMessage = context.l10n.validationPasswordsDoNotMatch;
       });
       return;
     }
@@ -52,14 +53,14 @@ class _SignupScreenState extends State<SignupScreen> {
           }
         } else {
           setState(() {
-            _errorMessage = response.error ?? 'Registration failed';
+            _errorMessage = _mapAuthError(response.error);
           });
         }
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Network error. Please try again.';
+          _errorMessage = context.l10n.errorNetworkTryAgain;
         });
       }
     } finally {
@@ -76,13 +77,14 @@ class _SignupScreenState extends State<SignupScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final l10n = context.l10n;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('Become a Member'),
+        title: Text(l10n.signupBecomeMember),
         centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_outlined, color: colorScheme.onSurface),
@@ -111,7 +113,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         Column(
                           children: [
                             Text(
-                              'Become a Member',
+                              l10n.signupBecomeMember,
                               style: textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: colorScheme.onSurface,
@@ -119,7 +121,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Your journey to effortless connection begins here.',
+                              l10n.signupSubtitle,
                               textAlign: TextAlign.center,
                               style: textTheme.bodyMedium?.copyWith(
                                 color: colorScheme.onSurfaceVariant,
@@ -139,18 +141,19 @@ class _SignupScreenState extends State<SignupScreen> {
                               // Email Field
                               _buildTextField(
                                 controller: _emailController,
-                                label: 'Correspondence Email',
-                                hint: 'Enter your correspondence email',
+                                label: l10n.signupEmailLabel,
+                                hint: l10n.signupEmailHint,
                                 icon: Icons.email_outlined,
                                 keyboardType: TextInputType.emailAddress,
                                 validator: (value) {
                                   if (value == null || value.trim().isEmpty) {
-                                    return 'Please enter your correspondence email';
+                                    return l10n
+                                        .signupValidationEnterCorrespondenceEmail;
                                   }
                                   if (!RegExp(
                                     r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
                                   ).hasMatch(value)) {
-                                    return 'Please enter a valid email';
+                                    return l10n.validationEnterValidEmail;
                                   }
                                   return null;
                                 },
@@ -161,8 +164,8 @@ class _SignupScreenState extends State<SignupScreen> {
                               // Password Field
                               _buildTextField(
                                 controller: _passwordController,
-                                label: 'Secure Passcode',
-                                hint: 'Create a secure passcode',
+                                label: l10n.signupSecurePasscodeLabel,
+                                hint: l10n.signupSecurePasscodeHint,
                                 icon: Icons.lock_outline,
                                 isPassword: true,
                                 obscureText: _obscurePassword,
@@ -173,10 +176,12 @@ class _SignupScreenState extends State<SignupScreen> {
                                 },
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Please enter a secure passcode';
+                                    return l10n
+                                        .signupValidationEnterSecurePasscode;
                                   }
                                   if (value.length < 6) {
-                                    return 'Passcode must be at least 6 characters';
+                                    return l10n
+                                        .signupValidationPasscodeMinLength;
                                   }
                                   return null;
                                 },
@@ -187,8 +192,8 @@ class _SignupScreenState extends State<SignupScreen> {
                               // Confirm Password Field
                               _buildTextField(
                                 controller: _confirmPasswordController,
-                                label: 'Verify Passcode',
-                                hint: 'Verify your passcode',
+                                label: l10n.signupVerifyPasscodeLabel,
+                                hint: l10n.signupVerifyPasscodeHint,
                                 icon: Icons.lock_outline,
                                 isPassword: true,
                                 obscureText: _obscureConfirmPassword,
@@ -200,7 +205,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                 },
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Please verify your passcode';
+                                    return l10n.signupValidationVerifyPasscode;
                                   }
                                   return null;
                                 },
@@ -215,7 +220,9 @@ class _SignupScreenState extends State<SignupScreen> {
                                   decoration: BoxDecoration(
                                     color: colorScheme.errorContainer,
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: colorScheme.error),
+                                    border: Border.all(
+                                      color: colorScheme.error,
+                                    ),
                                   ),
                                   child: Row(
                                     children: [
@@ -257,12 +264,15 @@ class _SignupScreenState extends State<SignupScreen> {
                                         ),
                                       ),
                                       const SizedBox(width: 12),
-                                      const Text('Claiming access...'),
+                                      Text(l10n.signupClaimingAccess),
                                     ] else ...[
-                                      const Icon(Icons.person_add_outlined, size: 20),
+                                      const Icon(
+                                        Icons.person_add_outlined,
+                                        size: 20,
+                                      ),
                                       const SizedBox(width: 8),
-                                      const Text(
-                                        'Claim Your Access',
+                                      Text(
+                                        l10n.signupClaimAccessButton,
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w600,
@@ -280,21 +290,20 @@ class _SignupScreenState extends State<SignupScreen> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    'Already established? ',
+                                    l10n.signupAlreadyEstablishedPrompt,
                                     style: TextStyle(
                                       color: colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                   TextButton(
-                                    onPressed:
-                                        _isLoading
-                                            ? null
-                                            : () {
-                                                HapticFeedback.selectionClick();
-                                                Navigator.pop(context);
-                                              },
+                                    onPressed: _isLoading
+                                        ? null
+                                        : () {
+                                            HapticFeedback.selectionClick();
+                                            Navigator.pop(context);
+                                          },
                                     child: Text(
-                                      'Enter Here',
+                                      l10n.signupEnterHere,
                                       style: TextStyle(
                                         color: colorScheme.secondary,
                                         fontWeight: FontWeight.w600,
@@ -368,5 +377,13 @@ class _SignupScreenState extends State<SignupScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  String _mapAuthError(String? code) {
+    final l10n = context.l10n;
+    return switch (code) {
+      'network_error' => l10n.errorNetworkTryAgain,
+      _ => code ?? l10n.signupRegistrationFailed,
+    };
   }
 }

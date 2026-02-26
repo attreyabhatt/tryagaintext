@@ -9,6 +9,7 @@ import 'package:in_app_review/in_app_review.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:io';
+import '../../l10n/l10n.dart';
 import '../../state/app_state.dart';
 import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
@@ -292,7 +293,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             _hasShownSubscriptionActivated = true;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Subscription activated!'),
+                content: Text(context.l10n.subscriptionActivated),
                 backgroundColor: Theme.of(
                   context,
                 ).colorScheme.secondaryContainer,
@@ -399,13 +400,13 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         setState(() {
           _errorMessage = e.message.isNotEmpty
               ? e.message
-              : 'Oops! Something went wrong. Please try again.';
+              : context.l10n.errorUnexpectedTryAgain;
         });
       }
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Oops! Something went wrong. Please try again.';
+        _errorMessage = context.l10n.errorUnexpectedTryAgain;
       });
     }
   }
@@ -434,8 +435,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 const SizedBox(width: 8),
                 Text(
                   justSignedUp
-                      ? 'Account created. You have been signed in'
-                      : 'Welcome back!',
+                      ? context.l10n.authAccountCreatedSignedIn
+                      : context.l10n.authWelcomeBack,
                 ),
               ],
             ),
@@ -461,7 +462,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       _hasShownSubscriptionActivated = true;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Subscription activated!'),
+          content: Text(context.l10n.subscriptionActivated),
           backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
         ),
       );
@@ -533,13 +534,13 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     if (_situation == 'just_matched' &&
         _newMatchMode == NewMatchMode.ai &&
         _uploadedProfileImage == null) {
-      _showError('Please upload a profile screenshot first');
+      _showError(context.l10n.conversationsUploadProfileFirst);
       return;
     }
 
     // For Need Reply tab, require conversation text
     if (_situation != 'just_matched' && _conversationCtrl.text.trim().isEmpty) {
-      _showError('Please add your conversation first');
+      _showError(context.l10n.conversationsAddConversationFirst);
       return;
     }
 
@@ -631,13 +632,13 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         setState(() {
           _errorMessage = e.message.isNotEmpty
               ? e.message
-              : 'Oops! Something went wrong. Please try again.';
+              : context.l10n.errorUnexpectedTryAgain;
         });
       }
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Oops! Something went wrong. Please try again.';
+        _errorMessage = context.l10n.errorUnexpectedTryAgain;
       });
     }
   }
@@ -678,7 +679,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         _isExtractingImage = false;
         _uploadedConversationImage = null;
       });
-      _showError('Failed to extract text from image. Please try again.');
+      _showError(context.l10n.conversationsExtractImageFailed);
     }
   }
 
@@ -710,7 +711,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       });
     } catch (e) {
       if (!mounted) return;
-      _showError('Failed to select image. Please try again.');
+      _showError(context.l10n.conversationsSelectImageFailed);
     }
   }
 
@@ -748,9 +749,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     final minutes = difference.inMinutes % 60;
 
     if (hours > 0) {
-      return '${hours}h ${minutes}m';
+      return context.l10n.conversationsTimeHoursMinutes(hours, minutes);
     }
-    return '${minutes}m';
+    return context.l10n.conversationsTimeMinutes(minutes);
   }
 
   void _startNewSession() {
@@ -872,7 +873,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           _isLoading = false;
           _errorMessage = e.message.isNotEmpty
               ? e.message
-              : 'Please create your free account to continue.';
+              : context.l10n.conversationsCreateFreeAccountPrompt;
         });
         return;
       }
@@ -927,7 +928,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         setState(() {
           _errorMessage = e.message.isNotEmpty
               ? e.message
-              : 'Subscription required. Please subscribe to continue.';
+              : context.l10n.conversationsSubscriptionRequired;
         });
       }
       await _recordZeroCreditsDayIfNeeded();
@@ -1127,13 +1128,12 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
   void _showGuestAccessCompleteSheet() {
     _showLuxuryAccessSheet(
-      headline: 'Join the Inner Circle.',
-      body:
-          'Create your free account to reveal this response and continue with FlirtFix.',
-      supportText: 'Takes less than 30 seconds.',
-      primaryLabel: 'Continue',
+      headline: context.l10n.conversationsGuestSheetHeadline,
+      body: context.l10n.conversationsGuestSheetBody,
+      supportText: context.l10n.conversationsGuestSheetSupport,
+      primaryLabel: context.l10n.commonContinue,
       onPrimary: _navigateToSignup,
-      secondaryLabel: 'Login to existing account',
+      secondaryLabel: context.l10n.conversationsGuestSheetSecondary,
       onSecondary: _navigateToAuth,
     );
   }
@@ -1170,13 +1170,12 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     final resetTime = _getTimeUntilMidnightUtc();
 
     _showLuxuryAccessSheet(
-      headline: 'Unlock this reply.',
-      body:
-          'Your daily limit of $limitLabel reached. Resets in $resetTime. Continue to Premium to reveal the full response.',
-      supportText: 'Instant unlock after checkout.',
-      primaryLabel: 'Continue',
+      headline: context.l10n.conversationsUnlockReplyHeadline,
+      body: context.l10n.conversationsUnlockReplyBody(limitLabel, resetTime),
+      supportText: context.l10n.conversationsUnlockReplySupport,
+      primaryLabel: context.l10n.commonContinue,
       onPrimary: () => _navigateToPricingAndUnlockLockedReply(lockedReplyId),
-      secondaryLabel: 'Maybe later',
+      secondaryLabel: context.l10n.commonMaybeLater,
       secondaryForegroundColor: Colors.white.withValues(alpha: 0.7),
     );
   }
@@ -1201,7 +1200,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                   color: Theme.of(context).colorScheme.onSecondaryContainer,
                 ),
                 const SizedBox(width: 8),
-                const Text('Account created. You have been signed in'),
+                Text(context.l10n.authAccountCreatedSignedIn),
               ],
             ),
             backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
@@ -1224,7 +1223,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               size: 20,
             ),
             const SizedBox(width: 8),
-            const Text('Copied to clipboard!'),
+            Text(context.l10n.conversationsCopiedToClipboard),
           ],
         ),
         backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
@@ -1260,6 +1259,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
   Future<void> _showPulseCheck(ReviewPromptDecision decision) async {
     final colorScheme = Theme.of(context).colorScheme;
+    final prompt = _reviewPromptCopy(decision);
     final isDark = colorScheme.brightness == Brightness.dark;
     final action = await showModalBottomSheet<_PulseCheckAction>(
       context: context,
@@ -1272,7 +1272,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           top: false,
           child: Container(
             decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
               border: Border(
                 top: BorderSide(
                   color: colorScheme.secondary.withValues(alpha: 0.3),
@@ -1284,10 +1286,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.auto_awesome, color: colorScheme.secondary, size: 28),
+                Icon(
+                  Icons.auto_awesome,
+                  color: colorScheme.secondary,
+                  size: 28,
+                ),
                 const SizedBox(height: 14),
                 Text(
-                  decision.headline,
+                  prompt.headline,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     color: colorScheme.onSurface,
@@ -1295,7 +1301,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  decision.subtext,
+                  prompt.subtext,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: colorScheme.onSurfaceVariant,
@@ -1322,7 +1328,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                         ),
                       ),
                       child: Text(
-                        'Needs Calibration',
+                        context.l10n.reviewNeedsCalibration,
                         textAlign: TextAlign.center,
                         style: TextStyle(color: colorScheme.onSurfaceVariant),
                       ),
@@ -1332,8 +1338,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: isDark
-                              ? [const Color(0xFFFF2D6D), const Color(0xFFB95A7B)]
-                              : [const Color(0xFF991B38), const Color(0xFFC22E53)],
+                              ? [
+                                  const Color(0xFFFF2D6D),
+                                  const Color(0xFFB95A7B),
+                                ]
+                              : [
+                                  const Color(0xFF991B38),
+                                  const Color(0xFFC22E53),
+                                ],
                         ),
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
@@ -1359,7 +1371,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                           ),
                         ),
                         child: Text(
-                          decision.positiveLabel,
+                          prompt.positiveLabel,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: colorScheme.onPrimary,
@@ -1372,9 +1384,15 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     if (useVerticalButtons) {
                       return Column(
                         children: [
-                          SizedBox(width: double.infinity, child: negativeButton),
+                          SizedBox(
+                            width: double.infinity,
+                            child: negativeButton,
+                          ),
                           const SizedBox(height: 12),
-                          SizedBox(width: double.infinity, child: positiveButton),
+                          SizedBox(
+                            width: double.infinity,
+                            child: positiveButton,
+                          ),
                         ],
                       );
                     }
@@ -1402,8 +1420,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     if (action == _PulseCheckAction.negative) {
       try {
         final messenger = ScaffoldMessenger.of(context);
-        final secondaryContainer =
-            Theme.of(context).colorScheme.secondaryContainer;
+        final secondaryContainer = Theme.of(
+          context,
+        ).colorScheme.secondaryContainer;
         await Future<void>.delayed(const Duration(milliseconds: 180));
         if (!mounted) return;
         final submitted = await _showFeedbackForm(decision);
@@ -1414,9 +1433,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         if (!mounted) return;
         messenger.showSnackBar(
           SnackBar(
-            content: const Text(
-              'Feedback received. We are calibrating.',
-            ),
+            content: Text(context.l10n.reviewFeedbackReceived),
             backgroundColor: secondaryContainer,
           ),
         );
@@ -1426,6 +1443,38 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     } else if (action == _PulseCheckAction.positive) {
       await Future<void>.delayed(const Duration(milliseconds: 180));
       await _handlePositiveReviewPath();
+    }
+  }
+
+  ({String headline, String subtext, String positiveLabel}) _reviewPromptCopy(
+    ReviewPromptDecision decision,
+  ) {
+    final l10n = context.l10n;
+    switch (decision.variant) {
+      case ReviewPromptVariant.qualityCheck:
+        return (
+          headline: l10n.reviewPromptQualityHeadline,
+          subtext: l10n.reviewPromptQualitySubtext,
+          positiveLabel: l10n.reviewPromptQualityPositive,
+        );
+      case ReviewPromptVariant.systemStatus:
+        return (
+          headline: l10n.reviewPromptSystemHeadline,
+          subtext: l10n.reviewPromptSystemSubtext,
+          positiveLabel: l10n.reviewPromptSystemPositive,
+        );
+      case ReviewPromptVariant.redemption:
+        return (
+          headline: l10n.reviewPromptRedemptionHeadline,
+          subtext: l10n.reviewPromptRedemptionSubtext,
+          positiveLabel: l10n.reviewPromptRedemptionPositive,
+        );
+      case null:
+        return (
+          headline: l10n.reviewPromptQualityHeadline,
+          subtext: l10n.reviewPromptQualitySubtext,
+          positiveLabel: l10n.reviewPromptQualityPositive,
+        );
     }
   }
 
@@ -1479,13 +1528,13 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Refine Strategy',
+                          context.l10n.reviewRefineStrategyTitle,
                           style: Theme.of(sheetContext).textTheme.headlineSmall
                               ?.copyWith(color: colorScheme.onSurface),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Tell us what went wrong. Your feedback calibrates the model.',
+                          context.l10n.reviewRefineStrategySubtitle,
                           style: Theme.of(sheetContext).textTheme.bodyMedium
                               ?.copyWith(color: colorScheme.onSurfaceVariant),
                         ),
@@ -1495,12 +1544,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                           minLines: 5,
                           maxLines: 7,
                           decoration: InputDecoration(
-                            hintText: 'The reply was too aggressive...',
+                            hintText: context.l10n.reviewFeedbackHint,
                             fillColor: colorScheme.surfaceContainerHighest,
                           ),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
-                              return 'Please share what went wrong.';
+                              return context
+                                  .l10n
+                                  .reviewFeedbackValidationMessage;
                             }
                             return null;
                           },
@@ -1509,17 +1560,17 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                         TextFormField(
                           controller: emailController,
                           keyboardType: TextInputType.emailAddress,
-                          decoration: const InputDecoration(
-                            hintText: 'you@example.com',
-                            labelText: 'Email',
+                          decoration: InputDecoration(
+                            hintText: context.l10n.commonEmailHint,
+                            labelText: context.l10n.commonEmailLabel,
                           ),
                           validator: (value) {
                             final email = (value ?? '').trim();
                             if (email.isEmpty) {
-                              return 'Please enter your email.';
+                              return context.l10n.validationEnterYourEmail;
                             }
                             if (!_isValidEmail(email)) {
-                              return 'Please enter a valid email.';
+                              return context.l10n.validationEnterValidEmail;
                             }
                             return null;
                           },
@@ -1550,8 +1601,10 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
                                       final ok = await _apiClient.reportIssue(
                                         reason: 'feedback',
-                                        title:
-                                            'Pulse Feedback - ${_reviewReasonTag(decision.reason)}',
+                                        title: context.l10n
+                                            .reviewPulseFeedbackTitle(
+                                              _reviewReasonTag(decision.reason),
+                                            ),
                                         subject: messageController.text.trim(),
                                         email: emailController.text.trim(),
                                       );
@@ -1570,8 +1623,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                                       }
                                       setSheetState(() {
                                         isSubmitting = false;
-                                        errorMessage =
-                                            'Could not send feedback. Please try again.';
+                                        errorMessage = context
+                                            .l10n
+                                            .reviewFeedbackSendFailed;
                                       });
                                     } catch (_) {
                                       if (!sheetContext.mounted) {
@@ -1579,8 +1633,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                                       }
                                       setSheetState(() {
                                         isSubmitting = false;
-                                        errorMessage =
-                                            'Could not send feedback. Please try again.';
+                                        errorMessage = context
+                                            .l10n
+                                            .reviewFeedbackSendFailed;
                                       });
                                     }
                                   },
@@ -1594,7 +1649,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                                     ),
                                   )
                                 : Text(
-                                    'Transmit Feedback',
+                                    context.l10n.reviewTransmitFeedback,
                                     style: TextStyle(
                                       color: colorScheme.secondary,
                                       fontWeight: FontWeight.w700,
@@ -1648,9 +1703,10 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       return;
     }
     final appState = AppStateScope.of(context);
-    final decision = await _reviewPromptService.recordNeedReplySuccessAndGetDecision(
-      isSubscribed: appState.isSubscribed,
-    );
+    final decision = await _reviewPromptService
+        .recordNeedReplySuccessAndGetDecision(
+          isSubscribed: appState.isSubscribed,
+        );
     await _maybeShowPulseCheck(decision);
   }
 
@@ -1733,7 +1789,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Expertly formulated to maximize engagement and intrigue.',
+                                context
+                                    .l10n
+                                    .conversationsRecommendedDescription,
                                 style: TextStyle(
                                   color: colorScheme.onSecondaryContainer,
                                   fontSize: 13,
@@ -1828,7 +1886,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'FlirtFix',
+                context.l10n.appTitle,
                 style: textTheme.headlineSmall?.copyWith(
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
@@ -1837,7 +1895,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 ),
               ),
               Text(
-                'Your Conversation Architect',
+                context.l10n.conversationsAppbarSubtitle,
                 style: textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w500,
@@ -1943,17 +2001,19 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           : _isReplyLimitExceeded;
 
       if (isLimitExceeded) {
-        final limitType = isOpenerTab ? 'opener' : 'reply';
+        final limitType = isOpenerTab
+            ? context.l10n.conversationsLimitTypeOpener
+            : context.l10n.conversationsLimitTypeReply;
         final resetTime = _getTimeUntilMidnightUtc();
         final subtitle = isOpenerTab
-            ? 'Resets in $resetTime\n\nPlease use Recommended openers. Expertly formulated to maximize engagement and intrigue.'
-            : 'Resets in $resetTime';
+            ? context.l10n.conversationsDailyLimitOpenerSubtitle(resetTime)
+            : context.l10n.conversationsDailyLimitReplySubtitle(resetTime);
         return Column(
           children: [
             _buildBanner(
               colorScheme: colorScheme,
               icon: Icons.hourglass_empty_outlined,
-              title: 'Daily $limitType limit reached',
+              title: context.l10n.conversationsDailyLimitTitle(limitType),
               subtitle: subtitle,
               type: BannerType.warning,
             ),
@@ -2142,14 +2202,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                       children: [
                         _buildTabPillItem(
                           icon: Icons.favorite_outline,
-                          label: 'Open',
+                          label: context.l10n.conversationsTabOpen,
                           isActive: !isNeedReplySelected,
                           onTap: () => _handleTabTap(0),
                           colorScheme: colorScheme,
                         ),
                         _buildTabPillItem(
                           icon: Icons.chat_bubble_outline,
-                          label: 'Respond',
+                          label: context.l10n.conversationsTabRespond,
                           isActive: isNeedReplySelected,
                           onTap: () => _handleTabTap(1),
                           colorScheme: colorScheme,
@@ -2235,14 +2295,47 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
   String _buildCommandHintText() {
     final activeSettings = <String>[
-      if (!_isDefaultCharacterSelection) _selectedCharacter,
-      if (!_isDefaultToneSelection) _selectedTone,
-      if (_keepItShort) 'Short',
+      if (!_isDefaultCharacterSelection)
+        _displayCommandOptionLabel(_selectedCharacter),
+      if (!_isDefaultToneSelection) _displayCommandOptionLabel(_selectedTone),
+      if (_keepItShort) context.l10n.conversationsCommandShort,
     ];
     if (activeSettings.isEmpty) {
-      return 'Any specific instructions?';
+      return context.l10n.conversationsCommandHintEmpty;
     }
-    return '(${activeSettings.join(' | ')}) Add details...';
+    return context.l10n.conversationsCommandHintWithSettings(
+      activeSettings.join(' | '),
+    );
+  }
+
+  String _displayCommandOptionLabel(String option) {
+    final l10n = context.l10n;
+    switch (option) {
+      case 'Default':
+        return l10n.conversationsToneDefault;
+      case 'Flirty':
+        return l10n.conversationsToneFlirty;
+      case 'Witty':
+        return l10n.conversationsToneWitty;
+      case 'Romantic':
+        return l10n.conversationsToneRomantic;
+      case 'Cocky Funny':
+        return l10n.conversationsToneCockyFunny;
+      case 'None':
+        return l10n.conversationsCharacterNone;
+      case 'Tommy Shelby':
+        return l10n.conversationsCharacterTommyShelby;
+      case 'Sherlock Holmes':
+        return l10n.conversationsCharacterSherlockHolmes;
+      case 'Logan Roy':
+        return l10n.conversationsCharacterLoganRoy;
+      case 'Lawyer':
+        return l10n.conversationsCharacterLawyer;
+      case 'Doctor':
+        return l10n.conversationsCharacterDoctor;
+      default:
+        return option;
+    }
   }
 
   Future<void> _setKeepItShort(bool value) async {
@@ -2256,8 +2349,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   Future<void> _showTonePicker(ColorScheme colorScheme) async {
     final selectedTone = await _showCommandOptionSheet(
       colorScheme: colorScheme,
-      title: 'Select Tone',
-      helperText: 'Select a style or type your own above.',
+      title: context.l10n.conversationsSelectToneTitle,
+      helperText: context.l10n.conversationsSelectToneHelper,
       options: _toneOptions,
       selectedValue: _selectedTone,
     );
@@ -2273,8 +2366,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   Future<void> _showCharacterPicker(ColorScheme colorScheme) async {
     final selectedCharacter = await _showCommandOptionSheet(
       colorScheme: colorScheme,
-      title: 'Select Character',
-      helperText: 'Select a persona or type your own above.',
+      title: context.l10n.conversationsSelectCharacterTitle,
+      helperText: context.l10n.conversationsSelectCharacterHelper,
       options: _characterOptions,
       selectedValue: _selectedCharacter,
     );
@@ -2338,13 +2431,12 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 decoration: BoxDecoration(
                   color: sheetBackgroundColor,
                   borderRadius: BorderRadius.circular(28),
-                  border: Border.all(
-                    color: sheetBorderColor,
-                    width: 1,
-                  ),
+                  border: Border.all(color: sheetBorderColor, width: 1),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.14),
+                      color: Colors.black.withValues(
+                        alpha: isDark ? 0.45 : 0.14,
+                      ),
                       blurRadius: isDark ? 26 : 20,
                       offset: const Offset(0, 14),
                     ),
@@ -2384,7 +2476,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                           children: options.map((option) {
                             final isSelected = selectedValue == option;
                             return ChoiceChip(
-                              label: Text(option),
+                              label: Text(_displayCommandOptionLabel(option)),
                               selected: isSelected,
                               onSelected: (_) =>
                                   Navigator.of(sheetContext).pop(option),
@@ -2462,7 +2554,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         ],
       ),
     );
-
   }
 
   Widget _buildCustomInstructionsSection(ColorScheme colorScheme) {
@@ -2543,7 +2634,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 onPressed: () {
                   _showCharacterPicker(colorScheme);
                 },
-                tooltip: 'Character',
+                tooltip: context.l10n.conversationsTooltipCharacter,
               ),
               _buildCommandIconButton(
                 colorScheme: colorScheme,
@@ -2552,14 +2643,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 onPressed: () {
                   _showTonePicker(colorScheme);
                 },
-                tooltip: 'Tone',
+                tooltip: context.l10n.conversationsTooltipTone,
               ),
               const Spacer(),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Keep it short',
+                    context.l10n.conversationsKeepItShort,
                     style: TextStyle(
                       color: _keepItShort
                           ? colorScheme.secondary
@@ -2588,11 +2679,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
   Widget _buildNewMatchToggle(ColorScheme colorScheme) {
     return SegmentedButton<NewMatchMode>(
-      segments: const [
-        ButtonSegment(value: NewMatchMode.ai, label: Text('Creative')),
+      segments: [
+        ButtonSegment(
+          value: NewMatchMode.ai,
+          label: Text(context.l10n.conversationsModeCreative),
+        ),
         ButtonSegment(
           value: NewMatchMode.recommended,
-          label: Text('Recommended'),
+          label: Text(context.l10n.conversationsModeRecommended),
         ),
       ],
       selected: <NewMatchMode>{_newMatchMode},
@@ -2624,7 +2718,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Their profile',
+                  context.l10n.conversationsTheirProfile,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
@@ -2635,7 +2729,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             ),
             const SizedBox(height: 4),
             Text(
-              'Pick the most interesting photo or bio section',
+              context.l10n.conversationsProfileHint,
               style: TextStyle(
                 color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                 fontSize: 12,
@@ -2657,14 +2751,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.photo_camera_outlined, size: 18),
-                    SizedBox(width: 8),
+                    const Icon(Icons.photo_camera_outlined, size: 18),
+                    const SizedBox(width: 8),
                     Text(
-                      'Analyze Profile',
-                      style: TextStyle(
+                      context.l10n.conversationsAnalyzeProfile,
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
@@ -2712,7 +2806,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                               const SizedBox(width: 6),
                               Flexible(
                                 child: Text(
-                                  'Uploaded',
+                                  context.l10n.commonUploaded,
                                   style: TextStyle(
                                     color: colorScheme.onSurface,
                                     fontSize: 13,
@@ -2725,7 +2819,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Tap "Craft Opening" to generate personalized first messages',
+                            context.l10n.conversationsTapCraftOpeningHint,
                             style: TextStyle(
                               color: colorScheme.onSurfaceVariant,
                               fontSize: 12,
@@ -2794,7 +2888,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Your conversation',
+                  context.l10n.conversationsYourConversation,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
@@ -2824,8 +2918,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                   children: [
                     const Icon(Icons.photo_camera_outlined, size: 18),
                     const SizedBox(width: 8),
-                    const Text(
-                      'Analyze Chat',
+                    Text(
+                      context.l10n.conversationsAnalyzeChat,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -2864,7 +2958,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     const SizedBox(width: 12),
                     Expanded(
                       child: ThinkingIndicatorCompact(
-                        messages: extractionMessages,
+                        messages: extractionMessages(context),
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ),
@@ -2925,7 +3019,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                               const SizedBox(width: 6),
                               Flexible(
                                 child: Text(
-                                  'Uploaded',
+                                  context.l10n.commonUploaded,
                                   style: TextStyle(
                                     color: colorScheme.onSurface,
                                     fontSize: 13,
@@ -2939,7 +3033,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                           const SizedBox(height: 4),
                           Text(
                             _conversationCtrl.text.isEmpty
-                                ? 'Tap "Craft Response" to generate suggestions'
+                                ? context.l10n.conversationsTapCraftResponseHint
                                 : (_conversationCtrl.text.length > 80
                                       ? '${_conversationCtrl.text.substring(0, 80)}...'
                                       : _conversationCtrl.text),
@@ -3061,8 +3155,10 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         _situation == 'just_matched' &&
         _newMatchMode == NewMatchMode.recommended;
     final label = (isRecommended || _suggestions.isNotEmpty)
-        ? 'Regenerate'
-        : (_situation == 'just_matched' ? 'Craft Opening' : 'Craft Response');
+        ? context.l10n.conversationsRegenerate
+        : (_situation == 'just_matched'
+              ? context.l10n.conversationsCraftOpening
+              : context.l10n.conversationsCraftResponse);
     return _buildPrimaryGradientButton(
       onPressed: (_isLoading || _isExtractingImage)
           ? null
@@ -3104,7 +3200,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           OutlinedButton.icon(
             onPressed: _startNewSession,
             icon: const Icon(Icons.add_outlined, size: 18),
-            label: const Text('New chat'),
+            label: Text(context.l10n.conversationsNewChat),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(0, 50),
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -3180,15 +3276,17 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 const SizedBox(height: 20),
                 AnimatedLoadingText(
                   messages: isRecommendedNewMatch
-                      ? recommendedMessages
-                      : (isAiNewMatch ? openerMessages : replyMessages),
+                      ? recommendedMessages(context)
+                      : (isAiNewMatch
+                            ? openerMessages(context)
+                            : replyMessages(context)),
                   color: colorScheme.onSurface,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'This might take a few seconds',
+                  context.l10n.conversationsLoadingMayTakeSeconds,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
@@ -3241,7 +3339,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               ),
               const SizedBox(height: 20),
               Text(
-                'Workspace Ready',
+                context.l10n.conversationsWorkspaceReady,
                 style: textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: colorScheme.onSurface,
@@ -3249,7 +3347,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                'Upload a screenshot or provide context to begin crafting your next move.',
+                context.l10n.conversationsWorkspaceReadySubtitle,
                 textAlign: TextAlign.center,
                 style: textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
@@ -3264,8 +3362,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
     // Results
     final resultsLabel = _situation == 'just_matched'
-        ? 'Your Approach'
-        : 'Curated Responses';
+        ? context.l10n.conversationsResultsYourApproach
+        : context.l10n.conversationsResultsCuratedResponses;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -3473,7 +3571,7 @@ class _SuggestionCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Tap to unlock',
+                      context.l10n.conversationsTapToUnlock,
                       style: TextStyle(
                         fontSize: 12,
                         color: colorScheme.onSurfaceVariant,
@@ -3583,7 +3681,3 @@ class _SuggestionCard extends StatelessWidget {
     );
   }
 }
-
-
-
-

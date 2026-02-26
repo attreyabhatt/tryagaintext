@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../l10n/l10n.dart';
 import '../../services/api_client.dart';
 import '../widgets/luxury_text_field.dart';
 import '../widgets/thinking_indicator.dart';
@@ -25,6 +26,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     HapticFeedback.mediumImpact();
+    final l10n = context.l10n;
 
     setState(() {
       _isSubmitting = true;
@@ -44,14 +46,12 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Thanks'),
-            content: const Text(
-              'Your report was sent. We will get back to you by email.',
-            ),
+            title: Text(l10n.reportIssueThanksTitle),
+            content: Text(l10n.reportIssueThanksMessage),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
+                child: Text(l10n.commonOk),
               ),
             ],
           ),
@@ -60,13 +60,13 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
         });
       } else {
         setState(() {
-          _errorMessage = 'Could not send your report. Please try again.';
+          _errorMessage = l10n.reportIssueSendFailed;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = 'Could not send your report. Please try again.';
+          _errorMessage = l10n.reportIssueSendFailed;
         });
       }
     } finally {
@@ -82,6 +82,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final l10n = context.l10n;
     final isLight = theme.brightness == Brightness.light;
     final cardShadow = isLight
         ? BoxShadow(
@@ -98,10 +99,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text('Report an Issue'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: Text(l10n.reportIssueTitle), centerTitle: true),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -115,37 +113,35 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                   decoration: BoxDecoration(
                     color: colorScheme.surfaceContainerLow,
                     borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      cardShadow,
-                    ],
+                    boxShadow: [cardShadow],
                   ),
                   child: Column(
                     children: [
                       DropdownButtonFormField<String>(
                         initialValue: _reason,
                         decoration: InputDecoration(
-                          labelText: 'Reason',
+                          labelText: l10n.reportIssueReasonLabel,
                           prefixIcon: Icon(
                             Icons.flag_outlined,
                             color: colorScheme.primary,
                           ),
                         ),
-                        items: const [
+                        items: [
                           DropdownMenuItem(
                             value: 'bug',
-                            child: Text('Bug Report'),
+                            child: Text(l10n.reportIssueReasonBug),
                           ),
                           DropdownMenuItem(
                             value: 'payment',
-                            child: Text('Payments'),
+                            child: Text(l10n.reportIssueReasonPayment),
                           ),
                           DropdownMenuItem(
                             value: 'feedback',
-                            child: Text('Feedback'),
+                            child: Text(l10n.reportIssueReasonFeedback),
                           ),
                           DropdownMenuItem(
                             value: 'other',
-                            child: Text('Other'),
+                            child: Text(l10n.reportIssueReasonOther),
                           ),
                         ],
                         onChanged: (value) {
@@ -160,14 +156,14 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                       const SizedBox(height: 16),
                       LuxuryTextField(
                         controller: _titleController,
-                        decoration: const InputDecoration(
-                          labelText: 'Title',
-                          hintText: 'Short summary',
+                        decoration: InputDecoration(
+                          labelText: l10n.reportIssueFormTitleLabel,
+                          hintText: l10n.reportIssueFormTitleHint,
                         ),
                         showShadow: false,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return 'Please enter a title';
+                            return l10n.reportIssueValidationTitle;
                           }
                           return null;
                         },
@@ -176,14 +172,14 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                       LuxuryTextField(
                         controller: _messageController,
                         maxLines: 5,
-                        decoration: const InputDecoration(
-                          labelText: 'Details',
-                          hintText: 'Tell us what happened',
+                        decoration: InputDecoration(
+                          labelText: l10n.reportIssueFormDetailsLabel,
+                          hintText: l10n.reportIssueFormDetailsHint,
                         ),
                         showShadow: false,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return 'Please enter details';
+                            return l10n.reportIssueValidationDetails;
                           }
                           return null;
                         },
@@ -192,19 +188,19 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                       LuxuryTextField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        decoration: const InputDecoration(
-                          labelText: 'Email',
-                          hintText: 'you@example.com',
+                        decoration: InputDecoration(
+                          labelText: l10n.commonEmailLabel,
+                          hintText: l10n.commonEmailHint,
                         ),
                         showShadow: false,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return 'Please enter your email';
+                            return l10n.validationEnterYourEmail;
                           }
                           if (!RegExp(
                             r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
                           ).hasMatch(value.trim())) {
-                            return 'Please enter a valid email';
+                            return l10n.validationEnterValidEmail;
                           }
                           return null;
                         },
@@ -238,17 +234,17 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                child: _isSubmitting
-                    ? SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: BreathingPulseIndicator(
-                          size: 18,
-                          color: colorScheme.onPrimary,
-                        ),
-                      )
-                    : const Text(
-                          'Send Report',
+                  child: _isSubmitting
+                      ? SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: BreathingPulseIndicator(
+                            size: 18,
+                            color: colorScheme.onPrimary,
+                          ),
+                        )
+                      : Text(
+                          l10n.reportIssueSendButton,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,

@@ -1,10 +1,13 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flirtfix/l10n/gen/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'l10n/l10n.dart';
 import 'state/app_state.dart';
 import 'views/screens/conversations_screen.dart';
 
@@ -214,12 +217,20 @@ class _MyAppState extends State<MyApp> {
           notifier: _appState,
           child: MaterialApp(
             debugShowCheckedModeBanner: false,
-            title: 'FlirtFix',
+            onGenerateTitle: (context) => context.l10n.appTitle,
             theme: _buildPremiumLightTheme(),
             darkTheme: buildPremiumDarkNeonTheme(),
             themeMode: _appState.themeMode == AppThemeMode.premiumLightGold
                 ? ThemeMode.light
                 : ThemeMode.dark,
+            locale: _appState.localeOverride,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
             builder: (context, child) {
               return RepaintBoundary(child: child ?? const SizedBox.shrink());
             },
@@ -457,6 +468,7 @@ class _SplashScreenState extends State<SplashScreen>
     final splashTheme = buildPremiumDarkNeonTheme();
     final colorScheme = splashTheme.colorScheme;
     final textTheme = splashTheme.textTheme;
+    final l10n = context.l10n;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -489,7 +501,7 @@ class _SplashScreenState extends State<SplashScreen>
 
                 // App name
                 Text(
-                  'FlirtFix',
+                  l10n.appTitle,
                   style: textTheme.displaySmall?.copyWith(
                     fontSize: 36,
                     fontWeight: FontWeight.w600,
@@ -502,7 +514,7 @@ class _SplashScreenState extends State<SplashScreen>
 
                 // Tagline
                 Text(
-                  'Master the Art of Conversation.',
+                  l10n.splashTagline,
                   style: textTheme.titleSmall?.copyWith(
                     color: colorScheme.secondary,
                     letterSpacing: 0.8,
