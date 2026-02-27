@@ -37,26 +37,70 @@ class AuthService {
   static const String justSignedUpKey = 'just_signed_up';
   static const FlutterSecureStorage _secureStorage = FlutterSecureStorage();
 
+  static String? _normalizeToken(String? token) {
+    if (token == null) {
+      return null;
+    }
+    var normalized = token.trim();
+    if (normalized.isEmpty) {
+      return null;
+    }
+
+    // Defensive migration: older clients may have persisted values like
+    // "Token <key>" or "Bearer <key>" instead of raw token keys.
+    while (true) {
+      final lower = normalized.toLowerCase();
+      if (lower.startsWith('token ')) {
+        normalized = normalized.substring(6).trim();
+        continue;
+      }
+      if (lower.startsWith('bearer ')) {
+        normalized = normalized.substring(7).trim();
+        continue;
+      }
+      break;
+    }
+
+    return normalized.isEmpty ? null : normalized;
+  }
+
+  static bool _isAuthFailure({
+    required int statusCode,
+    required Map<String, dynamic> data,
+  }) {
+    if (statusCode == 401 || statusCode == 403) {
+      return true;
+    }
+    final error = (data['error']?.toString() ?? '').toLowerCase();
+    final detail = (data['detail']?.toString() ?? '').toLowerCase();
+    return error.contains('not_authenticated') ||
+        error.contains('invalid_token') ||
+        error.contains('authentication') ||
+        detail.contains('not authenticated') ||
+        detail.contains('invalid token') ||
+        detail.contains('credentials were not provided');
+  }
+
   // Store auth token
   static Future<void> _storeToken(String token) async {
+    final normalized = _normalizeToken(token);
+    if (normalized == null) {
+      return;
+    }
     if (!kIsWeb) {
       try {
-        await _secureStorage.write(key: tokenKey, value: token);
+        await _secureStorage.write(key: tokenKey, value: normalized);
       } catch (e) {
         AppLogger.error('Secure token write failed', e is Exception ? e : null);
       }
     }
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(tokenKey, token);
+    await prefs.setString(tokenKey, normalized);
   }
 
   // Store a fresh auth token returned by the backend.
   static Future<void> storeTokenFromServer(String token) async {
-    final sanitized = token.trim();
-    if (sanitized.isEmpty) {
-      return;
-    }
-    await _storeToken(sanitized);
+    await _storeToken(token);
   }
 
   // Store user data
@@ -99,8 +143,12 @@ class AuthService {
   static Future<String?> getToken() async {
     if (!kIsWeb) {
       try {
-        final secureToken = await _secureStorage.read(key: tokenKey);
-        if (secureToken != null && secureToken.isNotEmpty) {
+        final rawSecureToken = await _secureStorage.read(key: tokenKey);
+        final secureToken = _normalizeToken(rawSecureToken);
+        if (secureToken != null) {
+          if (rawSecureToken != secureToken) {
+            await _secureStorage.write(key: tokenKey, value: secureToken);
+          }
           return secureToken;
         }
       } catch (e) {
@@ -109,8 +157,9 @@ class AuthService {
     }
 
     final prefs = await SharedPreferences.getInstance();
-    final legacyToken = prefs.getString(tokenKey);
-    if (legacyToken == null || legacyToken.isEmpty) {
+    final rawLegacyToken = prefs.getString(tokenKey);
+    final legacyToken = _normalizeToken(rawLegacyToken);
+    if (legacyToken == null) {
       return null;
     }
 
@@ -352,7 +401,11 @@ class AuthService {
         },
       );
 
-      final data = jsonDecode(response.body);
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      if (_isAuthFailure(statusCode: response.statusCode, data: data)) {
+        await clearStoredData();
+        return ProfileResponse(success: false, error: 'not_authenticated');
+      }
       final profileResponse = ProfileResponse.fromJson(data);
 
       if (profileResponse.success && profileResponse.user != null) {
@@ -403,6 +456,21 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     final existing =
         prefs.getString(deviceFingerprintKey) ?? prefs.getString(guestIdKey);
+    final secureExisting = await _readSecureDeviceFingerprint();
+
+    // Preserve previously issued fingerprints so existing auth sessions remain
+    // valid across app updates.
+    if (secureExisting != null && secureExisting.isNotEmpty) {
+      return _persistDeviceFingerprint(
+        prefs,
+        secureExisting,
+        saveSecure: false,
+      );
+    }
+    if (existing != null && existing.isNotEmpty) {
+      return _persistDeviceFingerprint(prefs, existing, saveSecure: true);
+    }
+
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       try {
         final androidId = await const AndroidId().getId();
@@ -424,19 +492,6 @@ class AuthService {
       } catch (e) {
         AppLogger.error('IDFV lookup failed', e is Exception ? e : null);
       }
-    }
-
-    final secureExisting = await _readSecureDeviceFingerprint();
-    if (secureExisting != null && secureExisting.isNotEmpty) {
-      return _persistDeviceFingerprint(
-        prefs,
-        secureExisting,
-        saveSecure: false,
-      );
-    }
-
-    if (existing != null && existing.isNotEmpty) {
-      return _persistDeviceFingerprint(prefs, existing, saveSecure: true);
     }
 
     final rand = Random.secure();
