@@ -398,6 +398,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageSpanish => 'Spanish';
 
   @override
+  String get languagePortuguese => 'Portuguese';
+
+  @override
+  String get languageGerman => 'German';
+
+  @override
+  String get languageFrench => 'French';
+
+  @override
   String get subscriptionActivated => 'Subscription activated!';
 
   @override

@@ -22,6 +22,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return switch (locale.languageCode) {
       'en' => l10n.languageEnglish,
       'es' => l10n.languageSpanish,
+      'pt' => l10n.languagePortuguese,
+      'de' => l10n.languageGerman,
+      'fr' => l10n.languageFrench,
       _ => locale.languageCode.toUpperCase(),
     };
   }

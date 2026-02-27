@@ -139,7 +139,10 @@
   },
   "languageSystem": "Sistema",
   "languageEnglish": "Inglés",
-  "languageSpanish": "Espa\u00f1ol",
+  "languageSpanish": "Español",
+  "languagePortuguese": "Portugués",
+  "languageGerman": "Alemán",
+  "languageFrench": "Francés",
 
   "subscriptionActivated": "¡Suscripción activada!",
 

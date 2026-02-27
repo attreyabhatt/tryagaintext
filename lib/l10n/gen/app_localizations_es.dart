@@ -406,7 +406,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get languageEnglish => 'Inglés';
 
   @override
-  String get languageSpanish => 'Espa\u00f1ol';
+  String get languageSpanish => 'Español';
+
+  @override
+  String get languagePortuguese => 'Portugués';
+
+  @override
+  String get languageGerman => 'Alemán';
+
+  @override
+  String get languageFrench => 'Francés';
 
   @override
   String get subscriptionActivated => '¡Suscripción activada!';
