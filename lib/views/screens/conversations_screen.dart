@@ -84,6 +84,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   final InAppPurchase _inAppPurchase = InAppPurchase.instance;
   File? _uploadedConversationImage;
   File? _uploadedProfileImage;
+  String _replyInputSource = 'manual';
+  String? _replyOcrText;
   NewMatchMode _newMatchMode = NewMatchMode.ai;
   int _generateRequestId = 0;
   int _conversationExtractionRequestId = 0;
@@ -349,10 +351,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       _generateRequestId++;
       if (previousSituation == 'just_matched' && _situation != 'just_matched') {
         _uploadedProfileImage = null;
+        _replyInputSource = 'manual';
+        _replyOcrText = null;
       }
       if (previousSituation != 'just_matched' && _situation == 'just_matched') {
         _uploadedConversationImage = null;
         _isExtractingImage = false;
+        _replyInputSource = 'manual';
+        _replyOcrText = null;
       }
     });
     if (_situation == 'just_matched' &&
@@ -581,6 +587,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           herInfo: '',
           tone: _toneForBackend(),
           customInstructions: combinedInstructions,
+          inputSource: _replyInputSource,
+          ocrText: _replyInputSource == 'ocr' ? _replyOcrText : null,
         );
       }
 
@@ -668,6 +676,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       setState(() {
         _conversationCtrl.text = extractedText;
         _isExtractingImage = false;
+        _replyInputSource = 'ocr';
+        _replyOcrText = extractedText;
       });
     } catch (e) {
       if (!mounted) return;
@@ -677,6 +687,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       setState(() {
         _isExtractingImage = false;
         _uploadedConversationImage = null;
+        _replyInputSource = 'manual';
+        _replyOcrText = null;
       });
       _showError(context.l10n.conversationsExtractImageFailed);
     }
@@ -689,6 +701,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       _isExtractingImage = false;
       _uploadedConversationImage = null;
       _conversationCtrl.clear();
+      _replyInputSource = 'manual';
+      _replyOcrText = null;
       _suggestions = [];
       _errorMessage = null;
       _animationController.reset();
@@ -766,6 +780,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       } else {
         _uploadedConversationImage = null;
         _conversationCtrl.clear();
+        _replyInputSource = 'manual';
+        _replyOcrText = null;
       }
     });
     _scrollController.animateTo(
@@ -1209,7 +1225,14 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     }
   }
 
-  Future<void> _copySuggestion(String message) async {
+  Future<void> _copySuggestion(Suggestion suggestion) async {
+    final message = suggestion.message;
+    final copyType = _situation == 'just_matched' ? 'opener' : 'reply';
+    final replyContextOcrText =
+        copyType == 'reply' && _replyInputSource == 'ocr'
+        ? _replyOcrText
+        : null;
+
     Clipboard.setData(ClipboardData(text: message));
     HapticFeedback.lightImpact();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1228,6 +1251,12 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
         duration: const Duration(seconds: 2),
       ),
+    );
+    await _apiClient.logCopyEvent(
+      copiedText: message,
+      copyType: copyType,
+      generationEventId: suggestion.generationEventId,
+      replyContextOcrText: replyContextOcrText,
     );
     await _handleCopyReviewSignal();
   }
@@ -2993,6 +3022,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                         setState(() {
                           _uploadedConversationImage = null;
                           _conversationCtrl.clear();
+                          _replyInputSource = 'manual';
+                          _replyOcrText = null;
                           _suggestions = [];
                           _animationController.reset();
                         });
@@ -3358,7 +3389,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 colorScheme: colorScheme,
                 onTap: suggestion.isLocked
                     ? () => _showUpgradePopup(suggestion.lockedReplyId)
-                    : () => _copySuggestion(suggestion.message),
+                    : () => _copySuggestion(suggestion),
               ),
             ),
           );

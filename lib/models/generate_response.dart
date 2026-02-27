@@ -19,6 +19,7 @@ class GenerateResponse {
   // Free daily credit fields
   final int? freeDailyCreditsRemaining;
   final int? freeDailyCreditsLimit;
+  final int? generationEventId;
 
   GenerateResponse({
     required this.success,
@@ -38,6 +39,7 @@ class GenerateResponse {
     this.hasPendingUnlock,
     this.freeDailyCreditsRemaining,
     this.freeDailyCreditsLimit,
+    this.generationEventId,
   });
 
   factory GenerateResponse.fromJson(Map<String, dynamic> json) {
@@ -61,6 +63,7 @@ class GenerateResponse {
       hasPendingUnlock: json['has_pending_unlock'],
       freeDailyCreditsRemaining: json['free_daily_credits_remaining'],
       freeDailyCreditsLimit: json['free_daily_credits_limit'],
+      generationEventId: json['generation_event_id'],
     );
   }
 }

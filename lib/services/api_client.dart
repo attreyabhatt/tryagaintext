@@ -35,6 +35,8 @@ class ApiClient {
     String herInfo = '',
     required String tone,
     String customInstructions = '',
+    String inputSource = 'manual',
+    String? ocrText,
   }) async {
     try {
       final headers = await _getHeaders();
@@ -48,6 +50,9 @@ class ApiClient {
           'her_info': herInfo,
           'tone': tone,
           'custom_instructions': customInstructions,
+          'input_source': inputSource,
+          if (inputSource == 'ocr' && (ocrText ?? '').trim().isNotEmpty)
+            'ocr_text': ocrText?.trim(),
         }),
       );
 
@@ -81,6 +86,7 @@ class ApiClient {
           (i) => Suggestion(
             message: previews[i],
             confidence: 0.8,
+            generationEventId: generateResponse.generationEventId,
             isLocked: true,
             blurPreview: previews[i],
             lockedReplyId: generateResponse.lockedReplyId,
@@ -96,7 +102,10 @@ class ApiClient {
       }
 
       // Parse reply into suggestions
-      return _parseReplyToSuggestions(generateResponse.reply ?? '');
+      return _parseReplyToSuggestions(
+        generateResponse.reply ?? '',
+        generationEventId: generateResponse.generationEventId,
+      );
     } catch (e) {
       if (e is ApiException) {
         rethrow;
@@ -576,11 +585,13 @@ class ApiClient {
                 .toList() ??
             [];
         final lockedId = data['locked_reply_id'] as int?;
+        final generationEventId = data['generation_event_id'] as int?;
         return List.generate(
           previews.length,
           (i) => Suggestion(
             message: previews[i],
             confidence: 0.8,
+            generationEventId: generationEventId,
             isLocked: true,
             blurPreview: previews[i],
             lockedReplyId: lockedId,
@@ -594,7 +605,10 @@ class ApiClient {
       }
 
       // Parse reply into suggestions
-      return _parseReplyToSuggestions(data['reply'] ?? '');
+      return _parseReplyToSuggestions(
+        data['reply'] ?? '',
+        generationEventId: data['generation_event_id'] as int?,
+      );
     } catch (e) {
       if (e is ApiException) {
         rethrow;
@@ -640,7 +654,52 @@ class ApiClient {
     }
   }
 
-  List<Suggestion> _parseReplyToSuggestions(String reply) {
+  Future<void> logCopyEvent({
+    required String copiedText,
+    required String copyType,
+    int? generationEventId,
+    String? replyContextOcrText,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/copy-event/'),
+        headers: headers,
+        body: jsonEncode({
+          'copied_text': copiedText,
+          'copy_type': copyType,
+          if (generationEventId != null)
+            'generation_event_id': generationEventId,
+          if (copyType == 'reply' &&
+              (replyContextOcrText ?? '').trim().isNotEmpty)
+            'reply_context_ocr_text': replyContextOcrText!.trim(),
+        }),
+      );
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        AppLogger.error(
+          'Copy event logging failed: status=${response.statusCode}',
+          Exception(response.body),
+        );
+        return;
+      }
+
+      final data = _decodeJson(response.body);
+      if (data['success'] != true) {
+        AppLogger.error(
+          'Copy event logging returned non-success payload',
+          Exception(data.toString()),
+        );
+      }
+    } catch (e) {
+      AppLogger.error('Copy event logging failed', e is Exception ? e : null);
+    }
+  }
+
+  List<Suggestion> _parseReplyToSuggestions(
+    String reply, {
+    int? generationEventId,
+  }) {
     final suggestions = <Suggestion>[];
 
     if (reply.trim().isEmpty) {
@@ -669,6 +728,7 @@ class ApiClient {
                 Suggestion(
                   message: message.trim(),
                   confidence: confidence,
+                  generationEventId: generationEventId,
                   whyItWorks: whyItWorks?.trim().isNotEmpty == true
                       ? whyItWorks?.trim()
                       : null,
@@ -703,6 +763,7 @@ class ApiClient {
               Suggestion(
                 message: cleanLine,
                 confidence: _calculateConfidence(i, lines.length),
+                generationEventId: generationEventId,
               ),
             );
           }
@@ -801,11 +862,17 @@ class ApiClient {
         await AuthService.updateStoredCredits(data['credits_remaining']);
       }
 
+      final generationEventId = data['generation_event_id'] as int?;
       final openers = data['openers'];
       if (openers is List) {
         return openers
             .whereType<Map<String, dynamic>>()
-            .map((item) => Suggestion.fromJson(item))
+            .map(
+              (item) => Suggestion.fromJson(
+                item,
+                generationEventId: generationEventId,
+              ),
+            )
             .toList();
       }
 
