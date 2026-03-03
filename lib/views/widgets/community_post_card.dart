@@ -1,0 +1,415 @@
+import 'package:flutter/material.dart';
+import '../../models/community_post.dart';
+
+/// Reusable card for displaying a community post in the feed.
+class CommunityPostCard extends StatelessWidget {
+  final CommunityPost post;
+  final VoidCallback onTap;
+
+  const CommunityPostCard({super.key, required this.post, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final tt = theme.textTheme;
+    final isLight = theme.brightness == Brightness.light;
+
+    if (post.isFeatured) {
+      return _buildFeaturedCard(context, cs, tt, isLight);
+    }
+    return _buildNormalCard(context, cs, tt, isLight);
+  }
+
+  Widget _buildFeaturedCard(
+    BuildContext context,
+    ColorScheme cs,
+    TextTheme tt,
+    bool isLight,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isLight
+                ? [
+                    cs.secondaryContainer,
+                    cs.secondaryContainer.withValues(alpha: 0.6),
+                  ]
+                : [
+                    cs.secondary.withValues(alpha: 0.10),
+                    cs.primary.withValues(alpha: 0.06),
+                  ],
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: cs.secondary.withValues(alpha: isLight ? 0.2 : 0.15),
+            width: 1,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Left: text content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // FEATURED badge + author + time
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: cs.secondary,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'FEATURED',
+                            style: TextStyle(
+                              color: cs.onSecondary,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.8,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            '${post.author.displayName} · ${_timeAgo(post.createdAt)}',
+                            style: tt.bodySmall?.copyWith(
+                              color: cs.onSurface.withValues(alpha: 0.5),
+                              fontSize: 11,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Title (Playfair Display — editorial)
+                    Text(
+                      post.title,
+                      style: tt.headlineSmall?.copyWith(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: cs.onSurface,
+                        height: 1.3,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Body preview
+                    Text(
+                      post.bodyPreview,
+                      style: tt.bodySmall?.copyWith(
+                        color: cs.onSurface.withValues(alpha: 0.65),
+                        height: 1.4,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Footer: hearts + comments
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.favorite,
+                          size: 14,
+                          color: cs.primary.withValues(alpha: 0.8),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _formatCount(post.voteScore),
+                          style: tt.bodySmall?.copyWith(
+                            color: cs.onSurface.withValues(alpha: 0.6),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Icon(
+                          Icons.chat_bubble,
+                          size: 13,
+                          color: cs.onSurface.withValues(alpha: 0.4),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _formatCount(post.commentCount),
+                          style: tt.bodySmall?.copyWith(
+                            color: cs.onSurface.withValues(alpha: 0.6),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Right: small image thumbnail (if available)
+              if (post.imageUrl != null && post.imageUrl!.isNotEmpty) ...[
+                const SizedBox(width: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.network(
+                    post.imageUrl!,
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNormalCard(
+    BuildContext context,
+    ColorScheme cs,
+    TextTheme tt,
+    bool isLight,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isLight ? cs.surface : cs.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isLight
+                ? cs.outlineVariant
+                : cs.outlineVariant.withValues(alpha: 0.4),
+            width: isLight ? 0.8 : 0.5,
+          ),
+          boxShadow: isLight
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Author row + badge row
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: cs.secondary.withValues(alpha: 0.12),
+                    child: Text(
+                      post.author.displayName.isNotEmpty
+                          ? post.author.displayName[0].toUpperCase()
+                          : '?',
+                      style: TextStyle(
+                        color: cs.secondary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              post.author.displayName,
+                              style: tt.bodySmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: cs.onSurface,
+                              ),
+                            ),
+                            if (post.author.isPro) ...[
+                              const SizedBox(width: 6),
+                              _Badge(
+                                label: 'PRO',
+                                bg: cs.secondary.withValues(alpha: 0.2),
+                                fg: cs.secondary,
+                              ),
+                            ],
+                          ],
+                        ),
+                        Text(
+                          _timeAgo(post.createdAt),
+                          style: tt.bodySmall?.copyWith(
+                            color: cs.onSurface.withValues(alpha: 0.5),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Status badges
+                  Row(
+                    children: [
+                      if (post.isTrending)
+                        _Badge(
+                          label: 'TRENDING',
+                          bg: cs.primary.withValues(alpha: 0.15),
+                          fg: cs.primary,
+                        ),
+                      if (post.isNew && !post.isTrending)
+                        _Badge(
+                          label: 'NEW',
+                          bg: cs.surfaceContainerHighest,
+                          fg: cs.onSurface,
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 10),
+
+              // Title (Playfair Display — editorial)
+              Text(
+                post.title,
+                style: tt.headlineSmall?.copyWith(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: cs.onSurface,
+                  height: 1.3,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+
+              const SizedBox(height: 6),
+
+              // Body preview
+              Text(
+                post.bodyPreview,
+                style: tt.bodySmall?.copyWith(
+                  color: cs.onSurface.withValues(alpha: 0.6),
+                  height: 1.4,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+
+              // Image thumbnail
+              if (post.imageUrl != null && post.imageUrl!.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.network(
+                    post.imageUrl!,
+                    height: 160,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 10),
+
+              // Footer: votes + comments
+              Row(
+                children: [
+                  Icon(
+                    Icons.thumb_up_outlined,
+                    size: 14,
+                    color: cs.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${post.voteScore}',
+                    style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                  ),
+                  const SizedBox(width: 14),
+                  Icon(
+                    Icons.chat_bubble_outline,
+                    size: 14,
+                    color: cs.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${post.commentCount}',
+                    style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Badge extends StatelessWidget {
+  final String label;
+  final Color bg;
+  final Color fg;
+
+  const _Badge({required this.label, required this.bg, required this.fg});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(left: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: fg,
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.8,
+        ),
+      ),
+    );
+  }
+}
+
+String _formatCount(int count) {
+  if (count >= 1000) {
+    final k = count / 1000;
+    return k >= 10 ? '${k.round()}k' : '${k.toStringAsFixed(1)}k';
+  }
+  return '$count';
+}
+
+String timeAgoFromDate(DateTime date) => _timeAgo(date);
+
+String _timeAgo(DateTime date) {
+  final diff = DateTime.now().difference(date);
+  if (diff.inSeconds < 60) return 'just now';
+  if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+  if (diff.inHours < 24) return '${diff.inHours}h ago';
+  if (diff.inDays < 7) return '${diff.inDays}d ago';
+  return '${(diff.inDays / 7).floor()}w ago';
+}

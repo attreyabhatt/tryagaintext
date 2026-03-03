@@ -522,10 +522,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Esto puede tardar unos segundos';
 
   @override
-  String get conversationsModeCreative => 'Creativo';
+  String get conversationsModeCreative => 'Craft';
 
   @override
-  String get conversationsModeRecommended => 'Recomendado';
+  String get conversationsModeRecommended => 'The Vault';
 
   @override
   String get conversationsNewChat => 'Nuevo chat';
@@ -536,7 +536,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get conversationsRecommendedDescription =>
-      'Formulado expertamente para maximizar la conexión y la intriga.';
+      'Hand-selected scripts from top dating experts. Proven to get a 3x higher response rate.';
+
+  @override
+  String get conversationsVaultHeadline => 'The Coach\'s Playbook.';
 
   @override
   String get conversationsRegenerate => 'Regenerar';
@@ -584,6 +587,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Toca \"Crear Respuesta\" para generar sugerencias';
 
   @override
+  String get conversationsSignUpToReveal => 'Sign up to reveal.';
+
+  @override
   String get conversationsTapToUnlock => 'Toca para desbloquear';
 
   @override
@@ -627,6 +633,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get conversationsUnlockReplyHeadline => 'Desbloquea esta respuesta.';
+
+  @override
+  String get conversationsUnlockFullArchive => 'UNLOCK FULL ARCHIVE';
 
   @override
   String get conversationsUnlockReplySupport =>

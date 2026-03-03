@@ -19,7 +19,7 @@ import '../../utils/app_logger.dart';
 import 'login_screen.dart';
 import 'signup_screen.dart';
 import 'package:flirtfix/views/screens/pricing_screen.dart';
-import 'package:flirtfix/views/screens/profile_screen.dart';
+import 'package:flirtfix/views/screens/settings_screen.dart';
 import '../widgets/gradient_icon.dart';
 import '../widgets/thinking_indicator.dart';
 
@@ -379,7 +379,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     });
 
     try {
-      final suggestions = await _apiClient.getRecommendedOpeners(count: 3);
+      final suggestions = await _apiClient.getRecommendedOpeners(
+        vaultMode: true,
+      );
       if (!mounted ||
           requestId != _generateRequestId ||
           _situation != 'just_matched' ||
@@ -474,10 +476,39 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     }
   }
 
-  Future<void> _navigateToProfile() async {
+  bool get _isVaultRecommendedMode =>
+      _situation == 'just_matched' && _newMatchMode == NewMatchMode.recommended;
+
+  _VaultTier _vaultTier(AppState appState) {
+    if (appState.isSubscribed) return _VaultTier.elite;
+    if (appState.isLoggedIn) return _VaultTier.free;
+    return _VaultTier.guest;
+  }
+
+  Future<void> _handleVaultUnlockPressed() async {
+    final appState = AppStateScope.of(context);
+    if (!appState.isLoggedIn) {
+      await _navigateToAuth();
+      if (!mounted) return;
+      await appState.reloadFromStorage();
+      if (!mounted || !appState.isLoggedIn) {
+        return;
+      }
+    }
+
+    await _navigateToPricing();
+    if (!mounted) return;
+    await appState.reloadFromStorage();
+    if (!mounted) return;
+    if (_isVaultRecommendedMode) {
+      await _loadRecommendedOpeners();
+    }
+  }
+
+  Future<void> _navigateToSettings() async {
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const ProfileScreen()),
+      MaterialPageRoute(builder: (context) => const SettingsScreen()),
     );
   }
 
@@ -568,7 +599,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
       if (_situation == 'just_matched') {
         if (_newMatchMode == NewMatchMode.recommended) {
-          suggestions = await _apiClient.getRecommendedOpeners(count: 3);
+          suggestions = await _apiClient.getRecommendedOpeners(vaultMode: true);
         } else {
           // Use the new image-based opener generation endpoint
           final combinedInstructionsForOpeners =
@@ -1743,10 +1774,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final appState = AppStateScope.of(context);
-    final isLoggedIn = appState.isLoggedIn;
-    final dailyCreditsRemaining = appState.freeDailyCreditsRemaining;
     final isSubscribed = appState.isSubscribed;
-    final username = appState.user?.username ?? '';
+    final vaultTier = _vaultTier(appState);
     const double sectionSpacing = 20;
     final showCustomInstructions =
         _situation != 'just_matched' ||
@@ -1758,17 +1787,11 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         _situation == 'just_matched' && _newMatchMode == NewMatchMode.ai;
     final showGenerateRow = !isAiNewMatch || _uploadedProfileImage != null;
     final shouldShowGenerateRow = isRecommendedNewMatch
-        ? !_isLoading && !_isExtractingImage
+        ? (!_isLoading && !_isExtractingImage && vaultTier != _VaultTier.elite)
         : showGenerateRow;
 
     return Scaffold(
-      appBar: _buildAppBar(
-        colorScheme,
-        isLoggedIn,
-        dailyCreditsRemaining,
-        isSubscribed,
-        username,
-      ),
+      appBar: _buildAppBar(colorScheme),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         behavior: HitTestBehavior.opaque,
@@ -1795,36 +1818,48 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     SizedBox(height: sectionSpacing),
                     if (isRecommendedNewMatch) ...[
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: colorScheme.secondaryContainer.withValues(
                             alpha: 0.5,
                           ),
                           borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: colorScheme.secondary.withValues(alpha: 0.3),
+                          ),
                         ),
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              Icons.verified,
-                              size: 18,
-                              color: colorScheme.brightness == Brightness.light
-                                  ? const Color(
-                                      0xFF991B38,
-                                    ) // Merlot for light mode
-                                  : colorScheme
-                                        .onSecondaryContainer, // Original color for dark mode
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                context
-                                    .l10n
-                                    .conversationsRecommendedDescription,
-                                style: TextStyle(
-                                  color: colorScheme.onSecondaryContainer,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.verified,
+                                  size: 18,
+                                  color:
+                                      colorScheme.brightness == Brightness.light
+                                      ? const Color(0xFF991B38)
+                                      : colorScheme.onSecondaryContainer,
                                 ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  context.l10n.conversationsVaultHeadline,
+                                  style: TextStyle(
+                                    color: colorScheme.onSecondaryContainer,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              context.l10n.conversationsRecommendedDescription,
+                              style: TextStyle(
+                                color: colorScheme.onSecondaryContainer,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                height: 1.35,
                               ),
                             ),
                           ],
@@ -1887,13 +1922,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     );
   }
 
-  PreferredSizeWidget _buildAppBar(
-    ColorScheme colorScheme,
-    bool isLoggedIn,
-    int? dailyCreditsRemaining,
-    bool isSubscribed,
-    String username,
-  ) {
+  PreferredSizeWidget _buildAppBar(ColorScheme colorScheme) {
     final textTheme = Theme.of(context).textTheme;
     return AppBar(
       backgroundColor: Colors.transparent,
@@ -1934,15 +1963,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         ],
       ),
       actions: [
-        // Profile button
+        // Settings button
         IconButton(
-          onPressed: () {
-            if (isLoggedIn) {
-              _navigateToProfile();
-            } else {
-              _navigateToAuth();
-            }
-          },
+          onPressed: _navigateToSettings,
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -1951,7 +1974,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               color: Colors.transparent,
             ),
             child: Icon(
-              isLoggedIn ? Icons.person_outline_outlined : Icons.person_outline,
+              Icons.settings_outlined,
               color: colorScheme.onSurfaceVariant,
               size: 20,
             ),
@@ -3123,10 +3146,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   }
 
   Widget _buildGenerateButton(ColorScheme colorScheme) {
-    final isRecommended =
-        _situation == 'just_matched' &&
-        _newMatchMode == NewMatchMode.recommended;
-    final label = (isRecommended || _suggestions.isNotEmpty)
+    final label = _suggestions.isNotEmpty
         ? context.l10n.conversationsRegenerate
         : (_situation == 'just_matched'
               ? context.l10n.conversationsCraftOpening
@@ -3157,12 +3177,97 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     );
   }
 
+  Widget _buildVaultUnlockButton({
+    required ColorScheme colorScheme,
+    required VoidCallback? onPressed,
+  }) {
+    final isDark = colorScheme.brightness == Brightness.dark;
+    final borderRadius = BorderRadius.circular(14);
+    final gradientColors = isDark
+        ? <Color>[colorScheme.secondary, colorScheme.secondaryContainer]
+        : <Color>[const Color(0xFF991B38), const Color(0xFF991B38)];
+    final shadowColor = isDark
+        ? colorScheme.secondary.withValues(alpha: 0.26)
+        : const Color(0xFF991B38).withValues(alpha: 0.25);
+
+    final button = SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: gradientColors,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: borderRadius,
+          boxShadow: [
+            BoxShadow(
+              color: shadowColor,
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            foregroundColor: isDark ? colorScheme.onSecondary : Colors.white,
+            disabledForegroundColor:
+                (isDark ? colorScheme.onSecondary : Colors.white).withValues(
+                  alpha: 0.65,
+                ),
+            disabledBackgroundColor: Colors.transparent,
+            shape: RoundedRectangleBorder(borderRadius: borderRadius),
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            textStyle: _primaryButtonTextStyle,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.lock_outline, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                context.l10n.conversationsUnlockFullArchive,
+                style: _primaryButtonTextStyle,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (onPressed == null) {
+      return Opacity(opacity: 0.5, child: button);
+    }
+    return button;
+  }
+
+  Widget _buildVaultActionRow(ColorScheme colorScheme) {
+    final appState = AppStateScope.of(context);
+    final tier = _vaultTier(appState);
+    if (tier == _VaultTier.elite) {
+      return const SizedBox.shrink();
+    }
+    return _buildVaultUnlockButton(
+      colorScheme: colorScheme,
+      onPressed: (_isLoading || _isExtractingImage)
+          ? null
+          : _handleVaultUnlockPressed,
+    );
+  }
+
   Widget _buildGenerateRow(ColorScheme colorScheme) {
     final showNewButton =
         _suggestions.isNotEmpty && !_isLoading && !_isExtractingImage;
     final isRecommendedNewMatch =
         _situation == 'just_matched' &&
         _newMatchMode == NewMatchMode.recommended;
+    if (isRecommendedNewMatch) {
+      return _buildVaultActionRow(colorScheme);
+    }
     final canShowNew = showNewButton && !isRecommendedNewMatch;
     return Row(
       children: [
@@ -3387,8 +3492,11 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 index: index,
                 suggestion: suggestion,
                 colorScheme: colorScheme,
+                isVaultStyle: isRecommendedNewMatch,
                 onTap: suggestion.isLocked
-                    ? () => _showUpgradePopup(suggestion.lockedReplyId)
+                    ? (isRecommendedNewMatch
+                          ? () => _handleVaultUnlockPressed()
+                          : () => _showUpgradePopup(suggestion.lockedReplyId))
                     : () => _copySuggestion(suggestion),
               ),
             ),
@@ -3419,18 +3527,22 @@ enum BannerType { error, warning, info }
 
 enum NewMatchMode { recommended, ai }
 
+enum _VaultTier { guest, free, elite }
+
 enum _PulseCheckAction { negative, positive }
 
 class _SuggestionCard extends StatelessWidget {
   final int index;
   final Suggestion suggestion;
   final ColorScheme colorScheme;
+  final bool isVaultStyle;
   final VoidCallback onTap;
 
   const _SuggestionCard({
     required this.index,
     required this.suggestion,
     required this.colorScheme,
+    required this.isVaultStyle,
     required this.onTap,
   });
 
@@ -3440,6 +3552,21 @@ class _SuggestionCard extends StatelessWidget {
     final badgeLabel = (index + 1).toString().padLeft(2, '0');
     final isDark = colorScheme.brightness == Brightness.dark;
     final borderRadius = BorderRadius.circular(isDark ? 18 : 14);
+    final lockColor = isDark ? colorScheme.secondary : colorScheme.primary;
+    final badgeBackground = isVaultStyle
+        ? colorScheme.secondaryContainer
+        : (isDark ? colorScheme.secondary : Colors.transparent);
+    final badgeTextColor = isVaultStyle
+        ? (isDark ? colorScheme.secondary : colorScheme.primary)
+        : (isDark ? colorScheme.onSecondary : const Color(0xFFC4A462));
+    final badgeBorder = isVaultStyle
+        ? null
+        : (isDark
+              ? null
+              : Border.all(
+                  color: const Color(0xFFC4A462), // Champagne Gold
+                  width: 1.5,
+                ));
     final cardContent = Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -3451,14 +3578,9 @@ class _SuggestionCard extends StatelessWidget {
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(
-                  color: isDark ? colorScheme.secondary : Colors.transparent,
+                  color: badgeBackground,
                   shape: BoxShape.circle,
-                  border: isDark
-                      ? null
-                      : Border.all(
-                          color: const Color(0xFFC4A462), // Champagne Gold
-                          width: 1.5,
-                        ),
+                  border: badgeBorder,
                   boxShadow: isDark
                       ? [
                           BoxShadow(
@@ -3475,9 +3597,7 @@ class _SuggestionCard extends StatelessWidget {
                 child: Text(
                   badgeLabel,
                   style: textTheme.labelSmall?.copyWith(
-                    color: isDark
-                        ? colorScheme.onSecondary
-                        : const Color(0xFFC4A462),
+                    color: badgeTextColor,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.6,
                   ),
@@ -3511,15 +3631,29 @@ class _SuggestionCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           if (suggestion.isLocked) ...[
-            // Locked state: show preview text + fake blurred block
-            Text(
-              suggestion.blurPreview ?? '',
-              style: TextStyle(
-                fontSize: 15,
-                color: colorScheme.onSurface,
-                height: 1.4,
+            if (isVaultStyle)
+              ClipRect(
+                child: ImageFiltered(
+                  imageFilter: ImageFilter.blur(sigmaX: 3.2, sigmaY: 3.2),
+                  child: Text(
+                    (suggestion.blurPreview ?? suggestion.message).trim(),
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: colorScheme.onSurface,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              )
+            else
+              Text(
+                (suggestion.blurPreview ?? suggestion.message).trim(),
+                style: TextStyle(
+                  fontSize: 15,
+                  color: colorScheme.onSurface,
+                  height: 1.4,
+                ),
               ),
-            ),
             const SizedBox(height: 6),
             Container(
               height: 40,
@@ -3539,11 +3673,15 @@ class _SuggestionCard extends StatelessWidget {
                     Icon(
                       Icons.lock_outline,
                       size: 16,
-                      color: colorScheme.onSurfaceVariant,
+                      color: isVaultStyle
+                          ? lockColor
+                          : colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      context.l10n.conversationsTapToUnlock,
+                      isVaultStyle
+                          ? context.l10n.conversationsSignUpToReveal
+                          : context.l10n.conversationsTapToUnlock,
                       style: TextStyle(
                         fontSize: 12,
                         color: colorScheme.onSurfaceVariant,
@@ -3580,7 +3718,9 @@ class _SuggestionCard extends StatelessWidget {
                     Icon(
                       Icons.lightbulb_outlined,
                       size: 16,
-                      color: colorScheme.onTertiaryContainer,
+                      color: isVaultStyle
+                          ? colorScheme.tertiary
+                          : colorScheme.onTertiaryContainer,
                     ),
                     const SizedBox(width: 6),
                     Expanded(
@@ -3588,7 +3728,9 @@ class _SuggestionCard extends StatelessWidget {
                         suggestion.whyItWorks!.trim(),
                         style: TextStyle(
                           fontSize: 12.5,
-                          color: colorScheme.onTertiaryContainer,
+                          color: isVaultStyle
+                              ? colorScheme.tertiary
+                              : colorScheme.onTertiaryContainer,
                         ),
                       ),
                     ),
@@ -3600,6 +3742,52 @@ class _SuggestionCard extends StatelessWidget {
         ],
       ),
     );
+
+    if (isVaultStyle) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: borderRadius,
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark
+                    ? colorScheme.surfaceContainer
+                    : colorScheme.surface,
+                borderRadius: borderRadius,
+                border: Border.all(
+                  color: isDark
+                      ? colorScheme.outlineVariant
+                      : colorScheme.outline,
+                ),
+                boxShadow: isDark
+                    ? [
+                        if (!suggestion.isLocked)
+                          BoxShadow(
+                            color: colorScheme.secondary.withValues(
+                              alpha: 0.05,
+                            ),
+                            blurRadius: 16,
+                            offset: const Offset(0, 8),
+                          ),
+                      ]
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.09),
+                          blurRadius: 24,
+                          offset: const Offset(0, 12),
+                          spreadRadius: -8,
+                        ),
+                      ],
+              ),
+              child: cardContent,
+            ),
+          ),
+        ),
+      );
+    }
 
     if (!isDark) {
       return Card(

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import '../config/app_config.dart';
+import '../models/community_post.dart';
 import '../models/generate_response.dart';
 import '../models/payment_history.dart';
 import '../models/suggestion.dart';
@@ -15,7 +16,10 @@ class ApiClient {
   ApiClient([String? baseUrl]) : baseUrl = baseUrl ?? AppConfig.baseUrl;
 
   Future<Map<String, String>> _getHeaders() async {
-    final headers = <String, String>{'Content-Type': 'application/json'};
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
 
     final token = await AuthService.getToken();
     if (token != null) {
@@ -794,8 +798,29 @@ class ApiClient {
   }
 
   Map<String, dynamic> _decodeJson(String body) {
+    final normalized = body.trimLeft().replaceFirst(RegExp(r'^\uFEFF'), '');
+    if (normalized.isEmpty) {
+      AppLogger.error('Failed to decode JSON response: empty response body');
+      return <String, dynamic>{
+        'success': false,
+        'message': 'Empty server response',
+      };
+    }
+    if (!(normalized.startsWith('{') || normalized.startsWith('['))) {
+      final oneLine = normalized.replaceAll('\n', ' ');
+      final preview = oneLine.length > 140
+          ? '${oneLine.substring(0, 140)}...'
+          : oneLine;
+      AppLogger.error(
+        'Failed to decode JSON response: unexpected content "$preview"',
+      );
+      return <String, dynamic>{
+        'success': false,
+        'message': 'Invalid server response',
+      };
+    }
     try {
-      final decoded = jsonDecode(body);
+      final decoded = jsonDecode(normalized);
       if (decoded is Map<String, dynamic>) {
         return decoded;
       }
@@ -809,6 +834,26 @@ class ApiClient {
       'success': false,
       'message': 'Invalid server response',
     };
+  }
+
+  String _extractApiMessage(Map<String, dynamic> data, String fallback) {
+    final value = data['error'] ?? data['detail'] ?? data['message'];
+    if (value is String && value.trim().isNotEmpty) {
+      return value.trim();
+    }
+    if (value is List && value.isNotEmpty) {
+      return value.join(', ');
+    }
+    if (value is Map && value.isNotEmpty) {
+      final first = value.values.first;
+      if (first is String && first.trim().isNotEmpty) {
+        return first.trim();
+      }
+      if (first is List && first.isNotEmpty) {
+        return first.join(', ');
+      }
+    }
+    return fallback;
   }
 
   ApiErrorCode _mapErrorCode(String? error) {
@@ -828,12 +873,19 @@ class ApiClient {
     }
   }
 
-  Future<List<Suggestion>> getRecommendedOpeners({int count = 3}) async {
+  Future<List<Suggestion>> getRecommendedOpeners({
+    int count = 3,
+    bool vaultMode = false,
+  }) async {
     try {
       final token = await AuthService.getToken();
       final deviceFingerprint =
           await AuthService.getOrCreateDeviceFingerprint();
 
+      final body = <String, dynamic>{
+        if (!vaultMode) 'count': count,
+        if (vaultMode) 'mode': 'vault',
+      };
       final response = await http.post(
         Uri.parse('$baseUrl/api/recommended-openers/'),
         headers: {
@@ -843,7 +895,7 @@ class ApiClient {
           // Backward compatibility for existing backend parsing.
           'X-Guest-Id': deviceFingerprint,
         },
-        body: jsonEncode({'count': count}),
+        body: jsonEncode(body),
       );
 
       final data = _decodeJson(response.body);
@@ -866,10 +918,10 @@ class ApiClient {
       final openers = data['openers'];
       if (openers is List) {
         return openers
-            .whereType<Map<String, dynamic>>()
+            .whereType<Map>()
             .map(
               (item) => Suggestion.fromJson(
-                item,
+                item.cast<String, dynamic>(),
                 generationEventId: generationEventId,
               ),
             )
@@ -886,6 +938,337 @@ class ApiClient {
         'Failed to load recommended openers',
         ApiErrorCode.server,
       );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Community API
+  // ---------------------------------------------------------------------------
+
+  Future<CommunityFeedResponse> getCommunityPosts({
+    String? category,
+    String sort = 'hot',
+    int page = 1,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final params = <String, String>{
+        'sort': sort,
+        'page': page.toString(),
+        if (category != null && category.isNotEmpty) 'category': category,
+      };
+      final uri = Uri.parse(
+        '$baseUrl/api/community/posts/',
+      ).replace(queryParameters: params);
+      final response = await http.get(uri, headers: headers);
+      AppLogger.debug('GET community/posts -> ${response.statusCode}');
+      final data = _decodeJson(response.body);
+      if (response.statusCode >= 400) {
+        throw ApiException(
+          _extractApiMessage(data, 'Failed to load posts.'),
+          ApiErrorCode.server,
+        );
+      }
+      if (data['posts'] is! List) {
+        throw ApiException(
+          _extractApiMessage(data, 'Invalid posts response.'),
+          ApiErrorCode.server,
+        );
+      }
+      return CommunityFeedResponse.fromJson(data);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      AppLogger.error('getCommunityPosts error', e is Exception ? e : null);
+      throw ApiException('Failed to load posts.', ApiErrorCode.network);
+    }
+  }
+
+  Future<CommunityPost> getCommunityPostDetail(int postId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/community/posts/$postId/'),
+        headers: headers,
+      );
+      AppLogger.debug('GET community/posts/$postId -> ${response.statusCode}');
+      final data = _decodeJson(response.body);
+      if (response.statusCode >= 400) {
+        throw ApiException(
+          _extractApiMessage(data, 'Failed to load post.'),
+          ApiErrorCode.server,
+        );
+      }
+      if (data['id'] == null) {
+        throw ApiException(
+          _extractApiMessage(data, 'Invalid post detail response.'),
+          ApiErrorCode.server,
+        );
+      }
+      return CommunityPost.fromJson(data);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      AppLogger.error(
+        'getCommunityPostDetail error',
+        e is Exception ? e : null,
+      );
+      throw ApiException('Failed to load post.', ApiErrorCode.network);
+    }
+  }
+
+  Future<CommunityPost> createCommunityPost({
+    required String title,
+    required String body,
+    required String category,
+    File? image,
+  }) async {
+    try {
+      final token = await AuthService.getToken();
+      final deviceFingerprint =
+          await AuthService.getOrCreateDeviceFingerprint();
+
+      if (image != null) {
+        final request = http.MultipartRequest(
+          'POST',
+          Uri.parse('$baseUrl/api/community/posts/'),
+        );
+        if (token != null) {
+          request.headers['Authorization'] = 'Token $token';
+        }
+        request.headers['Accept'] = 'application/json';
+        request.headers['X-Device-Fingerprint'] = deviceFingerprint;
+        request.headers['X-Guest-Id'] = deviceFingerprint;
+        request.fields['title'] = title;
+        request.fields['body'] = body;
+        request.fields['category'] = category;
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'image',
+            image.path,
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        );
+        final streamed = await request.send();
+        final response = await http.Response.fromStream(streamed);
+        AppLogger.debug('POST community/posts -> ${response.statusCode}');
+        final data = _decodeJson(response.body);
+        if (response.statusCode == 401 || response.statusCode == 403) {
+          throw ApiException(
+            _extractApiMessage(data, 'Session expired. Please sign in again.'),
+            ApiErrorCode.network,
+          );
+        }
+        if (response.statusCode >= 400) {
+          throw ApiException(
+            _extractApiMessage(data, 'Failed to create post.'),
+            ApiErrorCode.server,
+          );
+        }
+        if (data['id'] == null) {
+          throw ApiException(
+            _extractApiMessage(data, 'Invalid server response.'),
+            ApiErrorCode.server,
+          );
+        }
+        return CommunityPost.fromJson(data);
+      } else {
+        final headers = await _getHeaders();
+        final response = await http.post(
+          Uri.parse('$baseUrl/api/community/posts/'),
+          headers: headers,
+          body: jsonEncode({
+            'title': title,
+            'body': body,
+            'category': category,
+          }),
+        );
+        AppLogger.debug('POST community/posts -> ${response.statusCode}');
+        final data = _decodeJson(response.body);
+        if (response.statusCode == 401 || response.statusCode == 403) {
+          throw ApiException(
+            _extractApiMessage(data, 'Session expired. Please sign in again.'),
+            ApiErrorCode.network,
+          );
+        }
+        if (response.statusCode >= 400) {
+          throw ApiException(
+            _extractApiMessage(data, 'Failed to create post.'),
+            ApiErrorCode.server,
+          );
+        }
+        if (data['id'] == null) {
+          throw ApiException(
+            _extractApiMessage(data, 'Invalid server response.'),
+            ApiErrorCode.server,
+          );
+        }
+        return CommunityPost.fromJson(data);
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      AppLogger.error('createCommunityPost error', e is Exception ? e : null);
+      throw ApiException('Failed to create post.', ApiErrorCode.network);
+    }
+  }
+
+  Future<void> deleteCommunityPost(int postId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.delete(
+        Uri.parse('$baseUrl/api/community/posts/$postId/'),
+        headers: headers,
+      );
+      final data = _decodeJson(response.body);
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        throw ApiException(
+          _extractApiMessage(data, 'Session expired. Please sign in again.'),
+          ApiErrorCode.network,
+        );
+      }
+      if (response.statusCode >= 400) {
+        throw ApiException(
+          _extractApiMessage(data, 'Failed to delete post.'),
+          ApiErrorCode.server,
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      AppLogger.error('deleteCommunityPost error', e is Exception ? e : null);
+      throw ApiException('Failed to delete post.', ApiErrorCode.network);
+    }
+  }
+
+  Future<Map<String, dynamic>> voteCommunityPost(
+    int postId,
+    String voteType,
+  ) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/community/posts/$postId/vote/'),
+        headers: headers,
+        body: jsonEncode({'vote_type': voteType}),
+      );
+      final data = _decodeJson(response.body);
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        throw ApiException(
+          _extractApiMessage(data, 'Session expired. Please sign in again.'),
+          ApiErrorCode.network,
+        );
+      }
+      if (response.statusCode >= 400) {
+        throw ApiException(
+          _extractApiMessage(data, 'Failed to vote.'),
+          ApiErrorCode.server,
+        );
+      }
+      return data;
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      AppLogger.error('voteCommunityPost error', e is Exception ? e : null);
+      throw ApiException('Failed to vote.', ApiErrorCode.network);
+    }
+  }
+
+  Future<CommunityComment> addCommunityComment(int postId, String body) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/community/posts/$postId/comments/'),
+        headers: headers,
+        body: jsonEncode({'body': body}),
+      );
+      AppLogger.debug(
+        'POST community/posts/$postId/comments -> ${response.statusCode}',
+      );
+      final data = _decodeJson(response.body);
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        throw ApiException(
+          data['detail']?.toString() ??
+              data['error']?.toString() ??
+              'Session expired. Please sign in again.',
+          ApiErrorCode.network,
+        );
+      }
+      if (response.statusCode >= 400) {
+        throw ApiException(
+          data['error']?.toString() ??
+              data['detail']?.toString() ??
+              data['message']?.toString() ??
+              'Failed to add comment.',
+          ApiErrorCode.server,
+        );
+      }
+      if (data['id'] == null) {
+        throw ApiException(
+          data['message']?.toString() ??
+              'Invalid server response while posting comment.',
+          ApiErrorCode.server,
+        );
+      }
+      return CommunityComment.fromJson(data);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      AppLogger.error('addCommunityComment error', e is Exception ? e : null);
+      throw ApiException('Failed to add comment.', ApiErrorCode.network);
+    }
+  }
+
+  Future<void> deleteCommunityComment(int commentId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.delete(
+        Uri.parse('$baseUrl/api/community/comments/$commentId/delete/'),
+        headers: headers,
+      );
+      final data = _decodeJson(response.body);
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        throw ApiException(
+          _extractApiMessage(data, 'Session expired. Please sign in again.'),
+          ApiErrorCode.network,
+        );
+      }
+      if (response.statusCode >= 400) {
+        throw ApiException(
+          _extractApiMessage(data, 'Failed to delete comment.'),
+          ApiErrorCode.server,
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      AppLogger.error(
+        'deleteCommunityComment error',
+        e is Exception ? e : null,
+      );
+      throw ApiException('Failed to delete comment.', ApiErrorCode.network);
+    }
+  }
+
+  Future<Map<String, dynamic>> likeCommunityComment(int commentId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/community/comments/$commentId/like/'),
+        headers: headers,
+        body: '{}',
+      );
+      final data = _decodeJson(response.body);
+      if (response.statusCode == 401 || response.statusCode == 403) {
+        throw ApiException(
+          _extractApiMessage(data, 'Session expired. Please sign in again.'),
+          ApiErrorCode.network,
+        );
+      }
+      if (response.statusCode >= 400) {
+        throw ApiException(
+          _extractApiMessage(data, 'Failed to like comment.'),
+          ApiErrorCode.server,
+        );
+      }
+      return data;
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      AppLogger.error('likeCommunityComment error', e is Exception ? e : null);
+      throw ApiException('Failed to like comment.', ApiErrorCode.network);
     }
   }
 

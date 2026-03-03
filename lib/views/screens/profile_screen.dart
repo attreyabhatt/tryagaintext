@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flirtfix/l10n/gen/app_localizations.dart';
 import '../../l10n/l10n.dart';
 import '../../state/app_state.dart';
 import 'change_password_screen.dart';
 import 'delete_account_screen.dart';
+import 'login_screen.dart';
 import 'policy_viewer_screen.dart';
 import 'pricing_screen.dart';
 import 'report_issue_screen.dart';
@@ -17,25 +17,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  String _localeLabel(BuildContext context, Locale locale) {
-    final l10n = context.l10n;
-    return switch (locale.languageCode) {
-      'en' => l10n.languageEnglish,
-      'es' => l10n.languageSpanish,
-      'pt' => l10n.languagePortuguese,
-      'de' => l10n.languageGerman,
-      'fr' => l10n.languageFrench,
-      _ => locale.languageCode.toUpperCase(),
-    };
-  }
-
-  Future<void> _signOut() async {
-    await AppStateScope.of(context).logout();
-    if (mounted) {
-      Navigator.pop(context);
-    }
-  }
-
   @override
   void initState() {
     super.initState();
@@ -43,6 +24,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (!mounted) return;
       await AppStateScope.of(context).refreshUserData();
     });
+  }
+
+  Future<void> _openAuth() async {
+    HapticFeedback.selectionClick();
+    await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+    );
+    if (!mounted) return;
+    await AppStateScope.of(context).reloadFromStorage();
+  }
+
+  Future<void> _signOut() async {
+    await AppStateScope.of(context).logout();
   }
 
   void _openPolicy(String policyType) {
@@ -61,50 +56,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Future<void> _openLanguagePicker() async {
-    final appState = AppStateScope.of(context);
-    final l10n = context.l10n;
-    final supportedLocales = AppLocalizations.supportedLocales;
-    final choice = await showModalBottomSheet<String>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) {
-        final currentCode = appState.localeOverride?.languageCode;
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                title: Text(l10n.languageSystem),
-                trailing: currentCode == null ? const Icon(Icons.check) : null,
-                onTap: () => Navigator.pop(context, 'system'),
-              ),
-              ...supportedLocales.map((locale) {
-                final code = locale.languageCode;
-                return ListTile(
-                  title: Text(_localeLabel(context, locale)),
-                  trailing: currentCode == code
-                      ? const Icon(Icons.check)
-                      : null,
-                  onTap: () => Navigator.pop(context, code),
-                );
-              }),
-            ],
-          ),
-        );
-      },
-    );
-
-    if (choice == null) return;
-    if (choice == 'system') {
-      await appState.setLocaleOverride(null);
-      return;
-    }
-    await appState.setLocaleOverride(Locale(choice));
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -118,10 +69,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final memberName = username.isNotEmpty
         ? username
         : (email.isNotEmpty ? email.split('@').first : l10n.profileGuest);
-    final isLightMode = appState.themeMode == AppThemeMode.premiumLightGold;
-    final ambienceLabel = isLightMode
-        ? l10n.profileAmbienceRoyalRomance
-        : l10n.profileAmbienceMidnightGold;
     final isLight = theme.brightness == Brightness.light;
     final cardShadow = isLight
         ? BoxShadow(
@@ -137,7 +84,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(l10n.profileTitle),
         centerTitle: true,
@@ -275,6 +222,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
             ),
+            if (!appState.isLoggedIn) ...[
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: _openAuth,
+                child: Text(l10n.loginAccessButton),
+              ),
+            ],
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(20),
@@ -340,35 +294,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               child: Column(
                 children: [
-                  SwitchListTile.adaptive(
-                    secondary: const Icon(Icons.light_mode_outlined),
-                    title: Text(l10n.profileAmbience),
-                    subtitle: Text(ambienceLabel),
-                    value: isLightMode,
-                    onChanged: (value) {
-                      HapticFeedback.selectionClick();
-                      appState.setThemeMode(
-                        value
-                            ? AppThemeMode.premiumLightGold
-                            : AppThemeMode.premiumDarkNeonGold,
-                      );
-                    },
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.language_outlined),
-                    title: Text(l10n.profileLanguage),
-                    subtitle: Text(
-                      appState.localeOverride == null
-                          ? l10n.languageSystem
-                          : _localeLabel(context, appState.localeOverride!),
-                    ),
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      _openLanguagePicker();
-                    },
-                  ),
-                  const Divider(height: 1),
                   ListTile(
                     leading: const Icon(Icons.lock_reset_outlined),
                     title: Text(l10n.profileSecuritySettings),

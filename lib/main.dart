@@ -9,7 +9,10 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'l10n/l10n.dart';
 import 'state/app_state.dart';
+import 'views/screens/community_screen.dart';
 import 'views/screens/conversations_screen.dart';
+import 'views/screens/login_screen.dart';
+import 'views/screens/profile_screen.dart';
 
 ThemeData buildPremiumDarkNeonTheme() {
   const baseDark = Color(0xFF0E0F12);
@@ -392,6 +395,99 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Main shell — bottom navigation
+// ---------------------------------------------------------------------------
+
+class MainShell extends StatefulWidget {
+  const MainShell({super.key});
+
+  @override
+  State<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends State<MainShell> {
+  int _selectedIndex = 0;
+  bool _prevLoggedIn = false;
+
+  static const _screens = <Widget>[
+    ConversationsScreen(),
+    CommunityScreen(),
+    ProfileScreen(),
+  ];
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // When user logs out from the Profile tab, return to Home tab.
+    final appState = AppStateScope.of(context);
+    if (_prevLoggedIn && !appState.isLoggedIn && _selectedIndex == 2) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _selectedIndex = 0);
+      });
+    }
+    _prevLoggedIn = appState.isLoggedIn;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final appState = AppStateScope.of(context);
+
+    return Scaffold(
+      body: IndexedStack(index: _selectedIndex, children: _screens),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (i) async {
+          HapticFeedback.selectionClick();
+          if (i == 2 && !appState.isLoggedIn) {
+            final didLogin = await Navigator.push<bool>(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+            );
+            if (!mounted) return;
+            if (didLogin == true) {
+              setState(() => _selectedIndex = 0);
+            }
+            return;
+          }
+          setState(() => _selectedIndex = i);
+        },
+        backgroundColor: isLight ? cs.surface : cs.surfaceContainerLow,
+        indicatorColor: cs.primary.withValues(alpha: 0.15),
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        destinations: [
+          NavigationDestination(
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home, color: cs.primary),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.people_outline),
+            selectedIcon: Icon(Icons.people, color: cs.primary),
+            label: 'Community',
+          ),
+          if (appState.isLoggedIn)
+            NavigationDestination(
+              icon: const Icon(Icons.person_outline),
+              selectedIcon: Icon(Icons.person, color: cs.primary),
+              label: 'Profile',
+            )
+          else
+            NavigationDestination(
+              icon: const Icon(Icons.login_outlined),
+              selectedIcon: Icon(Icons.login, color: cs.primary),
+              label: 'Sign In',
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -453,7 +549,7 @@ class _SplashScreenState extends State<SplashScreen>
         context,
         PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) =>
-              const ConversationsScreen(),
+              const MainShell(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(opacity: animation, child: child);
           },

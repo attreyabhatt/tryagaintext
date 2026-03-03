@@ -1043,13 +1043,13 @@ abstract class AppLocalizations {
   /// No description provided for @conversationsModeCreative.
   ///
   /// In en, this message translates to:
-  /// **'Creative'**
+  /// **'Craft'**
   String get conversationsModeCreative;
 
   /// No description provided for @conversationsModeRecommended.
   ///
   /// In en, this message translates to:
-  /// **'Recommended'**
+  /// **'The Vault'**
   String get conversationsModeRecommended;
 
   /// No description provided for @conversationsNewChat.
@@ -1067,8 +1067,14 @@ abstract class AppLocalizations {
   /// No description provided for @conversationsRecommendedDescription.
   ///
   /// In en, this message translates to:
-  /// **'Expertly formulated to maximize engagement and intrigue.'**
+  /// **'Hand-selected scripts from top dating experts. Proven to get a 3x higher response rate.'**
   String get conversationsRecommendedDescription;
+
+  /// No description provided for @conversationsVaultHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'The Coach\'s Playbook.'**
+  String get conversationsVaultHeadline;
 
   /// No description provided for @conversationsRegenerate.
   ///
@@ -1148,6 +1154,12 @@ abstract class AppLocalizations {
   /// **'Tap \"Craft Response\" to generate suggestions'**
   String get conversationsTapCraftResponseHint;
 
+  /// No description provided for @conversationsSignUpToReveal.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign up to reveal.'**
+  String get conversationsSignUpToReveal;
+
   /// No description provided for @conversationsTapToUnlock.
   ///
   /// In en, this message translates to:
@@ -1225,6 +1237,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unlock this reply.'**
   String get conversationsUnlockReplyHeadline;
+
+  /// No description provided for @conversationsUnlockFullArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'UNLOCK FULL ARCHIVE'**
+  String get conversationsUnlockFullArchive;
 
   /// No description provided for @conversationsUnlockReplySupport.
   ///

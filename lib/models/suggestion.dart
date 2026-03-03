@@ -31,13 +31,27 @@ class Suggestion {
       return null;
     }
 
+    bool parseBool(dynamic value) {
+      if (value is bool) return value;
+      if (value is num) return value != 0;
+      if (value is String) {
+        final normalized = value.trim().toLowerCase();
+        return normalized == 'true' || normalized == '1';
+      }
+      return false;
+    }
+
     return Suggestion(
-      message: j['message'] as String? ?? '',
+      message:
+          (j['message'] as String?) ?? (j['blur_preview'] as String?) ?? '',
       confidence: (j['confidence_score'] as num?)?.toDouble() ?? 0.0,
       whyItWorks: j['why_it_works'] as String?,
       imageUrl: j['image_url'] as String?,
       generationEventId:
           generationEventId ?? parseInt(j['generation_event_id']),
+      isLocked: parseBool(j['is_locked']),
+      blurPreview: j['blur_preview'] as String?,
+      lockedReplyId: parseInt(j['locked_reply_id']),
     );
   }
 }
