@@ -1,12 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../models/community_post.dart';
+import 'community_poll_widget.dart';
 
 /// Reusable card for displaying a community post in the feed.
 class CommunityPostCard extends StatelessWidget {
   final CommunityPost post;
   final VoidCallback onTap;
+  final VoidCallback? onMoreTap;
+  final ValueChanged<String>? onPollVote;
 
-  const CommunityPostCard({super.key, required this.post, required this.onTap});
+  const CommunityPostCard({
+    super.key,
+    required this.post,
+    required this.onTap,
+    this.onMoreTap,
+    this.onPollVote,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -94,6 +104,13 @@ class CommunityPostCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        if (onMoreTap != null) ...[
+                          const SizedBox(width: 4),
+                          GestureDetector(
+                            onTap: onMoreTap,
+                            child: Icon(Icons.more_vert, size: 18, color: cs.onSurfaceVariant),
+                          ),
+                        ],
                       ],
                     ),
 
@@ -124,6 +141,16 @@ class CommunityPostCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
+
+                    // Poll
+                    if (post.poll != null) ...[
+                      const SizedBox(height: 10),
+                      CommunityPollWidget(
+                        poll: post.poll!,
+                        onVote: onPollVote,
+                        compact: true,
+                      ),
+                    ],
 
                     const SizedBox(height: 12),
 
@@ -171,7 +198,20 @@ class CommunityPostCard extends StatelessWidget {
                     width: 80,
                     height: 80,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return Shimmer.fromColors(
+                        baseColor: cs.surfaceContainerHigh,
+                        highlightColor: cs.surfaceContainerHighest,
+                        child: Container(width: 80, height: 80, color: cs.surfaceContainerHigh),
+                      );
+                    },
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 80,
+                      height: 80,
+                      color: cs.surfaceContainerHigh,
+                      child: Icon(Icons.image_not_supported_outlined, color: cs.onSurfaceVariant, size: 24),
+                    ),
                   ),
                 ),
               ],
@@ -282,6 +322,13 @@ class CommunityPostCard extends StatelessWidget {
                           bg: cs.surfaceContainerHighest,
                           fg: cs.onSurface,
                         ),
+                      if (onMoreTap != null) ...[
+                        const SizedBox(width: 4),
+                        GestureDetector(
+                          onTap: onMoreTap,
+                          child: Icon(Icons.more_vert, size: 18, color: cs.onSurfaceVariant),
+                        ),
+                      ],
                     ],
                   ),
                 ],
@@ -315,6 +362,16 @@ class CommunityPostCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
 
+              // Poll
+              if (post.poll != null) ...[
+                const SizedBox(height: 10),
+                CommunityPollWidget(
+                  poll: post.poll!,
+                  onVote: onPollVote,
+                  compact: true,
+                ),
+              ],
+
               // Image thumbnail
               if (post.imageUrl != null && post.imageUrl!.isNotEmpty) ...[
                 const SizedBox(height: 10),
@@ -325,7 +382,20 @@ class CommunityPostCard extends StatelessWidget {
                     height: 160,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return Shimmer.fromColors(
+                        baseColor: cs.surfaceContainerHigh,
+                        highlightColor: cs.surfaceContainerHighest,
+                        child: Container(height: 160, width: double.infinity, color: cs.surfaceContainerHigh),
+                      );
+                    },
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 160,
+                      width: double.infinity,
+                      color: cs.surfaceContainerHigh,
+                      child: Icon(Icons.image_not_supported_outlined, color: cs.onSurfaceVariant, size: 32),
+                    ),
                   ),
                 ),
               ],

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../models/community_post.dart';
 import '../../services/api_client.dart';
+import '../../services/community_guidelines_service.dart';
+import '../widgets/content_action_sheet.dart';
 import '../../state/app_state.dart';
+import '../widgets/community_poll_widget.dart';
 import '../widgets/community_post_card.dart';
 
 class CommunityPostDetailScreen extends StatefulWidget {
@@ -119,6 +123,10 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
       return;
     }
 
+    // EULA gate — first-time commenting requires acceptance
+    final accepted = await CommunityGuidelinesService.ensureAccepted(context);
+    if (!accepted || !mounted) return;
+
     setState(() => _isSubmittingComment = true);
     try {
       final comment = await _api.addCommunityComment(_post.id, body);
@@ -232,6 +240,98 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
     }
   }
 
+  Future<void> _showCommentActions(CommunityComment comment) async {
+    final appState = AppStateScope.of(context);
+    final isOwner = appState.isLoggedIn && appState.user?.username == comment.author.username;
+
+    final action = await showContentActionSheet(
+      context,
+      contentType: 'comment',
+      contentId: comment.id,
+      author: comment.author,
+      isOwner: isOwner,
+    );
+
+    if (action == null || !mounted) return;
+
+    switch (action) {
+      case ContentAction.delete:
+        await _deleteComment(comment);
+      case ContentAction.report:
+        if (mounted) {
+          await showReportReasonSheet(context, contentType: 'comment', contentId: comment.id);
+        }
+      case ContentAction.block:
+        if (mounted) {
+          final blocked = await handleBlockUser(context, author: comment.author);
+          if (blocked && mounted) {
+            // Remove blocked user's comments from view
+            final updated = _post.comments
+                .where((c) => c.author.username != comment.author.username)
+                .toList();
+            setState(() {
+              _post = _post.copyWith(comments: updated, commentCount: updated.length);
+            });
+          }
+        }
+    }
+  }
+
+  Future<void> _votePoll(String choice) async {
+    final appState = AppStateScope.of(context);
+    if (!appState.isLoggedIn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in to vote.')),
+      );
+      return;
+    }
+    try {
+      final result = await _api.votePoll(_post.id, choice);
+      if (!mounted) return;
+      setState(() {
+        _post = _post.copyWith(
+          poll: CommunityPoll(
+            sendItCount: result['send_it_count'] as int? ?? 0,
+            dontSendItCount: result['dont_send_it_count'] as int? ?? 0,
+            userVote: result['user_vote'] as String?,
+          ),
+        );
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    }
+  }
+
+  Future<void> _showPostActions(bool isOwner) async {
+    final action = await showContentActionSheet(
+      context,
+      contentType: 'post',
+      contentId: _post.id,
+      author: _post.author,
+      isOwner: isOwner,
+    );
+
+    if (action == null || !mounted) return;
+
+    switch (action) {
+      case ContentAction.delete:
+        await _deletePost();
+      case ContentAction.report:
+        if (mounted) {
+          await showReportReasonSheet(context, contentType: 'post', contentId: _post.id);
+        }
+      case ContentAction.block:
+        if (mounted) {
+          final blocked = await handleBlockUser(context, author: _post.author);
+          if (blocked && mounted) Navigator.pop(context);
+        }
+    }
+  }
+
   Future<void> _deletePost() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -282,16 +382,10 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
         ),
         centerTitle: true,
         actions: [
-          if (isOwner)
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
-              onSelected: (v) {
-                if (v == 'delete') _deletePost();
-              },
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: 'delete', child: Text('Delete post')),
-              ],
-            ),
+          IconButton(
+            icon: const Icon(Icons.more_vert),
+            onPressed: () => _showPostActions(isOwner),
+          ),
         ],
       ),
       body: Column(
@@ -416,16 +510,41 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
                 ),
               ),
 
+              // Poll
+              if (_post.poll != null) ...[
+                const SizedBox(height: 14),
+                CommunityPollWidget(
+                  poll: _post.poll!,
+                  onVote: (choice) => _votePoll(choice),
+                ),
+              ],
+
               // Image
               if (_post.imageUrl != null && _post.imageUrl!.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
-                  child: Image.network(
-                    _post.imageUrl!,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 400),
+                    child: Image.network(
+                      _post.imageUrl!,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return Shimmer.fromColors(
+                          baseColor: cs.surfaceContainerHigh,
+                          highlightColor: cs.surfaceContainerHighest,
+                          child: Container(height: 200, width: double.infinity, color: cs.surfaceContainerHigh),
+                        );
+                      },
+                      errorBuilder: (_, __, ___) => Container(
+                        height: 200,
+                        width: double.infinity,
+                        color: cs.surfaceContainerHigh,
+                        child: Icon(Icons.image_not_supported_outlined, color: cs.onSurfaceVariant, size: 32),
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -500,8 +619,11 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
           (comment) => _CommentTile(
             comment: comment,
             currentUsername: appState.user?.username,
+            postAuthorUsername: _post.author.username,
+            isPostAnonymous: _post.isAnonymous,
             onLike: () => _toggleLike(comment),
             onDelete: () => _deleteComment(comment),
+            onMoreTap: () => _showCommentActions(comment),
           ),
         ),
 
@@ -739,14 +861,20 @@ class _ProBadge extends StatelessWidget {
 class _CommentTile extends StatelessWidget {
   final CommunityComment comment;
   final String? currentUsername;
+  final String? postAuthorUsername;
+  final bool isPostAnonymous;
   final VoidCallback onLike;
   final VoidCallback onDelete;
+  final VoidCallback? onMoreTap;
 
   const _CommentTile({
     required this.comment,
     required this.currentUsername,
+    this.postAuthorUsername,
+    this.isPostAnonymous = false,
     required this.onLike,
     required this.onDelete,
+    this.onMoreTap,
   });
 
   @override
@@ -792,6 +920,27 @@ class _CommentTile extends StatelessWidget {
                       const SizedBox(width: 6),
                       _ProBadge(cs: cs),
                     ],
+                    if (!isPostAnonymous &&
+                        postAuthorUsername != null &&
+                        comment.author.username == postAuthorUsername) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: cs.primary.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'OP',
+                          style: TextStyle(
+                            color: cs.primary,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ),
+                    ],
                     const Spacer(),
                     Text(
                       timeAgoFromDate(comment.createdAt),
@@ -800,6 +949,13 @@ class _CommentTile extends StatelessWidget {
                         fontSize: 11,
                       ),
                     ),
+                    if (onMoreTap != null) ...[
+                      const SizedBox(width: 4),
+                      GestureDetector(
+                        onTap: onMoreTap,
+                        child: Icon(Icons.more_vert, size: 16, color: cs.onSurfaceVariant),
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 4),

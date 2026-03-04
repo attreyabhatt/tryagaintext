@@ -1,11 +1,13 @@
 class CommunityAuthor {
+  final int? id;
   final String username;
   final bool isPro;
 
-  const CommunityAuthor({required this.username, required this.isPro});
+  const CommunityAuthor({this.id, required this.username, required this.isPro});
 
   factory CommunityAuthor.fromJson(Map<String, dynamic> j) {
     return CommunityAuthor(
+      id: j['id'] as int?,
       username: j['username'] as String? ?? 'Unknown',
       isPro: j['is_pro'] as bool? ?? false,
     );
@@ -54,6 +56,39 @@ class CommunityComment {
   }
 }
 
+class CommunityPoll {
+  final int sendItCount;
+  final int dontSendItCount;
+  final String? userVote;
+
+  const CommunityPoll({
+    required this.sendItCount,
+    required this.dontSendItCount,
+    this.userVote,
+  });
+
+  factory CommunityPoll.fromJson(Map<String, dynamic> j) {
+    return CommunityPoll(
+      sendItCount: j['send_it_count'] as int? ?? 0,
+      dontSendItCount: j['dont_send_it_count'] as int? ?? 0,
+      userVote: j['user_vote'] as String?,
+    );
+  }
+
+  CommunityPoll copyWith({
+    int? sendItCount,
+    int? dontSendItCount,
+    String? userVote,
+    bool clearUserVote = false,
+  }) {
+    return CommunityPoll(
+      sendItCount: sendItCount ?? this.sendItCount,
+      dontSendItCount: dontSendItCount ?? this.dontSendItCount,
+      userVote: clearUserVote ? null : (userVote ?? this.userVote),
+    );
+  }
+}
+
 class CommunityPost {
   final int id;
   final String title;
@@ -68,6 +103,8 @@ class CommunityPost {
   final bool isTrending;
   final bool isNew;
   final String? userVote;
+  final bool isAnonymous;
+  final CommunityPoll? poll;
   final DateTime createdAt;
   final List<CommunityComment> comments;
 
@@ -85,6 +122,8 @@ class CommunityPost {
     required this.isTrending,
     required this.isNew,
     this.userVote,
+    this.isAnonymous = false,
+    this.poll,
     required this.createdAt,
     this.comments = const [],
   });
@@ -106,6 +145,10 @@ class CommunityPost {
       isTrending: j['is_trending'] as bool? ?? false,
       isNew: j['is_new'] as bool? ?? false,
       userVote: j['user_vote'] as String?,
+      isAnonymous: j['is_anonymous'] as bool? ?? false,
+      poll: j['poll'] != null
+          ? CommunityPoll.fromJson(j['poll'] as Map<String, dynamic>)
+          : null,
       createdAt:
           DateTime.tryParse(j['created_at'] as String? ?? '') ?? DateTime.now(),
       comments:
@@ -122,6 +165,8 @@ class CommunityPost {
     bool clearUserVote = false,
     List<CommunityComment>? comments,
     int? commentCount,
+    CommunityPoll? poll,
+    bool clearPoll = false,
   }) {
     return CommunityPost(
       id: id,
@@ -137,6 +182,8 @@ class CommunityPost {
       isTrending: isTrending,
       isNew: isNew,
       userVote: clearUserVote ? null : (userVote ?? this.userVote),
+      isAnonymous: isAnonymous,
+      poll: clearPoll ? null : (poll ?? this.poll),
       createdAt: createdAt,
       comments: comments ?? this.comments,
     );

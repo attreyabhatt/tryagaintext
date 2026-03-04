@@ -1020,6 +1020,8 @@ class ApiClient {
     required String body,
     required String category,
     File? image,
+    bool isAnonymous = false,
+    bool hasPoll = false,
   }) async {
     try {
       final token = await AuthService.getToken();
@@ -1040,6 +1042,8 @@ class ApiClient {
         request.fields['title'] = title;
         request.fields['body'] = body;
         request.fields['category'] = category;
+        if (isAnonymous) request.fields['is_anonymous'] = 'true';
+        if (hasPoll) request.fields['has_poll'] = 'true';
         request.files.add(
           await http.MultipartFile.fromPath(
             'image',
@@ -1079,6 +1083,8 @@ class ApiClient {
             'title': title,
             'body': body,
             'category': category,
+            if (isAnonymous) 'is_anonymous': true,
+            if (hasPoll) 'has_poll': true,
           }),
         );
         AppLogger.debug('POST community/posts -> ${response.statusCode}');
@@ -1269,6 +1275,108 @@ class ApiClient {
       if (e is ApiException) rethrow;
       AppLogger.error('likeCommunityComment error', e is Exception ? e : null);
       throw ApiException('Failed to like comment.', ApiErrorCode.network);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Community — Report / Block
+  // ---------------------------------------------------------------------------
+
+  Future<void> reportCommunityContent({
+    required String contentType,
+    required int objectId,
+    required String reason,
+    String detail = '',
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final endpoint = contentType == 'post'
+          ? '/api/community/posts/$objectId/report/'
+          : '/api/community/comments/$objectId/report/';
+      final response = await http.post(
+        Uri.parse('$baseUrl$endpoint'),
+        headers: {...headers, 'Content-Type': 'application/json'},
+        body: jsonEncode({'reason': reason, 'detail': detail}),
+      );
+      if (response.statusCode == 409) {
+        throw ApiException('You have already reported this.', ApiErrorCode.server);
+      }
+      if (response.statusCode != 201) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        throw ApiException(
+          data['error'] as String? ?? 'Failed to report.',
+          ApiErrorCode.server,
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      AppLogger.error('reportCommunityContent error', e is Exception ? e : null);
+      throw ApiException('Failed to report content.', ApiErrorCode.network);
+    }
+  }
+
+  Future<Map<String, dynamic>> toggleBlockUser(int userId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/community/users/$userId/block/'),
+        headers: {...headers, 'Content-Type': 'application/json'},
+      );
+      if (response.statusCode != 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        throw ApiException(
+          data['error'] as String? ?? 'Failed to block user.',
+          ApiErrorCode.server,
+        );
+      }
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      AppLogger.error('toggleBlockUser error', e is Exception ? e : null);
+      throw ApiException('Failed to block user.', ApiErrorCode.network);
+    }
+  }
+
+  Future<List<int>> getBlockedUserIds() async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/community/blocked-users/'),
+        headers: headers,
+      );
+      if (response.statusCode != 200) {
+        return [];
+      }
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final ids = data['blocked_user_ids'] as List<dynamic>? ?? [];
+      return ids.map((e) => e as int).toList();
+    } catch (e) {
+      AppLogger.error('getBlockedUserIds error', e is Exception ? e : null);
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>> votePoll(int postId, String choice) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/community/posts/$postId/poll/vote/'),
+        headers: headers,
+        body: jsonEncode({'choice': choice}),
+      );
+      AppLogger.debug('POST poll/vote -> ${response.statusCode}');
+      final data = _decodeJson(response.body);
+      if (response.statusCode >= 400) {
+        throw ApiException(
+          _extractApiMessage(data, 'Failed to vote.'),
+          ApiErrorCode.server,
+        );
+      }
+      return data;
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      AppLogger.error('votePoll error', e is Exception ? e : null);
+      throw ApiException('Failed to vote.', ApiErrorCode.network);
     }
   }
 

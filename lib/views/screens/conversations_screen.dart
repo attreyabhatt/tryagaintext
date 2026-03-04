@@ -16,6 +16,7 @@ import '../../services/auth_service.dart';
 import '../../services/review_prompt_service.dart';
 import '../../models/suggestion.dart';
 import '../../utils/app_logger.dart';
+import 'create_post_screen.dart';
 import 'login_screen.dart';
 import 'signup_screen.dart';
 import 'package:flirtfix/views/screens/pricing_screen.dart';
@@ -488,7 +489,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   Future<void> _handleVaultUnlockPressed() async {
     final appState = AppStateScope.of(context);
     if (!appState.isLoggedIn) {
-      await _navigateToAuth();
+      await _navigateToSignup();
       if (!mounted) return;
       await appState.reloadFromStorage();
       if (!mounted || !appState.isLoggedIn) {
@@ -1785,6 +1786,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         _newMatchMode == NewMatchMode.recommended;
     final isAiNewMatch =
         _situation == 'just_matched' && _newMatchMode == NewMatchMode.ai;
+    final hideNeedReplyConversationSection =
+        _situation != 'just_matched' && (_isLoading || _suggestions.isNotEmpty);
     final showGenerateRow = !isAiNewMatch || _uploadedProfileImage != null;
     final shouldShowGenerateRow = isRecommendedNewMatch
         ? (!_isLoading && !_isExtractingImage && vaultTier != _VaultTier.elite)
@@ -1870,9 +1873,30 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                   ],
 
                   // Input section
-                  _buildInputSection(colorScheme),
-
-                  SizedBox(height: sectionSpacing),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 280),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, animation) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SizeTransition(
+                          sizeFactor: animation,
+                          axisAlignment: -1.0,
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: hideNeedReplyConversationSection
+                        ? const SizedBox(key: ValueKey('reply-input-hidden'))
+                        : Column(
+                            key: const ValueKey('reply-input-visible'),
+                            children: [
+                              _buildInputSection(colorScheme),
+                              SizedBox(height: sectionSpacing),
+                            ],
+                          ),
+                  ),
 
                   // Custom instructions section
                   if (showCustomInstructions) ...[
@@ -3493,17 +3517,43 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 suggestion: suggestion,
                 colorScheme: colorScheme,
                 isVaultStyle: isRecommendedNewMatch,
+                isOpenerContext: _situation == 'just_matched',
                 onTap: suggestion.isLocked
                     ? (isRecommendedNewMatch
                           ? () => _handleVaultUnlockPressed()
                           : () => _showUpgradePopup(suggestion.lockedReplyId))
                     : () => _copySuggestion(suggestion),
+                onAskCommunity: suggestion.isLocked
+                    ? null
+                    : () => _askCommunity(suggestion),
               ),
             ),
           );
         }),
         const SizedBox(height: 32),
       ],
+    );
+  }
+
+  void _askCommunity(Suggestion suggestion) {
+    final appState = AppStateScope.of(context);
+    if (!appState.isLoggedIn) {
+      HapticFeedback.lightImpact();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in to post in the community.')),
+      );
+      return;
+    }
+    HapticFeedback.lightImpact();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CreatePostScreen(
+          prefillBody:
+              'AI suggested: "${suggestion.message}"\n\nWhat do you think?',
+          prefillCategory: 'help_me_reply',
+        ),
+      ),
     );
   }
 
@@ -3536,19 +3586,24 @@ class _SuggestionCard extends StatelessWidget {
   final Suggestion suggestion;
   final ColorScheme colorScheme;
   final bool isVaultStyle;
+  final bool isOpenerContext;
   final VoidCallback onTap;
+  final VoidCallback? onAskCommunity;
 
   const _SuggestionCard({
     required this.index,
     required this.suggestion,
     required this.colorScheme,
     required this.isVaultStyle,
+    required this.isOpenerContext,
     required this.onTap,
+    this.onAskCommunity,
   });
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final isLoggedIn = AppStateScope.of(context).isLoggedIn;
     final badgeLabel = (index + 1).toString().padLeft(2, '0');
     final isDark = colorScheme.brightness == Brightness.dark;
     final borderRadius = BorderRadius.circular(isDark ? 18 : 14);
@@ -3631,7 +3686,7 @@ class _SuggestionCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           if (suggestion.isLocked) ...[
-            if (isVaultStyle)
+            if (isOpenerContext)
               ClipRect(
                 child: ImageFiltered(
                   imageFilter: ImageFilter.blur(sigmaX: 3.2, sigmaY: 3.2),
@@ -3679,7 +3734,7 @@ class _SuggestionCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      isVaultStyle
+                      (isVaultStyle && !isLoggedIn)
                           ? context.l10n.conversationsSignUpToReveal
                           : context.l10n.conversationsTapToUnlock,
                       style: TextStyle(
@@ -3732,6 +3787,31 @@ class _SuggestionCard extends StatelessWidget {
                               ? colorScheme.tertiary
                               : colorScheme.onTertiaryContainer,
                         ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            if (onAskCommunity != null) ...[
+              const SizedBox(height: 10),
+              GestureDetector(
+                onTap: onAskCommunity,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.people_outline,
+                      size: 15,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      'Ask the Community',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],

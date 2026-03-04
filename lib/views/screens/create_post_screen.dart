@@ -4,9 +4,19 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../services/api_client.dart';
+import '../../services/community_guidelines_service.dart';
 
 class CreatePostScreen extends StatefulWidget {
-  const CreatePostScreen({super.key});
+  final String? prefillBody;
+  final String? prefillTitle;
+  final String? prefillCategory;
+
+  const CreatePostScreen({
+    super.key,
+    this.prefillBody,
+    this.prefillTitle,
+    this.prefillCategory,
+  });
 
   @override
   State<CreatePostScreen> createState() => _CreatePostScreenState();
@@ -20,13 +30,22 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   String? _selectedCategory;
   File? _image;
   bool _isSubmitting = false;
+  bool _isAnonymous = false;
+  bool _addPoll = false;
 
   static const _categories = [
-    (value: 'success_story', label: 'Success Story'),
-    (value: 'opening_line', label: 'Opening Line'),
-    (value: 'dating_advice', label: 'Dating Advice'),
-    (value: 'app_feedback', label: 'App Feedback'),
+    (value: 'help_me_reply', label: 'Help Me Reply 🚨'),
+    (value: 'rate_my_profile', label: 'Rate My Profile 📸'),
+    (value: 'wins', label: 'Wins 🏆'),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.prefillBody != null) _bodyController.text = widget.prefillBody!;
+    if (widget.prefillTitle != null) _titleController.text = widget.prefillTitle!;
+    if (widget.prefillCategory != null) _selectedCategory = widget.prefillCategory;
+  }
 
   @override
   void dispose() {
@@ -65,6 +84,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       return;
     }
 
+    // EULA gate — first-time posting requires acceptance
+    final accepted = await CommunityGuidelinesService.ensureAccepted(context);
+    if (!accepted || !mounted) return;
+
     setState(() => _isSubmitting = true);
 
     try {
@@ -73,6 +96,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         body: body,
         category: _selectedCategory!,
         image: _image,
+        isAnonymous: _isAnonymous,
+        hasPoll: _addPoll,
       );
       if (mounted) {
         HapticFeedback.lightImpact();
@@ -342,6 +367,54 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 foregroundColor: cs.onSurfaceVariant,
                 side: BorderSide(color: cs.outlineVariant),
               ),
+            ),
+
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Icon(Icons.privacy_tip_outlined, size: 14, color: cs.onSurfaceVariant),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Tip: Blur or crop out names, numbers, and faces before sharing.',
+                    style: tt.bodySmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+            SwitchListTile(
+              value: _isAnonymous,
+              onChanged: (v) {
+                HapticFeedback.selectionClick();
+                setState(() => _isAnonymous = v);
+              },
+              title: Text('Hide my username', style: tt.bodyMedium),
+              subtitle: Text(
+                'Post anonymously',
+                style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+              ),
+              secondary: Icon(Icons.visibility_off_outlined, color: cs.onSurfaceVariant),
+              contentPadding: EdgeInsets.zero,
+            ),
+
+            SwitchListTile(
+              value: _addPoll,
+              onChanged: (v) {
+                HapticFeedback.selectionClick();
+                setState(() => _addPoll = v);
+              },
+              title: Text('Add Poll', style: tt.bodyMedium),
+              subtitle: Text(
+                '"Send it" or "Don\'t send it"',
+                style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+              ),
+              secondary: Icon(Icons.poll_outlined, color: cs.onSurfaceVariant),
+              contentPadding: EdgeInsets.zero,
             ),
 
             const SizedBox(height: 40),

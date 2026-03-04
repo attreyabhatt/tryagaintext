@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
+import '../services/api_client.dart';
 import '../services/auth_service.dart';
 import '../utils/app_logger.dart';
 
@@ -27,6 +28,8 @@ class AppState extends ChangeNotifier {
   bool _initialized = false;
   AppThemeMode _themeMode = AppThemeMode.premiumDarkNeonGold;
   Locale? _localeOverride;
+  // Blocked users
+  Set<int> _blockedUserIds = {};
 
   User? get user => _user;
   int get credits => _credits;
@@ -46,6 +49,8 @@ class AppState extends ChangeNotifier {
   bool get initialized => _initialized;
   AppThemeMode get themeMode => _themeMode;
   Locale? get localeOverride => _localeOverride;
+  Set<int> get blockedUserIds => _blockedUserIds;
+  bool isUserBlocked(int userId) => _blockedUserIds.contains(userId);
 
   Future<void> initialize() async {
     await _loadThemePreference();
@@ -53,9 +58,37 @@ class AppState extends ChangeNotifier {
     await reloadFromStorage();
     if (_isLoggedIn) {
       await refreshUserData();
+      await loadBlockedUsers();
     }
     _initialized = true;
     notifyListeners();
+  }
+
+  Future<void> loadBlockedUsers() async {
+    try {
+      final ids = await ApiClient().getBlockedUserIds();
+      _blockedUserIds = ids.toSet();
+      notifyListeners();
+    } catch (e) {
+      AppLogger.error('loadBlockedUsers error', e is Exception ? e : null);
+    }
+  }
+
+  Future<bool> toggleBlockUser(int userId) async {
+    try {
+      final result = await ApiClient().toggleBlockUser(userId);
+      final blocked = result['blocked'] as bool? ?? false;
+      if (blocked) {
+        _blockedUserIds.add(userId);
+      } else {
+        _blockedUserIds.remove(userId);
+      }
+      notifyListeners();
+      return blocked;
+    } catch (e) {
+      AppLogger.error('toggleBlockUser error', e is Exception ? e : null);
+      rethrow;
+    }
   }
 
   Future<void> setThemeMode(AppThemeMode mode) async {

@@ -4,6 +4,7 @@ import '../../models/community_post.dart';
 import '../../services/api_client.dart';
 import '../../state/app_state.dart';
 import '../widgets/community_post_card.dart';
+import '../widgets/content_action_sheet.dart';
 import 'community_post_detail_screen.dart';
 import 'create_post_screen.dart';
 
@@ -29,10 +30,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   static const _categories = [
     (value: null, label: 'All'),
-    (value: 'success_story', label: 'Success Stories'),
-    (value: 'opening_line', label: 'Opening Lines'),
-    (value: 'dating_advice', label: 'Dating Advice'),
-    (value: 'app_feedback', label: 'App Feedback'),
+    (value: 'help_me_reply', label: 'Help Me Reply 🚨'),
+    (value: 'rate_my_profile', label: 'Rate My Profile 📸'),
+    (value: 'wins', label: 'Wins 🏆'),
   ];
 
   List<CommunityPost> _featuredFirst(Iterable<CommunityPost> posts) {
@@ -215,42 +215,51 @@ class _CommunityScreenState extends State<CommunityScreen> {
       body: Column(
         children: [
           // Category chips
-          SizedBox(
-            height: 48,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: _categories.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (_, i) {
-                final cat = _categories[i];
-                final selected = _selectedCategory == cat.value;
-                return FilterChip(
-                  label: Text(cat.label),
-                  selected: selected,
-                  onSelected: (_) {
-                    HapticFeedback.selectionClick();
-                    setState(() => _selectedCategory = cat.value);
-                    _loadPosts(refresh: true);
-                  },
-                  showCheckmark: false,
-                  selectedColor: cs.secondary.withValues(alpha: 0.15),
-                  labelStyle: TextStyle(
-                    color: selected ? cs.secondary : cs.onSurfaceVariant,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    fontSize: 12,
-                  ),
-                  side: selected
-                      ? BorderSide(color: cs.secondary.withValues(alpha: 0.3))
-                      : BorderSide.none,
-                  backgroundColor: cs.surfaceContainerHighest,
-                  shape: const StadiumBorder(),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 0,
-                  ),
-                );
-              },
+          ShaderMask(
+            shaderCallback: (bounds) => LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: [Colors.white, Colors.white, Colors.white, Colors.transparent],
+              stops: const [0.0, 0.85, 0.92, 1.0],
+            ).createShader(bounds),
+            blendMode: BlendMode.dstIn,
+            child: SizedBox(
+              height: 48,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                itemCount: _categories.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (_, i) {
+                  final cat = _categories[i];
+                  final selected = _selectedCategory == cat.value;
+                  return FilterChip(
+                    label: Text(cat.label),
+                    selected: selected,
+                    onSelected: (_) {
+                      HapticFeedback.selectionClick();
+                      setState(() => _selectedCategory = cat.value);
+                      _loadPosts(refresh: true);
+                    },
+                    showCheckmark: false,
+                    selectedColor: cs.secondary.withValues(alpha: 0.15),
+                    labelStyle: TextStyle(
+                      color: selected ? cs.secondary : cs.onSurfaceVariant,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      fontSize: 12,
+                    ),
+                    side: selected
+                        ? BorderSide(color: cs.secondary.withValues(alpha: 0.3))
+                        : BorderSide.none,
+                    backgroundColor: cs.surfaceContainerHighest,
+                    shape: const StadiumBorder(),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 0,
+                    ),
+                  );
+                },
+              ),
             ),
           ),
 
@@ -327,27 +336,108 @@ class _CommunityScreenState extends State<CommunityScreen> {
       );
     }
 
+    final appState = AppStateScope.of(context);
+    final visiblePosts = _posts
+        .where((p) => p.author.id == null || !appState.isUserBlocked(p.author.id!))
+        .toList();
+
     return RefreshIndicator(
       onRefresh: () => _loadPosts(refresh: true),
       color: cs.primary,
       child: ListView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.only(top: 4, bottom: 100),
-        itemCount: _posts.length + (_isLoadingMore ? 1 : 0),
+        itemCount: visiblePosts.length + (_isLoadingMore ? 1 : 0),
         itemBuilder: (_, i) {
-          if (i == _posts.length) {
+          if (i == visiblePosts.length) {
             return const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
               child: Center(child: CircularProgressIndicator()),
             );
           }
+          final post = visiblePosts[i];
           return CommunityPostCard(
-            post: _posts[i],
-            onTap: () => _openPost(_posts[i]),
+            post: post,
+            onTap: () => _openPost(post),
+            onMoreTap: () => _showPostActions(post),
+            onPollVote: post.poll != null
+                ? (choice) => _votePoll(post, choice)
+                : null,
           );
         },
       ),
     );
+  }
+
+  Future<void> _votePoll(CommunityPost post, String choice) async {
+    final appState = AppStateScope.of(context);
+    if (!appState.isLoggedIn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in to vote.')),
+      );
+      return;
+    }
+    try {
+      final result = await _api.votePoll(post.id, choice);
+      if (!mounted) return;
+      final updatedPoll = CommunityPoll(
+        sendItCount: result['send_it_count'] as int? ?? 0,
+        dontSendItCount: result['dont_send_it_count'] as int? ?? 0,
+        userVote: result['user_vote'] as String?,
+      );
+      setState(() {
+        final idx = _posts.indexWhere((p) => p.id == post.id);
+        if (idx != -1) {
+          _posts[idx] = _posts[idx].copyWith(poll: updatedPoll);
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    }
+  }
+
+  Future<void> _showPostActions(CommunityPost post) async {
+    final appState = AppStateScope.of(context);
+    final isOwner = appState.isLoggedIn && appState.user?.username == post.author.username;
+
+    final action = await showContentActionSheet(
+      context,
+      contentType: 'post',
+      contentId: post.id,
+      author: post.author,
+      isOwner: isOwner,
+    );
+
+    if (action == null || !mounted) return;
+
+    switch (action) {
+      case ContentAction.delete:
+        try {
+          await ApiClient().deleteCommunityPost(post.id);
+          if (mounted) {
+            setState(() => _posts.removeWhere((p) => p.id == post.id));
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(e.toString())),
+            );
+          }
+        }
+      case ContentAction.report:
+        if (mounted) {
+          await showReportReasonSheet(context, contentType: 'post', contentId: post.id);
+        }
+      case ContentAction.block:
+        if (mounted) {
+          await handleBlockUser(context, author: post.author);
+          // Blocked users' posts are filtered reactively via visiblePosts
+        }
+    }
   }
 
   void _showSortSheet() {
