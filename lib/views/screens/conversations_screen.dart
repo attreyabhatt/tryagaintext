@@ -14,9 +14,11 @@ import '../../state/app_state.dart';
 import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
 import '../../services/review_prompt_service.dart';
+import '../../models/community_post.dart';
 import '../../models/suggestion.dart';
 import '../../utils/app_logger.dart';
 import 'create_post_screen.dart';
+import 'community_post_detail_screen.dart';
 import 'login_screen.dart';
 import 'signup_screen.dart';
 import 'package:flirtfix/views/screens/pricing_screen.dart';
@@ -1789,9 +1791,13 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     final hideNeedReplyConversationSection =
         _situation != 'just_matched' && (_isLoading || _suggestions.isNotEmpty);
     final showGenerateRow = !isAiNewMatch || _uploadedProfileImage != null;
-    final shouldShowGenerateRow = isRecommendedNewMatch
-        ? (!_isLoading && !_isExtractingImage && vaultTier != _VaultTier.elite)
-        : showGenerateRow;
+    final shouldShowGenerateRow = !isRecommendedNewMatch && showGenerateRow;
+    final shouldShowVaultUnlockAfterOpeners =
+        isRecommendedNewMatch &&
+        !_isLoading &&
+        !_isExtractingImage &&
+        vaultTier != _VaultTier.elite &&
+        _suggestions.isNotEmpty;
 
     return Scaffold(
       appBar: _buildAppBar(colorScheme),
@@ -1909,6 +1915,10 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     SizedBox(height: sectionSpacing),
                   ],
                   _buildResultsSection(colorScheme),
+                  if (shouldShowVaultUnlockAfterOpeners) ...[
+                    _buildVaultActionRow(colorScheme),
+                    SizedBox(height: sectionSpacing),
+                  ],
 
                   const SizedBox(height: 40),
                 ],
@@ -3525,7 +3535,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                     : () => _copySuggestion(suggestion),
                 onAskCommunity: suggestion.isLocked
                     ? null
-                    : () => _askCommunity(suggestion),
+                    : () {
+                        _askCommunity(suggestion);
+                      },
               ),
             ),
           );
@@ -3535,7 +3547,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     );
   }
 
-  void _askCommunity(Suggestion suggestion) {
+  Future<void> _askCommunity(Suggestion suggestion) async {
     final appState = AppStateScope.of(context);
     if (!appState.isLoggedIn) {
       HapticFeedback.lightImpact();
@@ -3545,16 +3557,40 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       return;
     }
     HapticFeedback.lightImpact();
-    Navigator.push(
+    final createdPost = await Navigator.push<CommunityPost>(
       context,
       MaterialPageRoute(
         builder: (_) => CreatePostScreen(
-          prefillBody:
-              'AI suggested: "${suggestion.message}"\n\nWhat do you think?',
+          prefillBody: _buildAskCommunityPrefillBody(suggestion),
           prefillCategory: 'help_me_reply',
+          prefillImage: _situation == 'just_matched'
+              ? _uploadedProfileImage
+              : null,
         ),
       ),
     );
+    if (!mounted || createdPost == null) return;
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CommunityPostDetailScreen(post: createdPost),
+      ),
+    );
+  }
+
+  String _buildAskCommunityPrefillBody(Suggestion suggestion) {
+    final ocrConversation = _replyInputSource == 'ocr'
+        ? _replyOcrText?.trim()
+        : null;
+    final hasOcrConversation =
+        ocrConversation != null && ocrConversation.isNotEmpty;
+
+    final sections = <String>[
+      if (hasOcrConversation) 'Conversation (OCR):\n$ocrConversation',
+      'AI suggested: "${suggestion.message}"',
+      'What do you think?',
+    ];
+    return sections.join('\n\n');
   }
 
   @override
@@ -3608,6 +3644,12 @@ class _SuggestionCard extends StatelessWidget {
     final isDark = colorScheme.brightness == Brightness.dark;
     final borderRadius = BorderRadius.circular(isDark ? 18 : 14);
     final lockColor = isDark ? colorScheme.secondary : colorScheme.primary;
+    final lockedPreviewText = (suggestion.blurPreview ?? suggestion.message)
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    final lockedWhyItWorksText = (suggestion.whyItWorks ?? '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
     final badgeBackground = isVaultStyle
         ? colorScheme.secondaryContainer
         : (isDark ? colorScheme.secondary : Colors.transparent);
@@ -3687,18 +3729,73 @@ class _SuggestionCard extends StatelessWidget {
           const SizedBox(height: 12),
           if (suggestion.isLocked) ...[
             if (isOpenerContext)
-              ClipRect(
-                child: ImageFiltered(
-                  imageFilter: ImageFilter.blur(sigmaX: 3.2, sigmaY: 3.2),
-                  child: Text(
-                    (suggestion.blurPreview ?? suggestion.message).trim(),
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: colorScheme.onSurface,
-                      height: 1.4,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRect(
+                    child: ImageFiltered(
+                      imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                      child: Text(
+                        lockedPreviewText,
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: colorScheme.onSurface.withValues(alpha: 0.62),
+                          height: 1.45,
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  if (lockedWhyItWorksText.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.tertiaryContainer.withValues(
+                          alpha: 0.72,
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: ClipRect(
+                        child: ImageFiltered(
+                          imageFilter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.lightbulb_outlined,
+                                size: 16,
+                                color:
+                                    (isVaultStyle
+                                            ? colorScheme.tertiary
+                                            : colorScheme.onTertiaryContainer)
+                                        .withValues(alpha: 0.58),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  lockedWhyItWorksText,
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    color:
+                                        (isVaultStyle
+                                                ? colorScheme.tertiary
+                                                : colorScheme
+                                                      .onTertiaryContainer)
+                                            .withValues(alpha: 0.6),
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               )
             else
               Text(

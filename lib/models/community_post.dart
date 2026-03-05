@@ -188,6 +188,17 @@ class CommunityPost {
       comments: comments ?? this.comments,
     );
   }
+
+  String get displayAuthorName =>
+      isAnonymous ? 'Anonymous' : author.displayName;
+
+  String get displayAuthorInitial {
+    final value = displayAuthorName.trim();
+    if (value.isEmpty) return '?';
+    return value[0].toUpperCase();
+  }
+
+  bool get showAuthorProBadge => !isAnonymous && author.isPro;
 }
 
 class CommunityFeedResponse {

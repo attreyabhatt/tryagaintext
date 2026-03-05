@@ -37,6 +37,8 @@ class CommunityPostCard extends StatelessWidget {
     TextTheme tt,
     bool isLight,
   ) {
+    final displayAuthorName = post.displayAuthorName;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -96,7 +98,7 @@ class CommunityPostCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         Flexible(
                           child: Text(
-                            '${post.author.displayName} · ${_timeAgo(post.createdAt)}',
+                            '$displayAuthorName · ${_timeAgo(post.createdAt)}',
                             style: tt.bodySmall?.copyWith(
                               color: cs.onSurface.withValues(alpha: 0.5),
                               fontSize: 11,
@@ -108,7 +110,11 @@ class CommunityPostCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           GestureDetector(
                             onTap: onMoreTap,
-                            child: Icon(Icons.more_vert, size: 18, color: cs.onSurfaceVariant),
+                            child: Icon(
+                              Icons.more_vert,
+                              size: 18,
+                              color: cs.onSurfaceVariant,
+                            ),
                           ),
                         ],
                       ],
@@ -203,14 +209,22 @@ class CommunityPostCard extends StatelessWidget {
                       return Shimmer.fromColors(
                         baseColor: cs.surfaceContainerHigh,
                         highlightColor: cs.surfaceContainerHighest,
-                        child: Container(width: 80, height: 80, color: cs.surfaceContainerHigh),
+                        child: Container(
+                          width: 80,
+                          height: 80,
+                          color: cs.surfaceContainerHigh,
+                        ),
                       );
                     },
                     errorBuilder: (_, __, ___) => Container(
                       width: 80,
                       height: 80,
                       color: cs.surfaceContainerHigh,
-                      child: Icon(Icons.image_not_supported_outlined, color: cs.onSurfaceVariant, size: 24),
+                      child: Icon(
+                        Icons.image_not_supported_outlined,
+                        color: cs.onSurfaceVariant,
+                        size: 24,
+                      ),
                     ),
                   ),
                 ),
@@ -228,6 +242,8 @@ class CommunityPostCard extends StatelessWidget {
     TextTheme tt,
     bool isLight,
   ) {
+    final displayAuthorName = post.displayAuthorName;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -263,9 +279,7 @@ class CommunityPostCard extends StatelessWidget {
                     radius: 16,
                     backgroundColor: cs.secondary.withValues(alpha: 0.12),
                     child: Text(
-                      post.author.displayName.isNotEmpty
-                          ? post.author.displayName[0].toUpperCase()
-                          : '?',
+                      post.displayAuthorInitial,
                       style: TextStyle(
                         color: cs.secondary,
                         fontWeight: FontWeight.bold,
@@ -281,13 +295,13 @@ class CommunityPostCard extends StatelessWidget {
                         Row(
                           children: [
                             Text(
-                              post.author.displayName,
+                              displayAuthorName,
                               style: tt.bodySmall?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: cs.onSurface,
                               ),
                             ),
-                            if (post.author.isPro) ...[
+                            if (post.showAuthorProBadge) ...[
                               const SizedBox(width: 6),
                               _Badge(
                                 label: 'PRO',
@@ -326,7 +340,11 @@ class CommunityPostCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         GestureDetector(
                           onTap: onMoreTap,
-                          child: Icon(Icons.more_vert, size: 18, color: cs.onSurfaceVariant),
+                          child: Icon(
+                            Icons.more_vert,
+                            size: 18,
+                            color: cs.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ],
@@ -387,14 +405,22 @@ class CommunityPostCard extends StatelessWidget {
                       return Shimmer.fromColors(
                         baseColor: cs.surfaceContainerHigh,
                         highlightColor: cs.surfaceContainerHighest,
-                        child: Container(height: 160, width: double.infinity, color: cs.surfaceContainerHigh),
+                        child: Container(
+                          height: 160,
+                          width: double.infinity,
+                          color: cs.surfaceContainerHigh,
+                        ),
                       );
                     },
                     errorBuilder: (_, __, ___) => Container(
                       height: 160,
                       width: double.infinity,
                       color: cs.surfaceContainerHigh,
-                      child: Icon(Icons.image_not_supported_outlined, color: cs.onSurfaceVariant, size: 32),
+                      child: Icon(
+                        Icons.image_not_supported_outlined,
+                        color: cs.onSurfaceVariant,
+                        size: 32,
+                      ),
                     ),
                   ),
                 ),

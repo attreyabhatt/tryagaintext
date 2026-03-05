@@ -42,6 +42,8 @@ class _LoginScreenState extends State<LoginScreen> {
         if (response.success) {
           await AppStateScope.of(context).reloadFromStorage();
           if (!mounted) return;
+          await AppStateScope.of(context).loadBlockedUsers();
+          if (!mounted) return;
           Navigator.of(context).pop(true);
         } else {
           setState(() {
@@ -347,6 +349,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                         if (!mounted) return;
                                         if (result == true) {
                                           await appState.reloadFromStorage();
+                                          if (!mounted) return;
+                                          await appState.loadBlockedUsers();
                                           if (!mounted) return;
                                           navigator.pop(true);
                                         }

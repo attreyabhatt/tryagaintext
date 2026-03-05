@@ -242,7 +242,9 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
 
   Future<void> _showCommentActions(CommunityComment comment) async {
     final appState = AppStateScope.of(context);
-    final isOwner = appState.isLoggedIn && appState.user?.username == comment.author.username;
+    final isOwner =
+        appState.isLoggedIn &&
+        appState.user?.username == comment.author.username;
 
     final action = await showContentActionSheet(
       context,
@@ -259,18 +261,28 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
         await _deleteComment(comment);
       case ContentAction.report:
         if (mounted) {
-          await showReportReasonSheet(context, contentType: 'comment', contentId: comment.id);
+          await showReportReasonSheet(
+            context,
+            contentType: 'comment',
+            contentId: comment.id,
+          );
         }
       case ContentAction.block:
         if (mounted) {
-          final blocked = await handleBlockUser(context, author: comment.author);
+          final blocked = await handleBlockUser(
+            context,
+            author: comment.author,
+          );
           if (blocked && mounted) {
             // Remove blocked user's comments from view
             final updated = _post.comments
                 .where((c) => c.author.username != comment.author.username)
                 .toList();
             setState(() {
-              _post = _post.copyWith(comments: updated, commentCount: updated.length);
+              _post = _post.copyWith(
+                comments: updated,
+                commentCount: updated.length,
+              );
             });
           }
         }
@@ -280,9 +292,9 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
   Future<void> _votePoll(String choice) async {
     final appState = AppStateScope.of(context);
     if (!appState.isLoggedIn) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sign in to vote.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Sign in to vote.')));
       return;
     }
     try {
@@ -299,9 +311,9 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
   }
@@ -322,7 +334,11 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
         await _deletePost();
       case ContentAction.report:
         if (mounted) {
-          await showReportReasonSheet(context, contentType: 'post', contentId: _post.id);
+          await showReportReasonSheet(
+            context,
+            contentType: 'post',
+            contentId: _post.id,
+          );
         }
       case ContentAction.block:
         if (mounted) {
@@ -362,6 +378,101 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
         ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
+  }
+
+  Future<void> _showFullImagePreview(String imageUrl) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black87,
+      builder: (dialogContext) {
+        final screenSize = MediaQuery.of(dialogContext).size;
+        final maxPreviewHeight = screenSize.height * 0.7;
+        final maxPreviewWidth = screenSize.width - 32;
+
+        return Material(
+          type: MaterialType.transparency,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () => Navigator.of(dialogContext).pop(),
+                  behavior: HitTestBehavior.opaque,
+                  child: const SizedBox.expand(),
+                ),
+              ),
+              Positioned.fill(
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Center(
+                      child: GestureDetector(
+                        onTap: () {},
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxHeight: maxPreviewHeight,
+                            maxWidth: maxPreviewWidth,
+                          ),
+                          child: Image.network(
+                            imageUrl,
+                            fit: BoxFit.contain,
+                            loadingBuilder: (context, child, progress) {
+                              if (progress == null) return child;
+                              return const Center(
+                                child: SizedBox(
+                                  width: 36,
+                                  height: 36,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              );
+                            },
+                            errorBuilder: (_, __, ___) => const Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.image_not_supported_outlined,
+                                    color: Colors.white70,
+                                    size: 44,
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    'Unable to load image',
+                                    style: TextStyle(color: Colors.white70),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 12,
+                right: 12,
+                child: SafeArea(
+                  child: Material(
+                    color: Colors.black54,
+                    shape: const CircleBorder(),
+                    child: IconButton(
+                      tooltip: 'Close image preview',
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      icon: const Icon(Icons.close, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -410,6 +521,7 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
 
   Widget _buildContent(ColorScheme cs, TextTheme tt, AppState appState) {
     final isLight = Theme.of(context).brightness == Brightness.light;
+    final displayAuthorName = _post.displayAuthorName;
 
     return ListView(
       controller: _scrollController,
@@ -448,9 +560,7 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
                     radius: 18,
                     backgroundColor: cs.secondary.withValues(alpha: 0.12),
                     child: Text(
-                      _post.author.displayName.isNotEmpty
-                          ? _post.author.displayName[0].toUpperCase()
-                          : '?',
+                      _post.displayAuthorInitial,
                       style: TextStyle(
                         color: cs.secondary,
                         fontWeight: FontWeight.bold,
@@ -464,12 +574,12 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
                       Row(
                         children: [
                           Text(
-                            _post.author.displayName,
+                            displayAuthorName,
                             style: tt.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          if (_post.author.isPro) ...[
+                          if (_post.showAuthorProBadge) ...[
                             const SizedBox(width: 6),
                             _ProBadge(cs: cs),
                           ],
@@ -522,27 +632,38 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
               // Image
               if (_post.imageUrl != null && _post.imageUrl!.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 400),
-                    child: Image.network(
-                      _post.imageUrl!,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, progress) {
-                        if (progress == null) return child;
-                        return Shimmer.fromColors(
-                          baseColor: cs.surfaceContainerHigh,
-                          highlightColor: cs.surfaceContainerHighest,
-                          child: Container(height: 200, width: double.infinity, color: cs.surfaceContainerHigh),
-                        );
-                      },
-                      errorBuilder: (_, __, ___) => Container(
-                        height: 200,
+                GestureDetector(
+                  onTap: () => _showFullImagePreview(_post.imageUrl!),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 400),
+                      child: Image.network(
+                        _post.imageUrl!,
                         width: double.infinity,
-                        color: cs.surfaceContainerHigh,
-                        child: Icon(Icons.image_not_supported_outlined, color: cs.onSurfaceVariant, size: 32),
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return Shimmer.fromColors(
+                            baseColor: cs.surfaceContainerHigh,
+                            highlightColor: cs.surfaceContainerHighest,
+                            child: Container(
+                              height: 200,
+                              width: double.infinity,
+                              color: cs.surfaceContainerHigh,
+                            ),
+                          );
+                        },
+                        errorBuilder: (_, __, ___) => Container(
+                          height: 200,
+                          width: double.infinity,
+                          color: cs.surfaceContainerHigh,
+                          child: Icon(
+                            Icons.image_not_supported_outlined,
+                            color: cs.onSurfaceVariant,
+                            size: 32,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -671,12 +792,7 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
 
     return Container(
       color: cs.surface,
-      padding: EdgeInsets.only(
-        left: 12,
-        right: 12,
-        top: 8,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 8,
-      ),
+      padding: EdgeInsets.only(left: 12, right: 12, top: 8, bottom: 8),
       child: SafeArea(
         top: false,
         child: Container(
@@ -788,10 +904,9 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
 
   String _categoryLabel(String cat) {
     return switch (cat) {
-      'success_story' => 'Success Stories',
-      'opening_line' => 'Opening Lines',
-      'dating_advice' => 'Dating Advice',
-      'app_feedback' => 'App Feedback',
+      'help_me_reply' => 'Help Me Reply 🚨',
+      'rate_my_profile' => 'Rate My Profile 📸',
+      'wins' => 'Wins 🏆',
       _ => cat,
     };
   }
@@ -925,7 +1040,10 @@ class _CommentTile extends StatelessWidget {
                         comment.author.username == postAuthorUsername) ...[
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 5,
+                          vertical: 1,
+                        ),
                         decoration: BoxDecoration(
                           color: cs.primary.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(4),
@@ -953,7 +1071,11 @@ class _CommentTile extends StatelessWidget {
                       const SizedBox(width: 4),
                       GestureDetector(
                         onTap: onMoreTap,
-                        child: Icon(Icons.more_vert, size: 16, color: cs.onSurfaceVariant),
+                        child: Icon(
+                          Icons.more_vert,
+                          size: 16,
+                          color: cs.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ],

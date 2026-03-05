@@ -159,6 +159,9 @@ class AppState extends ChangeNotifier {
     _freeDailyCreditsRemaining =
         await AuthService.getStoredFreeDailyCreditsRemaining();
     _freeDailyCreditsLimit = await AuthService.getStoredFreeDailyCreditsLimit();
+    if (!_isLoggedIn) {
+      _blockedUserIds = {};
+    }
     notifyListeners();
   }
 
@@ -188,6 +191,7 @@ class AppState extends ChangeNotifier {
     _dailyRepliesLimit = null;
     _freeDailyCreditsRemaining = null;
     _freeDailyCreditsLimit = null;
+    _blockedUserIds = {};
     _isLoggedIn = false;
     notifyListeners();
   }

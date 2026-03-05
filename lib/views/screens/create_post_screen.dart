@@ -2,20 +2,26 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../services/api_client.dart';
 import '../../services/community_guidelines_service.dart';
+import 'blur_editor_screen.dart';
 
 class CreatePostScreen extends StatefulWidget {
   final String? prefillBody;
   final String? prefillTitle;
   final String? prefillCategory;
+  final File? prefillImage;
+  final bool prefillPoll;
 
   const CreatePostScreen({
     super.key,
     this.prefillBody,
     this.prefillTitle,
     this.prefillCategory,
+    this.prefillImage,
+    this.prefillPoll = false,
   });
 
   @override
@@ -30,6 +36,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   String? _selectedCategory;
   File? _image;
   bool _isSubmitting = false;
+  bool _isProcessingImage = false;
   bool _isAnonymous = false;
   bool _addPoll = false;
 
@@ -43,8 +50,16 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   void initState() {
     super.initState();
     if (widget.prefillBody != null) _bodyController.text = widget.prefillBody!;
-    if (widget.prefillTitle != null) _titleController.text = widget.prefillTitle!;
-    if (widget.prefillCategory != null) _selectedCategory = widget.prefillCategory;
+    if (widget.prefillTitle != null) {
+      _titleController.text = widget.prefillTitle!;
+    }
+    if (widget.prefillCategory != null) {
+      _selectedCategory = widget.prefillCategory;
+    }
+    if (widget.prefillImage != null && widget.prefillImage!.existsSync()) {
+      _image = widget.prefillImage;
+    }
+    if (widget.prefillPoll) _addPoll = true;
   }
 
   @override
@@ -55,16 +70,192 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   Future<void> _pickImage() async {
+    if (_isProcessingImage) return;
     HapticFeedback.selectionClick();
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 80,
-      maxWidth: 1200,
-    );
-    if (picked != null && mounted) {
-      setState(() => _image = File(picked.path));
+    setState(() => _isProcessingImage = true);
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(source: ImageSource.gallery);
+      if (picked == null || !mounted) return;
+
+      // Crop step
+      final cropped = await _cropImage(picked.path);
+      if (cropped == null || !mounted) return;
+      if (!mounted) return;
+      setState(() => _image = cropped);
+    } catch (_) {
+      if (mounted) {
+        _showError('Could not process image. Please try again.');
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessingImage = false);
     }
+  }
+
+  Future<File?> _cropImage(String sourcePath) async {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isLight = theme.brightness == Brightness.light;
+
+    final croppedFile = await ImageCropper().cropImage(
+      sourcePath: sourcePath,
+      compressQuality: 80,
+      maxWidth: 1200,
+      maxHeight: 1200,
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Adjust Photo',
+          toolbarColor: cs.surface,
+          toolbarWidgetColor: cs.onSurface,
+          activeControlsWidgetColor: cs.primary,
+          backgroundColor: cs.surface,
+          dimmedLayerColor: cs.scrim.withValues(alpha: isLight ? 0.42 : 0.62),
+          cropFrameColor: cs.primary,
+          cropGridColor: cs.outline.withValues(alpha: 0.5),
+          cropFrameStrokeWidth: 2,
+          cropGridStrokeWidth: 1,
+          statusBarLight: isLight,
+          navBarLight: isLight,
+          initAspectRatio: CropAspectRatioPreset.original,
+          lockAspectRatio: false,
+          hideBottomControls: false,
+          showCropGrid: true,
+          aspectRatioPresets: [
+            CropAspectRatioPreset.original,
+            CropAspectRatioPreset.square,
+            CropAspectRatioPreset.ratio4x3,
+            CropAspectRatioPreset.ratio16x9,
+          ],
+        ),
+        IOSUiSettings(
+          title: 'Adjust Photo',
+          doneButtonTitle: 'Done',
+          cancelButtonTitle: 'Cancel',
+          showCancelConfirmationDialog: true,
+          aspectRatioPresets: [
+            CropAspectRatioPreset.original,
+            CropAspectRatioPreset.square,
+            CropAspectRatioPreset.ratio4x3,
+            CropAspectRatioPreset.ratio16x9,
+          ],
+          aspectRatioLockEnabled: false,
+          resetAspectRatioEnabled: true,
+        ),
+      ],
+    );
+    if (croppedFile != null) return File(croppedFile.path);
+    return null;
+  }
+
+  Future<void> _recropCurrentImage() async {
+    if (_isProcessingImage || _image == null) return;
+    HapticFeedback.selectionClick();
+    setState(() => _isProcessingImage = true);
+    try {
+      final cropped = await _cropImage(_image!.path);
+      if (!mounted || cropped == null) return;
+      setState(() => _image = cropped);
+    } catch (_) {
+      if (mounted) {
+        _showError('Could not process image. Please try again.');
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessingImage = false);
+    }
+  }
+
+  Future<void> _blurCurrentImage() async {
+    if (_isProcessingImage || _image == null) return;
+    HapticFeedback.selectionClick();
+    setState(() => _isProcessingImage = true);
+    try {
+      final blurred = await Navigator.push<File>(
+        context,
+        MaterialPageRoute(builder: (_) => BlurEditorScreen(imageFile: _image!)),
+      );
+      if (!mounted || blurred == null) return;
+      setState(() => _image = blurred);
+    } catch (_) {
+      if (mounted) {
+        _showError('Could not process image. Please try again.');
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessingImage = false);
+    }
+  }
+
+  Widget _buildImagePreviewActionButton({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback? onTap,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.black54,
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: Padding(
+            padding: const EdgeInsets.all(6),
+            child: Icon(icon, color: Colors.white, size: 18),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showSelectedImagePreview() async {
+    final image = _image;
+    if (image == null) return;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black87,
+      builder: (dialogContext) {
+        return Material(
+          type: MaterialType.transparency,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () => Navigator.of(dialogContext).pop(),
+                  behavior: HitTestBehavior.opaque,
+                  child: const SizedBox.expand(),
+                ),
+              ),
+              Positioned.fill(
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: GestureDetector(
+                      onTap: () {},
+                      child: Image.file(image, fit: BoxFit.contain),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 12,
+                right: 12,
+                child: SafeArea(
+                  child: Material(
+                    color: Colors.black54,
+                    shape: const CircleBorder(),
+                    child: IconButton(
+                      tooltip: 'Close image preview',
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      icon: const Icon(Icons.close, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _submit() async {
@@ -111,9 +302,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg)),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
   @override
@@ -128,10 +317,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       appBar: AppBar(
         title: Text(
           'New Post',
-          style: tt.headlineSmall?.copyWith(
-            fontSize: 20,
-            color: cs.onSurface,
-          ),
+          style: tt.headlineSmall?.copyWith(fontSize: 20, color: cs.onSurface),
         ),
         centerTitle: true,
         actions: [
@@ -158,7 +344,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: cs.primary.withValues(alpha: isLight ? 0.15 : 0.3),
+                          color: cs.primary.withValues(
+                            alpha: isLight ? 0.15 : 0.3,
+                          ),
                           blurRadius: isLight ? 8 : 12,
                           offset: const Offset(0, 2),
                         ),
@@ -219,8 +407,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   selectedColor: cs.secondary.withValues(alpha: 0.15),
                   labelStyle: TextStyle(
                     color: selected ? cs.secondary : cs.onSurfaceVariant,
-                    fontWeight:
-                        selected ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                   ),
                   side: selected
                       ? BorderSide(color: cs.secondary.withValues(alpha: 0.3))
@@ -270,6 +457,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 contentPadding: const EdgeInsets.symmetric(vertical: 12),
               ),
               maxLength: 200,
+              textInputAction: TextInputAction.next,
               textCapitalization: TextCapitalization.sentences,
               onChanged: (_) => setState(() {}),
             ),
@@ -318,6 +506,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               maxLines: null,
               textCapitalization: TextCapitalization.sentences,
               keyboardType: TextInputType.multiline,
+              onTapOutside: (_) => FocusScope.of(context).unfocus(),
             ),
 
             const SizedBox(height: 24),
@@ -326,13 +515,35 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             if (_image != null) ...[
               Stack(
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.file(
-                      _image!,
-                      width: double.infinity,
-                      height: 180,
-                      fit: BoxFit.cover,
+                  GestureDetector(
+                    onTap: _showSelectedImagePreview,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.file(
+                        _image!,
+                        width: double.infinity,
+                        height: 180,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Row(
+                      children: [
+                        _buildImagePreviewActionButton(
+                          icon: Icons.crop_outlined,
+                          tooltip: 'Crop photo',
+                          onTap: _isProcessingImage ? null : _recropCurrentImage,
+                        ),
+                        const SizedBox(width: 8),
+                        _buildImagePreviewActionButton(
+                          icon: Icons.blur_on_outlined,
+                          tooltip: 'Blur sensitive info',
+                          onTap: _isProcessingImage ? null : _blurCurrentImage,
+                        ),
+                      ],
                     ),
                   ),
                   Positioned(
@@ -360,9 +571,19 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             ],
 
             OutlinedButton.icon(
-              onPressed: _pickImage,
-              icon: const Icon(Icons.photo_outlined),
-              label: Text(_image == null ? 'Add Photo' : 'Change Photo'),
+              onPressed: _isProcessingImage ? null : _pickImage,
+              icon: _isProcessingImage
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.photo_outlined),
+              label: Text(
+                _isProcessingImage
+                    ? 'Processing photo...'
+                    : (_image == null ? 'Add Photo' : 'Change Photo'),
+              ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: cs.onSurfaceVariant,
                 side: BorderSide(color: cs.outlineVariant),
@@ -372,11 +593,15 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             const SizedBox(height: 10),
             Row(
               children: [
-                Icon(Icons.privacy_tip_outlined, size: 14, color: cs.onSurfaceVariant),
+                Icon(
+                  Icons.privacy_tip_outlined,
+                  size: 14,
+                  color: cs.onSurfaceVariant,
+                ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'Tip: Blur or crop out names, numbers, and faces before sharing.',
+                    'Tip: Crop and optionally blur sensitive info before posting.',
                     style: tt.bodySmall?.copyWith(
                       color: cs.onSurfaceVariant,
                       fontSize: 11,
@@ -398,7 +623,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 'Post anonymously',
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
-              secondary: Icon(Icons.visibility_off_outlined, color: cs.onSurfaceVariant),
+              secondary: Icon(
+                Icons.visibility_off_outlined,
+                color: cs.onSurfaceVariant,
+              ),
               contentPadding: EdgeInsets.zero,
             ),
 
@@ -417,7 +645,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               contentPadding: EdgeInsets.zero,
             ),
 
-            const SizedBox(height: 40),
+            const SizedBox(height: 120),
           ],
         ),
       ),
