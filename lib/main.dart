@@ -12,6 +12,7 @@ import 'services/local_notification_service.dart';
 import 'services/push_notification_service.dart';
 import 'l10n/l10n.dart';
 import 'state/app_state.dart';
+import 'views/screens/community_post_route_screen.dart';
 import 'views/screens/community_screen.dart';
 import 'views/screens/conversations_screen.dart';
 import 'views/screens/login_screen.dart';
@@ -210,21 +211,46 @@ class _MyAppState extends State<MyApp> {
   late final AppState _appState;
   late final FirebaseAnalytics _analytics;
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  int? _lastSyncedOneSignalUserId;
+  bool _oneSignalLoggedOutSynced = false;
 
   @override
   void initState() {
     super.initState();
     _appState = AppState();
+    _appState.addListener(_handleAppStateChange);
     _appState.initialize();
     _analytics = FirebaseAnalytics.instance;
     unawaited(
-      LocalNotificationService.setTapHandler(
-        _handleLocalNotificationTapAction,
-      ),
+      LocalNotificationService.setTapHandler(_handleLocalNotificationTapAction),
     );
+    unawaited(PushNotificationService.setTapHandler(_handlePushTapAction));
+    unawaited(_syncOneSignalIdentity());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       PushNotificationService.requestPermissionForDebug();
     });
+  }
+
+  void _handleAppStateChange() {
+    unawaited(_syncOneSignalIdentity());
+  }
+
+  Future<void> _syncOneSignalIdentity() async {
+    final isLoggedIn = _appState.isLoggedIn;
+    final userId = _appState.user?.id;
+
+    if (isLoggedIn && userId != null) {
+      if (_lastSyncedOneSignalUserId == userId) return;
+      await PushNotificationService.syncAuthenticatedUser(userId);
+      _lastSyncedOneSignalUserId = userId;
+      _oneSignalLoggedOutSynced = false;
+      return;
+    }
+
+    if (_oneSignalLoggedOutSynced) return;
+    await PushNotificationService.clearAuthenticatedUser();
+    _lastSyncedOneSignalUserId = null;
+    _oneSignalLoggedOutSynced = true;
   }
 
   Future<void> _handleLocalNotificationTapAction(String action) async {
@@ -261,6 +287,32 @@ class _MyAppState extends State<MyApp> {
     }
 
     // Daily refill taps intentionally stay on the default home flow.
+  }
+
+  Future<void> _handlePushTapAction(PushTapAction action) async {
+    await _appState.reloadFromStorage();
+    if (!mounted) return;
+
+    final navigator = _navigatorKey.currentState;
+    if (navigator == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(_handlePushTapAction(action));
+      });
+      return;
+    }
+
+    navigator.popUntil((route) => route.isFirst);
+
+    if (action.action == PushNotificationService.actionCommunityComment) {
+      final postId = action.postId;
+      if (postId == null) return;
+      await navigator.push(
+        MaterialPageRoute(
+          builder: (context) => CommunityPostRouteScreen(postId: postId),
+        ),
+      );
+    }
   }
 
   @override
@@ -444,6 +496,8 @@ class _MyAppState extends State<MyApp> {
   @override
   void dispose() {
     unawaited(LocalNotificationService.setTapHandler(null));
+    unawaited(PushNotificationService.setTapHandler(null));
+    _appState.removeListener(_handleAppStateChange);
     _appState.dispose();
     super.dispose();
   }
@@ -683,4 +737,3 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 }
-
