@@ -13,6 +13,8 @@ import '../../l10n/l10n.dart';
 import '../../state/app_state.dart';
 import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
+import '../../services/local_notification_service.dart';
+import '../../services/notification_permission_service.dart';
 import '../../services/review_prompt_service.dart';
 import '../../models/community_post.dart';
 import '../../models/suggestion.dart';
@@ -291,6 +293,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         if (success) {
           await _saveHandledPurchaseToken(token);
           await appState.reloadFromStorage();
+          await LocalNotificationService.cancelUpgradeNudge();
+          await LocalNotificationService.cancelDailyRefillReminder();
           if (mounted &&
               !_suppressActivationSnackbar &&
               !_hasShownSubscriptionActivated) {
@@ -396,7 +400,10 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         _isLoading = false;
       });
       await AppStateScope.of(context).reloadFromStorage();
+      await _scheduleDailyRefillIfEligible(resetTimer: true);
       if (suggestions.isNotEmpty) {
+        await _maybePromptNotificationPermissionAfterSuccess();
+        if (!mounted) return;
         HapticFeedback.heavyImpact();
         _animationController.forward();
       }
@@ -642,10 +649,13 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
       final appState = AppStateScope.of(context);
       await appState.reloadFromStorage();
+      await _scheduleDailyRefillIfEligible(resetTimer: true);
       await _recordZeroCreditsDayIfNeeded();
       if (!mounted) return;
 
       if (suggestions.isNotEmpty) {
+        await _maybePromptNotificationPermissionAfterSuccess();
+        if (!mounted) return;
         HapticFeedback.heavyImpact();
         _animationController.forward();
         if (requestSituation != 'just_matched') {
@@ -882,6 +892,40 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         (requestSituation != 'just_matched' || _newMatchMode == requestMode);
   }
 
+  Future<void> _maybePromptNotificationPermissionAfterSuccess() async {
+    if (!mounted) return;
+    await NotificationPermissionService.maybePromptAfterFirstSuccess(context);
+  }
+
+  Future<void> _scheduleDailyRefillIfEligible({
+    bool resetTimer = false,
+  }) async {
+    if (!mounted) return;
+    final appState = AppStateScope.of(context);
+    if (!appState.isLoggedIn || appState.isSubscribed) {
+      return;
+    }
+
+    final remaining = appState.freeDailyCreditsRemaining;
+    if (remaining != null && remaining <= 0) {
+      await LocalNotificationService.scheduleDailyRefillReminder(
+        forceReschedule: resetTimer,
+      );
+    }
+  }
+
+  Future<void> _scheduleUpgradeNudgeIfEligible({
+    bool resetTimer = true,
+  }) async {
+    if (!mounted) return;
+    final appState = AppStateScope.of(context);
+    if (appState.isLoggedIn && !appState.isSubscribed) {
+      await LocalNotificationService.scheduleUpgradeNudge(
+        forceReschedule: resetTimer,
+      );
+    }
+  }
+
   Future<void> _handleCreditError(
     ApiException e, {
     DateTime? requestStartedAt,
@@ -912,6 +956,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           _animationController.forward();
         }
       }
+      await _scheduleUpgradeNudgeIfEligible(resetTimer: true);
       return;
     }
     if (e.code == ApiErrorCode.trialExpired) {
@@ -951,6 +996,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       setState(() {
         _isLoading = false;
       });
+      await LocalNotificationService.scheduleGuestSignupNudge(
+        forceReschedule: true,
+      );
       _showGuestAccessCompleteSheet();
       return;
     }
@@ -968,6 +1016,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       if (mounted) {
         await AppStateScope.of(context).reloadFromStorage();
       }
+      await _scheduleDailyRefillIfEligible(resetTimer: false);
+      await _scheduleUpgradeNudgeIfEligible(resetTimer: true);
       await _recordZeroCreditsDayIfNeeded();
       return;
     }
@@ -980,6 +1030,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
               : context.l10n.conversationsSubscriptionRequired;
         });
       }
+      await _scheduleDailyRefillIfEligible(resetTimer: false);
+      await _scheduleUpgradeNudgeIfEligible(resetTimer: true);
       await _recordZeroCreditsDayIfNeeded();
     }
   }
@@ -1211,6 +1263,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   }
 
   void _showUpgradePopup(int? lockedReplyId) {
+    unawaited(_scheduleUpgradeNudgeIfEligible(resetTimer: true));
     final appState = AppStateScope.of(context);
     final freeDailyLimit = appState.freeDailyCreditsLimit;
     final limitLabel = freeDailyLimit != null
@@ -4018,3 +4071,4 @@ class _SuggestionCard extends StatelessWidget {
     );
   }
 }
+

@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../l10n/l10n.dart';
 import '../../models/pricing_plan.dart';
 import '../../services/api_client.dart';
+import '../../services/local_notification_service.dart';
 import '../../state/app_state.dart';
 import '../../utils/app_logger.dart';
 import 'login_screen.dart';
@@ -396,6 +397,8 @@ class _PricingScreenState extends State<PricingScreen>
 
     if (success) {
       await _saveHandledToken(tokenKey);
+      await LocalNotificationService.cancelUpgradeNudge();
+      await LocalNotificationService.cancelDailyRefillReminder();
       _handleSuccessfulPurchase(isDelayed: !wasProcessing);
 
       if (mounted) {
@@ -999,3 +1002,4 @@ class _PricingScreenState extends State<PricingScreen>
     super.dispose();
   }
 }
+

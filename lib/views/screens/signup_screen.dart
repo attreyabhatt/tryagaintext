@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../l10n/l10n.dart';
 import '../../services/auth_service.dart';
+import '../../services/local_notification_service.dart';
 import '../widgets/luxury_text_field.dart';
 import '../widgets/premium_gradient_button.dart';
 import '../widgets/thinking_indicator.dart';
@@ -47,6 +48,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
       if (mounted) {
         if (response.success) {
+          await LocalNotificationService.cancelGuestSignupNudge();
           await AuthService.markJustSignedUp();
           if (mounted) {
             Navigator.of(context).pop(true);
@@ -387,3 +389,4 @@ class _SignupScreenState extends State<SignupScreen> {
     };
   }
 }
+

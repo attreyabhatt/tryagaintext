@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../l10n/l10n.dart';
 import '../../state/app_state.dart';
 import '../../services/auth_service.dart';
+import '../../services/local_notification_service.dart';
 import 'forgot_password_screen.dart';
 import 'signup_screen.dart';
 import '../widgets/luxury_text_field.dart';
@@ -40,9 +41,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (mounted) {
         if (response.success) {
-          await AppStateScope.of(context).reloadFromStorage();
+          final appState = AppStateScope.of(context);
+          await LocalNotificationService.cancelGuestSignupNudge();
+          await appState.reloadFromStorage();
           if (!mounted) return;
-          await AppStateScope.of(context).loadBlockedUsers();
+          await appState.loadBlockedUsers();
           if (!mounted) return;
           Navigator.of(context).pop(true);
         } else {
@@ -436,3 +439,4 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 }
+

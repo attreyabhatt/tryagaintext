@@ -54,6 +54,9 @@ dependencies:
   google_fonts: ^6.1.0
   shimmer: ^3.0.0
   font_awesome_flutter: ^10.7.0
+  onesignal_flutter: ^5.4.1
+  flutter_local_notifications: ^20.1.0
+  timezone: ^0.10.1
 
 dev_dependencies:
   flutter_test:

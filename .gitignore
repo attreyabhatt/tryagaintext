@@ -52,3 +52,7 @@ app.*.map.json
 # Claude Code related
 .claude/
 CLAUDE.md
+
+# Local build env files
+env/*.env
+!env/*.example.env

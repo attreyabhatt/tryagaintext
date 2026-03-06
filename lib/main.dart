@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,12 +8,16 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'services/local_notification_service.dart';
+import 'services/push_notification_service.dart';
 import 'l10n/l10n.dart';
 import 'state/app_state.dart';
 import 'views/screens/community_screen.dart';
 import 'views/screens/conversations_screen.dart';
 import 'views/screens/login_screen.dart';
+import 'views/screens/pricing_screen.dart';
 import 'views/screens/profile_screen.dart';
+import 'views/screens/signup_screen.dart';
 
 ThemeData buildPremiumDarkNeonTheme() {
   const baseDark = Color(0xFF0E0F12);
@@ -184,6 +189,8 @@ TextTheme _buildPremiumTextTheme(
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  await LocalNotificationService.initialize();
+  await PushNotificationService.initialize();
   FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
   PlatformDispatcher.instance.onError = (error, stack) {
     FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
@@ -202,6 +209,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   late final AppState _appState;
   late final FirebaseAnalytics _analytics;
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   void initState() {
@@ -209,6 +217,50 @@ class _MyAppState extends State<MyApp> {
     _appState = AppState();
     _appState.initialize();
     _analytics = FirebaseAnalytics.instance;
+    unawaited(
+      LocalNotificationService.setTapHandler(
+        _handleLocalNotificationTapAction,
+      ),
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      PushNotificationService.requestPermissionForDebug();
+    });
+  }
+
+  Future<void> _handleLocalNotificationTapAction(String action) async {
+    await _appState.reloadFromStorage();
+    if (!mounted) return;
+
+    final navigator = _navigatorKey.currentState;
+    if (navigator == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(_handleLocalNotificationTapAction(action));
+      });
+      return;
+    }
+
+    navigator.popUntil((route) => route.isFirst);
+
+    if (action == LocalNotificationService.actionGuestSignupNudge) {
+      if (!_appState.isLoggedIn) {
+        await navigator.push(
+          MaterialPageRoute(builder: (context) => const SignupScreen()),
+        );
+      }
+      return;
+    }
+
+    if (action == LocalNotificationService.actionUpgradeNudge) {
+      if (_appState.isLoggedIn && !_appState.isSubscribed) {
+        await navigator.push(
+          MaterialPageRoute(builder: (context) => const PricingScreen()),
+        );
+      }
+      return;
+    }
+
+    // Daily refill taps intentionally stay on the default home flow.
   }
 
   @override
@@ -219,6 +271,7 @@ class _MyAppState extends State<MyApp> {
         return AppStateScope(
           notifier: _appState,
           child: MaterialApp(
+            navigatorKey: _navigatorKey,
             debugShowCheckedModeBanner: false,
             onGenerateTitle: (context) => context.l10n.appTitle,
             theme: _buildPremiumLightTheme(),
@@ -390,6 +443,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void dispose() {
+    unawaited(LocalNotificationService.setTapHandler(null));
     _appState.dispose();
     super.dispose();
   }
@@ -629,3 +683,4 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 }
+
