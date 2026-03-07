@@ -2275,6 +2275,390 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'For refund requests or questions, email support@tryagaintext.com with your transaction details.'**
   String get policyRefundSectionContactContent;
+
+  /// No description provided for @communityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Community'**
+  String get communityTitle;
+
+  /// No description provided for @communityCategoryAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get communityCategoryAll;
+
+  /// No description provided for @communityCategoryHelpMeReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Help Me Reply 🚨'**
+  String get communityCategoryHelpMeReply;
+
+  /// No description provided for @communityCategoryDatingAdvice.
+  ///
+  /// In en, this message translates to:
+  /// **'Dating Advice 💘'**
+  String get communityCategoryDatingAdvice;
+
+  /// No description provided for @communityCategoryRateMyProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate My Profile 📸'**
+  String get communityCategoryRateMyProfile;
+
+  /// No description provided for @communityCategoryWins.
+  ///
+  /// In en, this message translates to:
+  /// **'Wins 🏆'**
+  String get communityCategoryWins;
+
+  /// No description provided for @communitySignInToCreatePost.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to create a post.'**
+  String get communitySignInToCreatePost;
+
+  /// No description provided for @communityCouldNotLoadPosts.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load posts.'**
+  String get communityCouldNotLoadPosts;
+
+  /// No description provided for @communityTryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get communityTryAgain;
+
+  /// No description provided for @communityNoPostsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No posts yet'**
+  String get communityNoPostsYet;
+
+  /// No description provided for @communityBeTheFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Be the first to share something!'**
+  String get communityBeTheFirst;
+
+  /// No description provided for @communitySignInToVote.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to vote.'**
+  String get communitySignInToVote;
+
+  /// No description provided for @communitySortPostsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort posts'**
+  String get communitySortPostsTitle;
+
+  /// No description provided for @communitySortTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort'**
+  String get communitySortTooltip;
+
+  /// No description provided for @communitySortHot.
+  ///
+  /// In en, this message translates to:
+  /// **'Hot'**
+  String get communitySortHot;
+
+  /// No description provided for @communitySortNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get communitySortNew;
+
+  /// No description provided for @communitySortTop.
+  ///
+  /// In en, this message translates to:
+  /// **'Top'**
+  String get communitySortTop;
+
+  /// No description provided for @communitySignInToComment.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to comment.'**
+  String get communitySignInToComment;
+
+  /// No description provided for @communitySignInToLikeComments.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to like comments.'**
+  String get communitySignInToLikeComments;
+
+  /// No description provided for @communityDeleteCommentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete comment?'**
+  String get communityDeleteCommentTitle;
+
+  /// No description provided for @communityDeletePostTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete post?'**
+  String get communityDeletePostTitle;
+
+  /// No description provided for @communityCannotBeUndone.
+  ///
+  /// In en, this message translates to:
+  /// **'This cannot be undone.'**
+  String get communityCannotBeUndone;
+
+  /// No description provided for @communityDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get communityDelete;
+
+  /// No description provided for @communityUnableToLoadImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load image'**
+  String get communityUnableToLoadImage;
+
+  /// No description provided for @communityCloseImagePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Close image preview'**
+  String get communityCloseImagePreview;
+
+  /// No description provided for @communityCommentsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Comments ({count})'**
+  String communityCommentsCount(int count);
+
+  /// No description provided for @communityNoCommentsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No comments yet'**
+  String get communityNoCommentsYet;
+
+  /// No description provided for @communityStartTheConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Start the conversation!'**
+  String get communityStartTheConversation;
+
+  /// No description provided for @communityAddAComment.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a comment...'**
+  String get communityAddAComment;
+
+  /// No description provided for @communitySignInToCommentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to comment'**
+  String get communitySignInToCommentHint;
+
+  /// No description provided for @communityProBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'PRO'**
+  String get communityProBadge;
+
+  /// No description provided for @communityOpBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'OP'**
+  String get communityOpBadge;
+
+  /// No description provided for @communityUnableToOpenPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to open this post right now.'**
+  String get communityUnableToOpenPost;
+
+  /// No description provided for @createPostAdjustPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust Photo'**
+  String get createPostAdjustPhoto;
+
+  /// No description provided for @createPostDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get createPostDone;
+
+  /// No description provided for @createPostValidationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Please add a title.'**
+  String get createPostValidationTitle;
+
+  /// No description provided for @createPostValidationContent.
+  ///
+  /// In en, this message translates to:
+  /// **'Please add some content.'**
+  String get createPostValidationContent;
+
+  /// No description provided for @createPostValidationCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Please choose a category.'**
+  String get createPostValidationCategory;
+
+  /// No description provided for @createPostPostButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Post'**
+  String get createPostPostButton;
+
+  /// No description provided for @createPostCategoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get createPostCategoryLabel;
+
+  /// No description provided for @createPostTitleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get createPostTitleLabel;
+
+  /// No description provided for @createPostTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s on your mind?'**
+  String get createPostTitleHint;
+
+  /// No description provided for @createPostContentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'What happened?'**
+  String get createPostContentLabel;
+
+  /// No description provided for @createPostContentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Share your story, tip, or question...'**
+  String get createPostContentHint;
+
+  /// No description provided for @createPostCropPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Crop photo'**
+  String get createPostCropPhoto;
+
+  /// No description provided for @createPostBlurSensitiveInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Blur sensitive info'**
+  String get createPostBlurSensitiveInfo;
+
+  /// No description provided for @createPostProcessingPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing photo...'**
+  String get createPostProcessingPhoto;
+
+  /// No description provided for @createPostAddPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Photo'**
+  String get createPostAddPhoto;
+
+  /// No description provided for @createPostChangePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Photo'**
+  String get createPostChangePhoto;
+
+  /// No description provided for @createPostPhotoTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Tip: Crop and optionally blur sensitive info before posting.'**
+  String get createPostPhotoTip;
+
+  /// No description provided for @createPostHideUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide my username'**
+  String get createPostHideUsername;
+
+  /// No description provided for @createPostPostAnonymously.
+  ///
+  /// In en, this message translates to:
+  /// **'Post anonymously'**
+  String get createPostPostAnonymously;
+
+  /// No description provided for @createPostAddPoll.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Poll'**
+  String get createPostAddPoll;
+
+  /// No description provided for @createPostPollSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'\"Send it\" or \"Don\'t send it\"'**
+  String get createPostPollSubtitle;
+
+  /// No description provided for @communityFeaturedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'FEATURED'**
+  String get communityFeaturedBadge;
+
+  /// No description provided for @communityTrendingBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'TRENDING'**
+  String get communityTrendingBadge;
+
+  /// No description provided for @communityNewBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'NEW'**
+  String get communityNewBadge;
+
+  /// No description provided for @communityTimeJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'just now'**
+  String get communityTimeJustNow;
+
+  /// No description provided for @communityTimeMinutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes}m ago'**
+  String communityTimeMinutesAgo(int minutes);
+
+  /// No description provided for @communityTimeHoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours}h ago'**
+  String communityTimeHoursAgo(int hours);
+
+  /// No description provided for @communityTimeDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{days}d ago'**
+  String communityTimeDaysAgo(int days);
+
+  /// No description provided for @communityTimeWeeksAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{weeks}w ago'**
+  String communityTimeWeeksAgo(int weeks);
+
+  /// No description provided for @communityAnonymous.
+  ///
+  /// In en, this message translates to:
+  /// **'Anonymous'**
+  String get communityAnonymous;
+
+  /// No description provided for @navHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get navHome;
 }
 
 class _AppLocalizationsDelegate

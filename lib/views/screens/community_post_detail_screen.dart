@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../l10n/l10n.dart';
 import '../../models/community_post.dart';
 import '../../services/api_client.dart';
 import '../../services/community_guidelines_service.dart';
@@ -9,6 +10,7 @@ import '../widgets/content_action_sheet.dart';
 import '../../state/app_state.dart';
 import '../widgets/community_poll_widget.dart';
 import '../widgets/community_post_card.dart';
+import 'settings_screen.dart';
 
 class CommunityPostDetailScreen extends StatefulWidget {
   final CommunityPost post;
@@ -81,7 +83,7 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
     if (!appState.isLoggedIn) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Sign in to vote.')));
+      ).showSnackBar(SnackBar(content: Text(context.l10n.communitySignInToVote)));
       return;
     }
     if (_isVoting) return;
@@ -119,7 +121,7 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
     if (!appState.isLoggedIn) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Sign in to comment.')));
+      ).showSnackBar(SnackBar(content: Text(context.l10n.communitySignInToComment)));
       return;
     }
 
@@ -167,7 +169,7 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
     final appState = AppStateScope.of(context);
     if (!appState.isLoggedIn) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sign in to like comments.')),
+        SnackBar(content: Text(context.l10n.communitySignInToLikeComments)),
       );
       return;
     }
@@ -202,16 +204,16 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete comment?'),
-        content: const Text('This cannot be undone.'),
+        title: Text(context.l10n.communityDeleteCommentTitle),
+        content: Text(context.l10n.communityCannotBeUndone),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.commonCancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
+            child: Text(context.l10n.communityDelete),
           ),
         ],
       ),
@@ -294,7 +296,7 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
     if (!appState.isLoggedIn) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Sign in to vote.')));
+      ).showSnackBar(SnackBar(content: Text(context.l10n.communitySignInToVote)));
       return;
     }
     try {
@@ -352,16 +354,16 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete post?'),
-        content: const Text('This cannot be undone.'),
+        title: Text(context.l10n.communityDeletePostTitle),
+        content: Text(context.l10n.communityCannotBeUndone),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.commonCancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
+            child: Text(context.l10n.communityDelete),
           ),
         ],
       ),
@@ -378,6 +380,14 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
         ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
+  }
+
+  void _openSettings() {
+    HapticFeedback.selectionClick();
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SettingsScreen()),
+    );
   }
 
   Future<void> _showFullImagePreview(String imageUrl) async {
@@ -429,7 +439,7 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
                                 ),
                               );
                             },
-                            errorBuilder: (_, __, ___) => const Center(
+                            errorBuilder: (_, __, ___) => Center(
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -440,7 +450,7 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
                                   ),
                                   SizedBox(height: 8),
                                   Text(
-                                    'Unable to load image',
+                                    context.l10n.communityUnableToLoadImage,
                                     style: TextStyle(color: Colors.white70),
                                   ),
                                 ],
@@ -461,7 +471,7 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
                     color: Colors.black54,
                     shape: const CircleBorder(),
                     child: IconButton(
-                      tooltip: 'Close image preview',
+                      tooltip: context.l10n.communityCloseImagePreview,
                       onPressed: () => Navigator.of(dialogContext).pop(),
                       icon: const Icon(Icons.close, color: Colors.white),
                     ),
@@ -480,6 +490,7 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final tt = theme.textTheme;
+    final l10n = context.l10n;
     final appState = AppStateScope.of(context);
     final isOwner =
         appState.isLoggedIn && appState.user?.username == _post.author.username;
@@ -487,16 +498,77 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          'Discussion',
-          style: tt.headlineSmall?.copyWith(fontSize: 20, color: cs.onSurface),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: false,
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            const SizedBox(width: 16),
+            Image.asset(
+              'assets/images/icons/appstore_transparent.png',
+              width: 32,
+              height: 32,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.appTitle,
+                  style: tt.headlineSmall?.copyWith(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.2,
+                    color: cs.onSurface,
+                  ),
+                ),
+                Text(
+                  l10n.communityTitle,
+                  style: tt.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
-        centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.more_vert),
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: cs.outlineVariant),
+                color: Colors.transparent,
+              ),
+              child: Icon(
+                Icons.more_vert,
+                color: cs.onSurfaceVariant,
+                size: 20,
+              ),
+            ),
             onPressed: () => _showPostActions(isOwner),
           ),
+          IconButton(
+            onPressed: _openSettings,
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: cs.outlineVariant),
+                color: Colors.transparent,
+              ),
+              child: Icon(
+                Icons.settings_outlined,
+                color: cs.onSurfaceVariant,
+                size: 20,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Column(
@@ -521,7 +593,7 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
 
   Widget _buildContent(ColorScheme cs, TextTheme tt, AppState appState) {
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final displayAuthorName = _post.displayAuthorName;
+    final displayAuthorName = _post.isAnonymous ? context.l10n.communityAnonymous : _post.author.displayName;
 
     return ListView(
       controller: _scrollController,
@@ -586,7 +658,7 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
                         ],
                       ),
                       Text(
-                        '${timeAgoFromDate(_post.createdAt)} · ${_categoryLabel(_post.category)}',
+                        '${timeAgoFromDate(context, _post.createdAt)} · ${_categoryLabel(_post.category)}',
                         style: tt.bodySmall?.copyWith(
                           color: cs.onSurface.withValues(alpha: 0.5),
                           fontSize: 12,
@@ -725,7 +797,7 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
             child: Row(
               children: [
                 Text(
-                  'Comments (${_post.commentCount})',
+                  context.l10n.communityCommentsCount(_post.commentCount),
                   style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ],
@@ -761,7 +833,7 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'No comments yet',
+                    context.l10n.communityNoCommentsYet,
                     style: tt.titleMedium?.copyWith(
                       color: cs.onSurfaceVariant,
                       fontWeight: FontWeight.w600,
@@ -769,7 +841,7 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Start the conversation!',
+                    context.l10n.communityStartTheConversation,
                     style: tt.bodyMedium?.copyWith(
                       color: cs.onSurfaceVariant.withValues(alpha: 0.7),
                     ),
@@ -840,8 +912,8 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
                   focusNode: _commentFocusNode,
                   decoration: InputDecoration(
                     hintText: appState.isLoggedIn
-                        ? 'Add a comment...'
-                        : 'Sign in to comment',
+                        ? context.l10n.communityAddAComment
+                        : context.l10n.communitySignInToCommentHint,
                     hintStyle: TextStyle(
                       color: cs.onSurface.withValues(alpha: 0.35),
                       fontSize: 14,
@@ -903,10 +975,12 @@ class _CommunityPostDetailScreenState extends State<CommunityPostDetailScreen> {
   }
 
   String _categoryLabel(String cat) {
+    final l10n = context.l10n;
     return switch (cat) {
-      'help_me_reply' => 'Help Me Reply 🚨',
-      'rate_my_profile' => 'Rate My Profile 📸',
-      'wins' => 'Wins 🏆',
+      'help_me_reply' => l10n.communityCategoryHelpMeReply,
+      'dating_advice' => l10n.communityCategoryDatingAdvice,
+      'rate_my_profile' => l10n.communityCategoryRateMyProfile,
+      'wins' => l10n.communityCategoryWins,
       _ => cat,
     };
   }
@@ -1061,7 +1135,7 @@ class _CommentTile extends StatelessWidget {
                     ],
                     const Spacer(),
                     Text(
-                      timeAgoFromDate(comment.createdAt),
+                      timeAgoFromDate(context, comment.createdAt),
                       style: tt.bodySmall?.copyWith(
                         color: cs.onSurfaceVariant,
                         fontSize: 11,

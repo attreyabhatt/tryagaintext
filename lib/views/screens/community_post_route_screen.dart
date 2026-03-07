@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/l10n.dart';
 import '../../services/api_client.dart';
 import 'community_post_detail_screen.dart';
+import 'settings_screen.dart';
 
 class CommunityPostRouteScreen extends StatefulWidget {
   final int postId;
@@ -49,12 +51,79 @@ class _CommunityPostRouteScreenState extends State<CommunityPostRouteScreen> {
     }
   }
 
+  void _openSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SettingsScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final cs = Theme.of(context).colorScheme;
+    final tt = theme.textTheme;
+    final l10n = context.l10n;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Community')),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: false,
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            const SizedBox(width: 16),
+            Image.asset(
+              'assets/images/icons/appstore_transparent.png',
+              width: 32,
+              height: 32,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.appTitle,
+                  style: tt.headlineSmall?.copyWith(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.2,
+                    color: cs.onSurface,
+                  ),
+                ),
+                Text(
+                  l10n.communityTitle,
+                  style: tt.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            onPressed: _openSettings,
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: cs.outlineVariant),
+                color: Colors.transparent,
+              ),
+              child: Icon(
+                Icons.settings_outlined,
+                color: cs.onSurfaceVariant,
+                size: 20,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -70,7 +139,7 @@ class _CommunityPostRouteScreenState extends State<CommunityPostRouteScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Unable to open this post right now.',
+                      l10n.communityUnableToOpenPost,
                       style: Theme.of(context).textTheme.titleMedium,
                       textAlign: TextAlign.center,
                     ),
@@ -87,7 +156,7 @@ class _CommunityPostRouteScreenState extends State<CommunityPostRouteScreen> {
                     const SizedBox(height: 16),
                     FilledButton(
                       onPressed: _loadPostAndOpen,
-                      child: const Text('Try again'),
+                      child: Text(l10n.communityTryAgain),
                     ),
                   ],
                 ),

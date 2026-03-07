@@ -18,6 +18,7 @@ import 'views/screens/conversations_screen.dart';
 import 'views/screens/login_screen.dart';
 import 'views/screens/pricing_screen.dart';
 import 'views/screens/profile_screen.dart';
+import 'views/screens/settings_screen.dart';
 import 'views/screens/signup_screen.dart';
 
 ThemeData buildPremiumDarkNeonTheme() {
@@ -226,9 +227,6 @@ class _MyAppState extends State<MyApp> {
     );
     unawaited(PushNotificationService.setTapHandler(_handlePushTapAction));
     unawaited(_syncOneSignalIdentity());
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      PushNotificationService.requestPermissionForDebug();
-    });
   }
 
   void _handleAppStateChange() {
@@ -517,12 +515,28 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _selectedIndex = 0;
   bool _prevLoggedIn = false;
+  VoidCallback? _communitySortAction;
+  VoidCallback? _communityRefreshAction;
 
-  static const _screens = <Widget>[
-    ConversationsScreen(),
-    CommunityScreen(),
-    ProfileScreen(),
-  ];
+  late final List<Widget> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    _screens = <Widget>[
+      const ConversationsScreen(showAppBar: false),
+      CommunityScreen(
+        showAppBar: false,
+        onSortActionChanged: (action) {
+          _communitySortAction = action;
+        },
+        onRefreshActionChanged: (action) {
+          _communityRefreshAction = action;
+        },
+      ),
+      const ProfileScreen(),
+    ];
+  }
 
   @override
   void didChangeDependencies() {
@@ -539,11 +553,14 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final isLight = Theme.of(context).brightness == Brightness.light;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isLight = theme.brightness == Brightness.light;
     final appState = AppStateScope.of(context);
+    final showMainAppBar = _selectedIndex != 2;
 
     return Scaffold(
+      appBar: showMainAppBar ? _buildMainAppBar(theme) : null,
       body: IndexedStack(index: _selectedIndex, children: _screens),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
@@ -560,6 +577,9 @@ class _MainShellState extends State<MainShell> {
             }
             return;
           }
+          if (i == 1) {
+            _communityRefreshAction?.call();
+          }
           setState(() => _selectedIndex = i);
         },
         backgroundColor: isLight ? cs.surface : cs.surfaceContainerLow,
@@ -569,27 +589,120 @@ class _MainShellState extends State<MainShell> {
           NavigationDestination(
             icon: const Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home, color: cs.primary),
-            label: 'Home',
+            label: context.l10n.navHome,
           ),
           NavigationDestination(
             icon: const Icon(Icons.people_outline),
             selectedIcon: Icon(Icons.people, color: cs.primary),
-            label: 'Community',
+            label: context.l10n.communityTitle,
           ),
           if (appState.isLoggedIn)
             NavigationDestination(
               icon: const Icon(Icons.person_outline),
               selectedIcon: Icon(Icons.person, color: cs.primary),
-              label: 'Profile',
+              label: context.l10n.profileTitle,
             )
           else
             NavigationDestination(
               icon: const Icon(Icons.login_outlined),
               selectedIcon: Icon(Icons.login, color: cs.primary),
-              label: 'Sign In',
+              label: context.l10n.commonSignIn,
             ),
         ],
       ),
+    );
+  }
+
+  void _openSettings() {
+    HapticFeedback.selectionClick();
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SettingsScreen()),
+    );
+  }
+
+  PreferredSizeWidget _buildMainAppBar(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final l10n = context.l10n;
+    final subtitle = _selectedIndex == 1
+        ? l10n.communityTitle
+        : l10n.conversationsAppbarSubtitle;
+
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      centerTitle: false,
+      titleSpacing: 0,
+      title: Row(
+        children: [
+          const SizedBox(width: 16),
+          Image.asset(
+            'assets/images/icons/appstore_transparent.png',
+            width: 32,
+            height: 32,
+            fit: BoxFit.contain,
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.appTitle,
+                style: textTheme.headlineSmall?.copyWith(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.2,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              Text(
+                subtitle,
+                style: textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      actions: [
+        if (_selectedIndex == 1)
+          IconButton(
+            onPressed: _communitySortAction,
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: colorScheme.outlineVariant),
+                color: Colors.transparent,
+              ),
+              child: Icon(
+                Icons.sort_outlined,
+                color: colorScheme.onSurfaceVariant,
+                size: 20,
+              ),
+            ),
+          ),
+        IconButton(
+          onPressed: _openSettings,
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: colorScheme.outlineVariant),
+              color: Colors.transparent,
+            ),
+            child: Icon(
+              Icons.settings_outlined,
+              color: colorScheme.onSurfaceVariant,
+              size: 20,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+      ],
     );
   }
 }

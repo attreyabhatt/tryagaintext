@@ -205,11 +205,13 @@ class CommunityFeedResponse {
   final List<CommunityPost> posts;
   final int page;
   final bool hasMore;
+  final String? sort;
 
   const CommunityFeedResponse({
     required this.posts,
     required this.page,
     required this.hasMore,
+    this.sort,
   });
 
   factory CommunityFeedResponse.fromJson(Map<String, dynamic> j) {
@@ -221,6 +223,7 @@ class CommunityFeedResponse {
           [],
       page: j['page'] as int? ?? 1,
       hasMore: j['has_more'] as bool? ?? false,
+      sort: j['sort'] as String?,
     );
   }
 }

@@ -455,5 +455,111 @@
   "policyRefundSectionPolicyChangesTitle": "13. Policy Changes",
   "policyRefundSectionPolicyChangesContent": "We may update this policy and publish changes in-app with an updated effective date.",
   "policyRefundSectionContactTitle": "14. Contact for Refund Requests",
-  "policyRefundSectionContactContent": "For refund requests or questions, email support@tryagaintext.com with your transaction details."
+  "policyRefundSectionContactContent": "For refund requests or questions, email support@tryagaintext.com with your transaction details.",
+
+  "communityTitle": "Community",
+  "communityCategoryAll": "All",
+  "communityCategoryHelpMeReply": "Help Me Reply 🚨",
+  "communityCategoryDatingAdvice": "Dating Advice 💘",
+  "communityCategoryRateMyProfile": "Rate My Profile 📸",
+  "communityCategoryWins": "Wins 🏆",
+  "communitySignInToCreatePost": "Sign in to create a post.",
+  "communityCouldNotLoadPosts": "Could not load posts.",
+  "communityTryAgain": "Try again",
+  "communityNoPostsYet": "No posts yet",
+  "communityBeTheFirst": "Be the first to share something!",
+  "communitySignInToVote": "Sign in to vote.",
+  "communitySortPostsTitle": "Sort posts",
+  "communitySortTooltip": "Sort",
+  "communitySortHot": "Hot",
+  "communitySortNew": "New",
+  "communitySortTop": "Top",
+
+  "communitySignInToComment": "Sign in to comment.",
+  "communitySignInToLikeComments": "Sign in to like comments.",
+  "communityDeleteCommentTitle": "Delete comment?",
+  "communityDeletePostTitle": "Delete post?",
+  "communityCannotBeUndone": "This cannot be undone.",
+  "communityDelete": "Delete",
+  "communityUnableToLoadImage": "Unable to load image",
+  "communityCloseImagePreview": "Close image preview",
+  "communityCommentsCount": "Comments ({count})",
+  "@communityCommentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "communityNoCommentsYet": "No comments yet",
+  "communityStartTheConversation": "Start the conversation!",
+  "communityAddAComment": "Add a comment...",
+  "communitySignInToCommentHint": "Sign in to comment",
+  "communityProBadge": "PRO",
+  "communityOpBadge": "OP",
+
+  "communityUnableToOpenPost": "Unable to open this post right now.",
+
+  "createPostAdjustPhoto": "Adjust Photo",
+  "createPostDone": "Done",
+  "createPostValidationTitle": "Please add a title.",
+  "createPostValidationContent": "Please add some content.",
+  "createPostValidationCategory": "Please choose a category.",
+  "createPostPostButton": "Post",
+  "createPostCategoryLabel": "Category",
+  "createPostTitleLabel": "Title",
+  "createPostTitleHint": "What's on your mind?",
+  "createPostContentLabel": "What happened?",
+  "createPostContentHint": "Share your story, tip, or question...",
+  "createPostCropPhoto": "Crop photo",
+  "createPostBlurSensitiveInfo": "Blur sensitive info",
+  "createPostProcessingPhoto": "Processing photo...",
+  "createPostAddPhoto": "Add Photo",
+  "createPostChangePhoto": "Change Photo",
+  "createPostPhotoTip": "Tip: Crop and optionally blur sensitive info before posting.",
+  "createPostHideUsername": "Hide my username",
+  "createPostPostAnonymously": "Post anonymously",
+  "createPostAddPoll": "Add Poll",
+  "createPostPollSubtitle": "\"Send it\" or \"Don't send it\"",
+
+  "communityFeaturedBadge": "FEATURED",
+  "communityTrendingBadge": "TRENDING",
+  "communityNewBadge": "NEW",
+  "communityTimeJustNow": "just now",
+  "communityTimeMinutesAgo": "{minutes}m ago",
+  "@communityTimeMinutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "communityTimeHoursAgo": "{hours}h ago",
+  "@communityTimeHoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "communityTimeDaysAgo": "{days}d ago",
+  "@communityTimeDaysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "communityTimeWeeksAgo": "{weeks}w ago",
+  "@communityTimeWeeksAgo": {
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      }
+    }
+  },
+
+  "communityAnonymous": "Anonymous",
+
+  "navHome": "Home"
 }

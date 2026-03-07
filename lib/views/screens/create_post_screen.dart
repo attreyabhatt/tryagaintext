@@ -4,9 +4,11 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../l10n/l10n.dart';
 import '../../services/api_client.dart';
 import '../../services/community_guidelines_service.dart';
 import 'blur_editor_screen.dart';
+import 'settings_screen.dart';
 
 class CreatePostScreen extends StatefulWidget {
   final String? prefillBody;
@@ -40,11 +42,15 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   bool _isAnonymous = false;
   bool _addPoll = false;
 
-  static const _categories = [
-    (value: 'help_me_reply', label: 'Help Me Reply 🚨'),
-    (value: 'rate_my_profile', label: 'Rate My Profile 📸'),
-    (value: 'wins', label: 'Wins 🏆'),
-  ];
+  List<({String value, String label})> _categories(BuildContext context) {
+    final l10n = context.l10n;
+    return [
+      (value: 'help_me_reply', label: l10n.communityCategoryHelpMeReply),
+      (value: 'dating_advice', label: l10n.communityCategoryDatingAdvice),
+      (value: 'rate_my_profile', label: l10n.communityCategoryRateMyProfile),
+      (value: 'wins', label: l10n.communityCategoryWins),
+    ];
+  }
 
   @override
   void initState() {
@@ -104,7 +110,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       maxHeight: 1200,
       uiSettings: [
         AndroidUiSettings(
-          toolbarTitle: 'Adjust Photo',
+          toolbarTitle: context.l10n.createPostAdjustPhoto,
           toolbarColor: cs.surface,
           toolbarWidgetColor: cs.onSurface,
           activeControlsWidgetColor: cs.primary,
@@ -128,8 +134,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           ],
         ),
         IOSUiSettings(
-          title: 'Adjust Photo',
-          doneButtonTitle: 'Done',
+          title: context.l10n.createPostAdjustPhoto,
+          doneButtonTitle: context.l10n.createPostDone,
           cancelButtonTitle: 'Cancel',
           showCancelConfirmationDialog: true,
           aspectRatioPresets: [
@@ -263,15 +269,15 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     final body = _bodyController.text.trim();
 
     if (title.isEmpty) {
-      _showError('Please add a title.');
+      _showError(context.l10n.createPostValidationTitle);
       return;
     }
     if (body.isEmpty) {
-      _showError('Please add some content.');
+      _showError(context.l10n.createPostValidationContent);
       return;
     }
     if (_selectedCategory == null) {
-      _showError('Please choose a category.');
+      _showError(context.l10n.createPostValidationCategory);
       return;
     }
 
@@ -305,21 +311,62 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
+  void _openSettings() {
+    HapticFeedback.selectionClick();
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SettingsScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final tt = theme.textTheme;
+    final l10n = context.l10n;
     final isLight = theme.brightness == Brightness.light;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(
-          'New Post',
-          style: tt.headlineSmall?.copyWith(fontSize: 20, color: cs.onSurface),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: false,
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            const SizedBox(width: 16),
+            Image.asset(
+              'assets/images/icons/appstore_transparent.png',
+              width: 32,
+              height: 32,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.appTitle,
+                  style: tt.headlineSmall?.copyWith(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.2,
+                    color: cs.onSurface,
+                  ),
+                ),
+                Text(
+                  l10n.communityTitle,
+                  style: tt.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
-        centerTitle: true,
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -363,7 +410,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                             vertical: 8,
                           ),
                           child: Text(
-                            'Post',
+                            l10n.createPostPostButton,
                             style: TextStyle(
                               color: cs.onPrimary,
                               fontWeight: FontWeight.w600,
@@ -374,6 +421,23 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     ),
                   ),
           ),
+          IconButton(
+            onPressed: _openSettings,
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: cs.outlineVariant),
+                color: Colors.transparent,
+              ),
+              child: Icon(
+                Icons.settings_outlined,
+                color: cs.onSurfaceVariant,
+                size: 20,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
         ],
       ),
       body: GestureDetector(
@@ -384,7 +448,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           children: [
             // Category selector
             Text(
-              'Category',
+              l10n.createPostCategoryLabel,
               style: tt.labelLarge?.copyWith(
                 color: cs.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
@@ -394,7 +458,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: _categories.map((cat) {
+              children: _categories(context).map((cat) {
                 final selected = _selectedCategory == cat.value;
                 return FilterChip(
                   label: Text(cat.label),
@@ -422,7 +486,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
             // Title
             Text(
-              'Title',
+              l10n.createPostTitleLabel,
               style: tt.labelLarge?.copyWith(
                 color: cs.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
@@ -437,7 +501,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 color: cs.onSurface,
               ),
               decoration: InputDecoration(
-                hintText: "What's on your mind?",
+                hintText: l10n.createPostTitleHint,
                 hintStyle: GoogleFonts.playfairDisplay(
                   fontSize: 22,
                   fontWeight: FontWeight.w600,
@@ -477,7 +541,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
             // Body
             Text(
-              'What happened?',
+              l10n.createPostContentLabel,
               style: tt.labelLarge?.copyWith(
                 color: cs.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
@@ -487,7 +551,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             TextField(
               controller: _bodyController,
               decoration: InputDecoration(
-                hintText: 'Share your story, tip, or question...',
+                hintText: l10n.createPostContentHint,
                 hintStyle: TextStyle(color: cs.onSurfaceVariant),
                 alignLabelWithHint: true,
                 filled: false,
@@ -534,13 +598,15 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       children: [
                         _buildImagePreviewActionButton(
                           icon: Icons.crop_outlined,
-                          tooltip: 'Crop photo',
-                          onTap: _isProcessingImage ? null : _recropCurrentImage,
+                          tooltip: l10n.createPostCropPhoto,
+                          onTap: _isProcessingImage
+                              ? null
+                              : _recropCurrentImage,
                         ),
                         const SizedBox(width: 8),
                         _buildImagePreviewActionButton(
                           icon: Icons.blur_on_outlined,
-                          tooltip: 'Blur sensitive info',
+                          tooltip: l10n.createPostBlurSensitiveInfo,
                           onTap: _isProcessingImage ? null : _blurCurrentImage,
                         ),
                       ],
@@ -581,8 +647,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   : const Icon(Icons.photo_outlined),
               label: Text(
                 _isProcessingImage
-                    ? 'Processing photo...'
-                    : (_image == null ? 'Add Photo' : 'Change Photo'),
+                    ? l10n.createPostProcessingPhoto
+                    : (_image == null ? l10n.createPostAddPhoto : l10n.createPostChangePhoto),
               ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: cs.onSurfaceVariant,
@@ -601,7 +667,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'Tip: Crop and optionally blur sensitive info before posting.',
+                    l10n.createPostPhotoTip,
                     style: tt.bodySmall?.copyWith(
                       color: cs.onSurfaceVariant,
                       fontSize: 11,
@@ -618,9 +684,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 HapticFeedback.selectionClick();
                 setState(() => _isAnonymous = v);
               },
-              title: Text('Hide my username', style: tt.bodyMedium),
+              title: Text(l10n.createPostHideUsername, style: tt.bodyMedium),
               subtitle: Text(
-                'Post anonymously',
+                l10n.createPostPostAnonymously,
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               secondary: Icon(
@@ -636,9 +702,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 HapticFeedback.selectionClick();
                 setState(() => _addPoll = v);
               },
-              title: Text('Add Poll', style: tt.bodyMedium),
+              title: Text(l10n.createPostAddPoll, style: tt.bodyMedium),
               subtitle: Text(
-                '"Send it" or "Don\'t send it"',
+                l10n.createPostPollSubtitle,
                 style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
               ),
               secondary: Icon(Icons.poll_outlined, color: cs.onSurfaceVariant),

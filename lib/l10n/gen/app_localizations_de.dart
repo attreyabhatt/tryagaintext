@@ -521,10 +521,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Das kann einige Sekunden dauern';
 
   @override
-  String get conversationsModeCreative => 'Craft';
+  String get conversationsModeCreative => 'Erstellen';
 
   @override
-  String get conversationsModeRecommended => 'The Vault';
+  String get conversationsModeRecommended => 'Der Tresor';
 
   @override
   String get conversationsNewChat => 'Neuer Chat';
@@ -535,10 +535,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get conversationsRecommendedDescription =>
-      'Hand-selected scripts from top dating experts. Proven to get a 3x higher response rate.';
+      'Handverlesene Skripte von Top-Dating-Experten. Nachweislich 3x höhere Antwortrate.';
 
   @override
-  String get conversationsVaultHeadline => 'The Coach\'s Playbook.';
+  String get conversationsVaultHeadline => 'Das Playbook des Coaches.';
 
   @override
   String get conversationsRegenerate => 'Neu Generieren';
@@ -586,7 +586,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Tippe auf \"Antwort Erstellen\", um Vorschläge zu generieren';
 
   @override
-  String get conversationsSignUpToReveal => 'Sign up to reveal.';
+  String get conversationsSignUpToReveal => 'Registriere dich, um es zu sehen.';
 
   @override
   String get conversationsTapToUnlock => 'Tippen zum Entsperren';
@@ -634,7 +634,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get conversationsUnlockReplyHeadline => 'Diese Antwort freischalten.';
 
   @override
-  String get conversationsUnlockFullArchive => 'UNLOCK FULL ARCHIVE';
+  String get conversationsUnlockFullArchive => 'VOLLES ARCHIV FREISCHALTEN';
 
   @override
   String get conversationsUnlockReplySupport =>
@@ -1245,4 +1245,214 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get policyRefundSectionContactContent =>
       'E-Mail mit Transaktionsdetails an support@tryagaintext.com senden.';
+
+  @override
+  String get communityTitle => 'Community';
+
+  @override
+  String get communityCategoryAll => 'Alle';
+
+  @override
+  String get communityCategoryHelpMeReply => 'Hilf mir antworten 🚨';
+
+  @override
+  String get communityCategoryDatingAdvice => 'Dating-Tipps 💘';
+
+  @override
+  String get communityCategoryRateMyProfile => 'Bewerte mein Profil 📸';
+
+  @override
+  String get communityCategoryWins => 'Erfolge 🏆';
+
+  @override
+  String get communitySignInToCreatePost =>
+      'Melde dich an, um einen Beitrag zu erstellen.';
+
+  @override
+  String get communityCouldNotLoadPosts =>
+      'Beiträge konnten nicht geladen werden.';
+
+  @override
+  String get communityTryAgain => 'Erneut versuchen';
+
+  @override
+  String get communityNoPostsYet => 'Noch keine Beiträge';
+
+  @override
+  String get communityBeTheFirst => 'Sei der Erste, der etwas teilt!';
+
+  @override
+  String get communitySignInToVote => 'Melde dich an, um abzustimmen.';
+
+  @override
+  String get communitySortPostsTitle => 'Beiträge sortieren';
+
+  @override
+  String get communitySortTooltip => 'Sortieren';
+
+  @override
+  String get communitySortHot => 'Beliebt';
+
+  @override
+  String get communitySortNew => 'Neu';
+
+  @override
+  String get communitySortTop => 'Top';
+
+  @override
+  String get communitySignInToComment => 'Melde dich an, um zu kommentieren.';
+
+  @override
+  String get communitySignInToLikeComments =>
+      'Melde dich an, um Kommentare zu liken.';
+
+  @override
+  String get communityDeleteCommentTitle => 'Kommentar löschen?';
+
+  @override
+  String get communityDeletePostTitle => 'Beitrag löschen?';
+
+  @override
+  String get communityCannotBeUndone =>
+      'Das kann nicht rückgängig gemacht werden.';
+
+  @override
+  String get communityDelete => 'Löschen';
+
+  @override
+  String get communityUnableToLoadImage => 'Bild konnte nicht geladen werden';
+
+  @override
+  String get communityCloseImagePreview => 'Bildvorschau schließen';
+
+  @override
+  String communityCommentsCount(int count) {
+    return 'Kommentare ($count)';
+  }
+
+  @override
+  String get communityNoCommentsYet => 'Noch keine Kommentare';
+
+  @override
+  String get communityStartTheConversation => 'Starte die Unterhaltung!';
+
+  @override
+  String get communityAddAComment => 'Kommentar hinzufügen...';
+
+  @override
+  String get communitySignInToCommentHint => 'Anmelden zum Kommentieren';
+
+  @override
+  String get communityProBadge => 'PRO';
+
+  @override
+  String get communityOpBadge => 'OP';
+
+  @override
+  String get communityUnableToOpenPost =>
+      'Dieser Beitrag kann gerade nicht geöffnet werden.';
+
+  @override
+  String get createPostAdjustPhoto => 'Foto anpassen';
+
+  @override
+  String get createPostDone => 'Fertig';
+
+  @override
+  String get createPostValidationTitle => 'Bitte füge einen Titel hinzu.';
+
+  @override
+  String get createPostValidationContent => 'Bitte füge etwas Inhalt hinzu.';
+
+  @override
+  String get createPostValidationCategory => 'Bitte wähle eine Kategorie.';
+
+  @override
+  String get createPostPostButton => 'Posten';
+
+  @override
+  String get createPostCategoryLabel => 'Kategorie';
+
+  @override
+  String get createPostTitleLabel => 'Titel';
+
+  @override
+  String get createPostTitleHint => 'Was beschäftigt dich?';
+
+  @override
+  String get createPostContentLabel => 'Was ist passiert?';
+
+  @override
+  String get createPostContentHint =>
+      'Teile deine Geschichte, deinen Tipp oder deine Frage...';
+
+  @override
+  String get createPostCropPhoto => 'Foto zuschneiden';
+
+  @override
+  String get createPostBlurSensitiveInfo => 'Sensible Infos unscharf machen';
+
+  @override
+  String get createPostProcessingPhoto => 'Foto wird verarbeitet...';
+
+  @override
+  String get createPostAddPhoto => 'Foto hinzufügen';
+
+  @override
+  String get createPostChangePhoto => 'Foto ändern';
+
+  @override
+  String get createPostPhotoTip =>
+      'Tipp: Schneide zu und mache sensible Infos optional unscharf.';
+
+  @override
+  String get createPostHideUsername => 'Benutzernamen verbergen';
+
+  @override
+  String get createPostPostAnonymously => 'Anonym posten';
+
+  @override
+  String get createPostAddPoll => 'Umfrage hinzufügen';
+
+  @override
+  String get createPostPollSubtitle =>
+      '\"Abschicken\" oder \"Nicht abschicken\"';
+
+  @override
+  String get communityFeaturedBadge => 'EMPFOHLEN';
+
+  @override
+  String get communityTrendingBadge => 'TRENDING';
+
+  @override
+  String get communityNewBadge => 'NEU';
+
+  @override
+  String get communityTimeJustNow => 'gerade eben';
+
+  @override
+  String communityTimeMinutesAgo(int minutes) {
+    return 'vor ${minutes}m';
+  }
+
+  @override
+  String communityTimeHoursAgo(int hours) {
+    return 'vor ${hours}h';
+  }
+
+  @override
+  String communityTimeDaysAgo(int days) {
+    return 'vor ${days}T';
+  }
+
+  @override
+  String communityTimeWeeksAgo(int weeks) {
+    return 'vor ${weeks}W';
+  }
+
+  @override
+  String get communityAnonymous => 'Anonym';
+
+  @override
+  String get navHome => 'Startseite';
 }

@@ -14,7 +14,7 @@ import '../../state/app_state.dart';
 import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
 import '../../services/local_notification_service.dart';
-import '../../services/notification_permission_service.dart';
+import '../../services/push_notification_service.dart';
 import '../../services/review_prompt_service.dart';
 import '../../models/community_post.dart';
 import '../../models/suggestion.dart';
@@ -31,7 +31,9 @@ import '../widgets/thinking_indicator.dart';
 const _smartReplyCardShadow = Color(0x0D000000); // Black at 5% opacity
 
 class ConversationsScreen extends StatefulWidget {
-  const ConversationsScreen({super.key});
+  final bool showAppBar;
+
+  const ConversationsScreen({super.key, this.showAppBar = true});
 
   @override
   State<ConversationsScreen> createState() => _ConversationsScreenState();
@@ -894,12 +896,10 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
   Future<void> _maybePromptNotificationPermissionAfterSuccess() async {
     if (!mounted) return;
-    await NotificationPermissionService.maybePromptAfterFirstSuccess(context);
+    await PushNotificationService.requestPermissionFromSystem();
   }
 
-  Future<void> _scheduleDailyRefillIfEligible({
-    bool resetTimer = false,
-  }) async {
+  Future<void> _scheduleDailyRefillIfEligible({bool resetTimer = false}) async {
     if (!mounted) return;
     final appState = AppStateScope.of(context);
     if (!appState.isLoggedIn || appState.isSubscribed) {
@@ -914,9 +914,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     }
   }
 
-  Future<void> _scheduleUpgradeNudgeIfEligible({
-    bool resetTimer = true,
-  }) async {
+  Future<void> _scheduleUpgradeNudgeIfEligible({bool resetTimer = true}) async {
     if (!mounted) return;
     final appState = AppStateScope.of(context);
     if (appState.isLoggedIn && !appState.isSubscribed) {
@@ -1853,7 +1851,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         _suggestions.isNotEmpty;
 
     return Scaffold(
-      appBar: _buildAppBar(colorScheme),
+      appBar: widget.showAppBar ? _buildAppBar(colorScheme) : null,
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         behavior: HitTestBehavior.opaque,
@@ -4071,4 +4069,3 @@ class _SuggestionCard extends StatelessWidget {
     );
   }
 }
-

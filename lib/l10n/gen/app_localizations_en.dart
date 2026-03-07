@@ -1238,4 +1238,207 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get policyRefundSectionContactContent =>
       'For refund requests or questions, email support@tryagaintext.com with your transaction details.';
+
+  @override
+  String get communityTitle => 'Community';
+
+  @override
+  String get communityCategoryAll => 'All';
+
+  @override
+  String get communityCategoryHelpMeReply => 'Help Me Reply 🚨';
+
+  @override
+  String get communityCategoryDatingAdvice => 'Dating Advice 💘';
+
+  @override
+  String get communityCategoryRateMyProfile => 'Rate My Profile 📸';
+
+  @override
+  String get communityCategoryWins => 'Wins 🏆';
+
+  @override
+  String get communitySignInToCreatePost => 'Sign in to create a post.';
+
+  @override
+  String get communityCouldNotLoadPosts => 'Could not load posts.';
+
+  @override
+  String get communityTryAgain => 'Try again';
+
+  @override
+  String get communityNoPostsYet => 'No posts yet';
+
+  @override
+  String get communityBeTheFirst => 'Be the first to share something!';
+
+  @override
+  String get communitySignInToVote => 'Sign in to vote.';
+
+  @override
+  String get communitySortPostsTitle => 'Sort posts';
+
+  @override
+  String get communitySortTooltip => 'Sort';
+
+  @override
+  String get communitySortHot => 'Hot';
+
+  @override
+  String get communitySortNew => 'New';
+
+  @override
+  String get communitySortTop => 'Top';
+
+  @override
+  String get communitySignInToComment => 'Sign in to comment.';
+
+  @override
+  String get communitySignInToLikeComments => 'Sign in to like comments.';
+
+  @override
+  String get communityDeleteCommentTitle => 'Delete comment?';
+
+  @override
+  String get communityDeletePostTitle => 'Delete post?';
+
+  @override
+  String get communityCannotBeUndone => 'This cannot be undone.';
+
+  @override
+  String get communityDelete => 'Delete';
+
+  @override
+  String get communityUnableToLoadImage => 'Unable to load image';
+
+  @override
+  String get communityCloseImagePreview => 'Close image preview';
+
+  @override
+  String communityCommentsCount(int count) {
+    return 'Comments ($count)';
+  }
+
+  @override
+  String get communityNoCommentsYet => 'No comments yet';
+
+  @override
+  String get communityStartTheConversation => 'Start the conversation!';
+
+  @override
+  String get communityAddAComment => 'Add a comment...';
+
+  @override
+  String get communitySignInToCommentHint => 'Sign in to comment';
+
+  @override
+  String get communityProBadge => 'PRO';
+
+  @override
+  String get communityOpBadge => 'OP';
+
+  @override
+  String get communityUnableToOpenPost => 'Unable to open this post right now.';
+
+  @override
+  String get createPostAdjustPhoto => 'Adjust Photo';
+
+  @override
+  String get createPostDone => 'Done';
+
+  @override
+  String get createPostValidationTitle => 'Please add a title.';
+
+  @override
+  String get createPostValidationContent => 'Please add some content.';
+
+  @override
+  String get createPostValidationCategory => 'Please choose a category.';
+
+  @override
+  String get createPostPostButton => 'Post';
+
+  @override
+  String get createPostCategoryLabel => 'Category';
+
+  @override
+  String get createPostTitleLabel => 'Title';
+
+  @override
+  String get createPostTitleHint => 'What\'s on your mind?';
+
+  @override
+  String get createPostContentLabel => 'What happened?';
+
+  @override
+  String get createPostContentHint => 'Share your story, tip, or question...';
+
+  @override
+  String get createPostCropPhoto => 'Crop photo';
+
+  @override
+  String get createPostBlurSensitiveInfo => 'Blur sensitive info';
+
+  @override
+  String get createPostProcessingPhoto => 'Processing photo...';
+
+  @override
+  String get createPostAddPhoto => 'Add Photo';
+
+  @override
+  String get createPostChangePhoto => 'Change Photo';
+
+  @override
+  String get createPostPhotoTip =>
+      'Tip: Crop and optionally blur sensitive info before posting.';
+
+  @override
+  String get createPostHideUsername => 'Hide my username';
+
+  @override
+  String get createPostPostAnonymously => 'Post anonymously';
+
+  @override
+  String get createPostAddPoll => 'Add Poll';
+
+  @override
+  String get createPostPollSubtitle => '\"Send it\" or \"Don\'t send it\"';
+
+  @override
+  String get communityFeaturedBadge => 'FEATURED';
+
+  @override
+  String get communityTrendingBadge => 'TRENDING';
+
+  @override
+  String get communityNewBadge => 'NEW';
+
+  @override
+  String get communityTimeJustNow => 'just now';
+
+  @override
+  String communityTimeMinutesAgo(int minutes) {
+    return '${minutes}m ago';
+  }
+
+  @override
+  String communityTimeHoursAgo(int hours) {
+    return '${hours}h ago';
+  }
+
+  @override
+  String communityTimeDaysAgo(int days) {
+    return '${days}d ago';
+  }
+
+  @override
+  String communityTimeWeeksAgo(int weeks) {
+    return '${weeks}w ago';
+  }
+
+  @override
+  String get communityAnonymous => 'Anonymous';
+
+  @override
+  String get navHome => 'Home';
 }

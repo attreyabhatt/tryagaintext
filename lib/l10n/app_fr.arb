@@ -195,12 +195,12 @@
   "conversationsLimitTypeOpener": "accroches",
   "conversationsLimitTypeReply": "réponses",
   "conversationsLoadingMayTakeSeconds": "Cela peut prendre quelques secondes",
-  "conversationsModeCreative": "Craft",
-  "conversationsModeRecommended": "The Vault",
+  "conversationsModeCreative": "Créer",
+  "conversationsModeRecommended": "Le Coffre",
   "conversationsNewChat": "Nouveau chat",
   "conversationsProfileHint": "Choisissez la photo ou la bio la plus intéressante",
-  "conversationsRecommendedDescription": "Hand-selected scripts from top dating experts. Proven to get a 3x higher response rate.",
-  "conversationsVaultHeadline": "The Coach's Playbook.",
+  "conversationsRecommendedDescription": "Scripts sélectionnés par les meilleurs experts en rencontres. Taux de réponse 3x plus élevé prouvé.",
+  "conversationsVaultHeadline": "Le Guide du Coach.",
   "conversationsRegenerate": "Régénérer",
   "conversationsResultsCuratedResponses": "Réponses Sélectionnées",
   "conversationsResultsYourApproach": "Votre Approche",
@@ -214,7 +214,7 @@
   "conversationsTabRespond": "Répondre",
   "conversationsTapCraftOpeningHint": "Appuyez sur \"Créer une Accroche\" pour générer des premiers messages personnalisés",
   "conversationsTapCraftResponseHint": "Appuyez sur \"Créer une Réponse\" pour générer des suggestions",
-  "conversationsSignUpToReveal": "Sign up to reveal.",
+  "conversationsSignUpToReveal": "Inscrivez-vous pour révéler.",
   "conversationsTapToUnlock": "Appuyez pour débloquer",
   "conversationsTheirProfile": "Son profil",
   "conversationsTimeHoursMinutes": "{hours}h {minutes}m",
@@ -251,7 +251,7 @@
     }
   },
   "conversationsUnlockReplyHeadline": "Débloquez cette réponse.",
-  "conversationsUnlockFullArchive": "UNLOCK FULL ARCHIVE",
+  "conversationsUnlockFullArchive": "DÉBLOQUER L'ARCHIVE COMPLÈTE",
   "conversationsUnlockReplySupport": "Déblocage instantané après le paiement.",
   "conversationsUploadProfileFirst": "Veuillez d'abord télécharger une capture d'écran du profil",
   "conversationsWorkspaceReady": "Espace de Travail Prêt",
@@ -455,5 +455,111 @@
   "policyRefundSectionPolicyChangesTitle": "13. Modifications",
   "policyRefundSectionPolicyChangesContent": "Les changements seront publiés dans l'application.",
   "policyRefundSectionContactTitle": "14. Contact",
-  "policyRefundSectionContactContent": "E-mail : support@tryagaintext.com."
+  "policyRefundSectionContactContent": "E-mail : support@tryagaintext.com.",
+
+  "communityTitle": "Communauté",
+  "communityCategoryAll": "Tout",
+  "communityCategoryHelpMeReply": "Aidez-moi à Répondre 🚨",
+  "communityCategoryDatingAdvice": "Conseils Rencontres 💘",
+  "communityCategoryRateMyProfile": "Évaluez Mon Profil 📸",
+  "communityCategoryWins": "Victoires 🏆",
+  "communitySignInToCreatePost": "Connectez-vous pour créer une publication.",
+  "communityCouldNotLoadPosts": "Impossible de charger les publications.",
+  "communityTryAgain": "Réessayer",
+  "communityNoPostsYet": "Pas encore de publications",
+  "communityBeTheFirst": "Soyez le premier à partager quelque chose !",
+  "communitySignInToVote": "Connectez-vous pour voter.",
+  "communitySortPostsTitle": "Trier les publications",
+  "communitySortTooltip": "Trier",
+  "communitySortHot": "Populaire",
+  "communitySortNew": "Nouveau",
+  "communitySortTop": "Top",
+
+  "communitySignInToComment": "Connectez-vous pour commenter.",
+  "communitySignInToLikeComments": "Connectez-vous pour aimer les commentaires.",
+  "communityDeleteCommentTitle": "Supprimer le commentaire ?",
+  "communityDeletePostTitle": "Supprimer la publication ?",
+  "communityCannotBeUndone": "Cette action est irréversible.",
+  "communityDelete": "Supprimer",
+  "communityUnableToLoadImage": "Impossible de charger l'image",
+  "communityCloseImagePreview": "Fermer l'aperçu de l'image",
+  "communityCommentsCount": "Commentaires ({count})",
+  "@communityCommentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "communityNoCommentsYet": "Pas encore de commentaires",
+  "communityStartTheConversation": "Lancez la conversation !",
+  "communityAddAComment": "Ajouter un commentaire...",
+  "communitySignInToCommentHint": "Connectez-vous pour commenter",
+  "communityProBadge": "PRO",
+  "communityOpBadge": "OP",
+
+  "communityUnableToOpenPost": "Impossible d'ouvrir cette publication pour le moment.",
+
+  "createPostAdjustPhoto": "Ajuster la Photo",
+  "createPostDone": "Terminé",
+  "createPostValidationTitle": "Veuillez ajouter un titre.",
+  "createPostValidationContent": "Veuillez ajouter du contenu.",
+  "createPostValidationCategory": "Veuillez choisir une catégorie.",
+  "createPostPostButton": "Publier",
+  "createPostCategoryLabel": "Catégorie",
+  "createPostTitleLabel": "Titre",
+  "createPostTitleHint": "Qu'avez-vous en tête ?",
+  "createPostContentLabel": "Que s'est-il passé ?",
+  "createPostContentHint": "Partagez votre histoire, conseil ou question...",
+  "createPostCropPhoto": "Recadrer la photo",
+  "createPostBlurSensitiveInfo": "Flouter les infos sensibles",
+  "createPostProcessingPhoto": "Traitement de la photo...",
+  "createPostAddPhoto": "Ajouter une Photo",
+  "createPostChangePhoto": "Changer la Photo",
+  "createPostPhotoTip": "Conseil : Recadrez et floutez les infos sensibles avant de publier.",
+  "createPostHideUsername": "Masquer mon nom d'utilisateur",
+  "createPostPostAnonymously": "Publier anonymement",
+  "createPostAddPoll": "Ajouter un Sondage",
+  "createPostPollSubtitle": "\"Envoie-le\" ou \"Ne l'envoie pas\"",
+
+  "communityFeaturedBadge": "EN VEDETTE",
+  "communityTrendingBadge": "TENDANCE",
+  "communityNewBadge": "NOUVEAU",
+  "communityTimeJustNow": "à l'instant",
+  "communityTimeMinutesAgo": "il y a {minutes}m",
+  "@communityTimeMinutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "communityTimeHoursAgo": "il y a {hours}h",
+  "@communityTimeHoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "communityTimeDaysAgo": "il y a {days}j",
+  "@communityTimeDaysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "communityTimeWeeksAgo": "il y a {weeks}sem",
+  "@communityTimeWeeksAgo": {
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      }
+    }
+  },
+
+  "communityAnonymous": "Anonyme",
+
+  "navHome": "Accueil"
 }

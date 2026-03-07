@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../l10n/l10n.dart';
 import '../../models/community_post.dart';
 import '../../services/api_client.dart';
 import '../../state/app_state.dart';
@@ -9,7 +10,16 @@ import 'community_post_detail_screen.dart';
 import 'create_post_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
-  const CommunityScreen({super.key});
+  final bool showAppBar;
+  final ValueChanged<VoidCallback?>? onSortActionChanged;
+  final ValueChanged<VoidCallback?>? onRefreshActionChanged;
+
+  const CommunityScreen({
+    super.key,
+    this.showAppBar = true,
+    this.onSortActionChanged,
+    this.onRefreshActionChanged,
+  });
 
   @override
   State<CommunityScreen> createState() => _CommunityScreenState();
@@ -25,15 +35,19 @@ class _CommunityScreenState extends State<CommunityScreen> {
   bool _hasMore = true;
   int _page = 1;
   String? _selectedCategory; // null = All
-  String _sort = 'hot';
+  String? _sort;
   String? _error;
 
-  static const _categories = [
-    (value: null, label: 'All'),
-    (value: 'help_me_reply', label: 'Help Me Reply 🚨'),
-    (value: 'rate_my_profile', label: 'Rate My Profile 📸'),
-    (value: 'wins', label: 'Wins 🏆'),
-  ];
+  List<({String? value, String label})> _categories(BuildContext context) {
+    final l10n = context.l10n;
+    return [
+      (value: null, label: l10n.communityCategoryAll),
+      (value: 'help_me_reply', label: l10n.communityCategoryHelpMeReply),
+      (value: 'dating_advice', label: l10n.communityCategoryDatingAdvice),
+      (value: 'rate_my_profile', label: l10n.communityCategoryRateMyProfile),
+      (value: 'wins', label: l10n.communityCategoryWins),
+    ];
+  }
 
   List<CommunityPost> _featuredFirst(Iterable<CommunityPost> posts) {
     final seenIds = <int>{};
@@ -53,14 +67,35 @@ class _CommunityScreenState extends State<CommunityScreen> {
   @override
   void initState() {
     super.initState();
+    widget.onSortActionChanged?.call(_showSortSheet);
+    widget.onRefreshActionChanged?.call(_refreshFromShell);
     _scrollController.addListener(_onScroll);
     _loadPosts(refresh: true);
   }
 
   @override
+  void didUpdateWidget(covariant CommunityScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.onSortActionChanged != widget.onSortActionChanged) {
+      oldWidget.onSortActionChanged?.call(null);
+      widget.onSortActionChanged?.call(_showSortSheet);
+    }
+    if (oldWidget.onRefreshActionChanged != widget.onRefreshActionChanged) {
+      oldWidget.onRefreshActionChanged?.call(null);
+      widget.onRefreshActionChanged?.call(_refreshFromShell);
+    }
+  }
+
+  @override
   void dispose() {
+    widget.onSortActionChanged?.call(null);
+    widget.onRefreshActionChanged?.call(null);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _refreshFromShell() {
+    _loadPosts(refresh: true);
   }
 
   void _onScroll() {
@@ -95,6 +130,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           _posts = _featuredFirst(result.posts);
           _page = 1;
           _hasMore = result.hasMore;
+          _sort = result.sort ?? _sort ?? 'new';
         });
       }
     } catch (e) {
@@ -119,6 +155,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           _posts = _featuredFirst([..._posts, ...result.posts]);
           _page++;
           _hasMore = result.hasMore;
+          _sort = result.sort ?? _sort ?? 'new';
         });
       }
     } catch (_) {
@@ -145,7 +182,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
     if (!appState.isLoggedIn) {
       HapticFeedback.lightImpact();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sign in to create a post.')),
+        SnackBar(content: Text(context.l10n.communitySignInToCreatePost)),
       );
       return;
     }
@@ -168,23 +205,25 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Community',
-          style: tt.headlineSmall?.copyWith(
-            fontSize: 20,
-            color: cs.onSurface,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.sort_outlined),
-            tooltip: 'Sort',
-            onPressed: _showSortSheet,
-          ),
-        ],
-      ),
+      appBar: widget.showAppBar
+          ? AppBar(
+              title: Text(
+                context.l10n.communityTitle,
+                style: tt.headlineSmall?.copyWith(
+                  fontSize: 20,
+                  color: cs.onSurface,
+                ),
+              ),
+              centerTitle: true,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.sort_outlined),
+                  tooltip: context.l10n.communitySortTooltip,
+                  onPressed: _showSortSheet,
+                ),
+              ],
+            )
+          : null,
       floatingActionButton: Container(
         decoration: BoxDecoration(
           shape: BoxShape.circle,
@@ -219,7 +258,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
             shaderCallback: (bounds) => LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
-              colors: [Colors.white, Colors.white, Colors.white, Colors.transparent],
+              colors: [
+                Colors.white,
+                Colors.white,
+                Colors.white,
+                Colors.transparent,
+              ],
               stops: const [0.0, 0.85, 0.92, 1.0],
             ).createShader(bounds),
             blendMode: BlendMode.dstIn,
@@ -227,11 +271,14 @@ class _CommunityScreenState extends State<CommunityScreen> {
               height: 48,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                itemCount: _categories.length,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                itemCount: _categories(context).length,
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder: (_, i) {
-                  final cat = _categories[i];
+                  final cat = _categories(context)[i];
                   final selected = _selectedCategory == cat.value;
                   return FilterChip(
                     label: Text(cat.label),
@@ -289,13 +336,13 @@ class _CommunityScreenState extends State<CommunityScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Could not load posts.',
+                context.l10n.communityCouldNotLoadPosts,
                 style: TextStyle(color: cs.onSurfaceVariant),
               ),
               const SizedBox(height: 16),
               FilledButton.tonal(
                 onPressed: () => _loadPosts(refresh: true),
-                child: const Text('Try again'),
+                child: Text(context.l10n.communityTryAgain),
               ),
             ],
           ),
@@ -317,7 +364,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'No posts yet',
+                context.l10n.communityNoPostsYet,
                 style: tt.titleMedium?.copyWith(
                   color: cs.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
@@ -325,7 +372,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Be the first to share something!',
+                context.l10n.communityBeTheFirst,
                 style: tt.bodyMedium?.copyWith(
                   color: cs.onSurfaceVariant.withValues(alpha: 0.7),
                 ),
@@ -338,7 +385,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
     final appState = AppStateScope.of(context);
     final visiblePosts = _posts
-        .where((p) => p.author.id == null || !appState.isUserBlocked(p.author.id!))
+        .where(
+          (p) => p.author.id == null || !appState.isUserBlocked(p.author.id!),
+        )
         .toList();
 
     return RefreshIndicator(
@@ -372,9 +421,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
   Future<void> _votePoll(CommunityPost post, String choice) async {
     final appState = AppStateScope.of(context);
     if (!appState.isLoggedIn) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sign in to vote.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.communitySignInToVote)));
       return;
     }
     try {
@@ -393,16 +442,17 @@ class _CommunityScreenState extends State<CommunityScreen> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
   }
 
   Future<void> _showPostActions(CommunityPost post) async {
     final appState = AppStateScope.of(context);
-    final isOwner = appState.isLoggedIn && appState.user?.username == post.author.username;
+    final isOwner =
+        appState.isLoggedIn && appState.user?.username == post.author.username;
 
     final action = await showContentActionSheet(
       context,
@@ -423,14 +473,18 @@ class _CommunityScreenState extends State<CommunityScreen> {
           }
         } catch (e) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(e.toString())),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(e.toString())));
           }
         }
       case ContentAction.report:
         if (mounted) {
-          await showReportReasonSheet(context, contentType: 'post', contentId: post.id);
+          await showReportReasonSheet(
+            context,
+            contentType: 'post',
+            contentId: post.id,
+          );
         }
       case ContentAction.block:
         if (mounted) {
@@ -441,6 +495,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
   }
 
   void _showSortSheet() {
+    final activeSort = _sort ?? 'new';
     HapticFeedback.selectionClick();
     showModalBottomSheet(
       context: context,
@@ -466,7 +521,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Text(
-                  'Sort posts',
+                  context.l10n.communitySortPostsTitle,
                   style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -474,29 +529,31 @@ class _CommunityScreenState extends State<CommunityScreen> {
               ),
               const SizedBox(height: 4),
               for (final s in [
-                ('hot', Icons.local_fire_department, 'Hot'),
-                ('new', Icons.auto_awesome, 'New'),
-                ('top', Icons.trending_up, 'Top'),
+                ('hot', Icons.local_fire_department, context.l10n.communitySortHot),
+                ('new', Icons.auto_awesome, context.l10n.communitySortNew),
+                ('top', Icons.trending_up, context.l10n.communitySortTop),
               ])
                 ListTile(
                   dense: true,
                   leading: Icon(
                     s.$2,
-                    color: _sort == s.$1 ? cs.primary : cs.onSurfaceVariant,
+                    color: activeSort == s.$1
+                        ? cs.primary
+                        : cs.onSurfaceVariant,
                   ),
                   title: Text(
                     s.$3,
                     style: TextStyle(
-                      color: _sort == s.$1 ? cs.primary : null,
-                      fontWeight: _sort == s.$1 ? FontWeight.w700 : null,
+                      color: activeSort == s.$1 ? cs.primary : null,
+                      fontWeight: activeSort == s.$1 ? FontWeight.w700 : null,
                     ),
                   ),
-                  trailing: _sort == s.$1
+                  trailing: activeSort == s.$1
                       ? Icon(Icons.check, color: cs.primary)
                       : null,
                   onTap: () {
                     Navigator.pop(ctx);
-                    if (_sort != s.$1) {
+                    if (activeSort != s.$1) {
                       setState(() => _sort = s.$1);
                       _loadPosts(refresh: true);
                     }

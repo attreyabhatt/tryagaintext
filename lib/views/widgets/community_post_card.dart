@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../l10n/l10n.dart';
 import '../../models/community_post.dart';
 import 'community_poll_widget.dart';
 
@@ -37,7 +38,7 @@ class CommunityPostCard extends StatelessWidget {
     TextTheme tt,
     bool isLight,
   ) {
-    final displayAuthorName = post.displayAuthorName;
+    final displayAuthorName = post.isAnonymous ? context.l10n.communityAnonymous : post.author.displayName;
 
     return GestureDetector(
       onTap: onTap,
@@ -86,7 +87,7 @@ class CommunityPostCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            'FEATURED',
+                            context.l10n.communityFeaturedBadge,
                             style: TextStyle(
                               color: cs.onSecondary,
                               fontSize: 9,
@@ -98,7 +99,7 @@ class CommunityPostCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         Flexible(
                           child: Text(
-                            '$displayAuthorName · ${_timeAgo(post.createdAt)}',
+                            '$displayAuthorName · ${_timeAgo(context, post.createdAt)} · ${_categoryLabel(context, post.category)}',
                             style: tt.bodySmall?.copyWith(
                               color: cs.onSurface.withValues(alpha: 0.5),
                               fontSize: 11,
@@ -122,7 +123,7 @@ class CommunityPostCard extends StatelessWidget {
 
                     const SizedBox(height: 12),
 
-                    // Title (Playfair Display — editorial)
+                    // Title (Playfair Display editorial)
                     Text(
                       post.title,
                       style: tt.headlineSmall?.copyWith(
@@ -242,7 +243,7 @@ class CommunityPostCard extends StatelessWidget {
     TextTheme tt,
     bool isLight,
   ) {
-    final displayAuthorName = post.displayAuthorName;
+    final displayAuthorName = post.isAnonymous ? context.l10n.communityAnonymous : post.author.displayName;
 
     return GestureDetector(
       onTap: onTap,
@@ -304,7 +305,7 @@ class CommunityPostCard extends StatelessWidget {
                             if (post.showAuthorProBadge) ...[
                               const SizedBox(width: 6),
                               _Badge(
-                                label: 'PRO',
+                                label: context.l10n.communityProBadge,
                                 bg: cs.secondary.withValues(alpha: 0.2),
                                 fg: cs.secondary,
                               ),
@@ -312,7 +313,7 @@ class CommunityPostCard extends StatelessWidget {
                           ],
                         ),
                         Text(
-                          _timeAgo(post.createdAt),
+                          '${_timeAgo(context, post.createdAt)} · ${_categoryLabel(context, post.category)}',
                           style: tt.bodySmall?.copyWith(
                             color: cs.onSurface.withValues(alpha: 0.5),
                             fontSize: 11,
@@ -326,13 +327,13 @@ class CommunityPostCard extends StatelessWidget {
                     children: [
                       if (post.isTrending)
                         _Badge(
-                          label: 'TRENDING',
+                          label: context.l10n.communityTrendingBadge,
                           bg: cs.primary.withValues(alpha: 0.15),
                           fg: cs.primary,
                         ),
                       if (post.isNew && !post.isTrending)
                         _Badge(
-                          label: 'NEW',
+                          label: context.l10n.communityNewBadge,
                           bg: cs.surfaceContainerHighest,
                           fg: cs.onSurface,
                         ),
@@ -354,7 +355,7 @@ class CommunityPostCard extends StatelessWidget {
 
               const SizedBox(height: 10),
 
-              // Title (Playfair Display — editorial)
+              // Title (Playfair Display editorial)
               Text(
                 post.title,
                 style: tt.headlineSmall?.copyWith(
@@ -499,13 +500,25 @@ String _formatCount(int count) {
   return '$count';
 }
 
-String timeAgoFromDate(DateTime date) => _timeAgo(date);
+String _categoryLabel(BuildContext context, String cat) {
+  final l10n = context.l10n;
+  return switch (cat) {
+    'help_me_reply' => l10n.communityCategoryHelpMeReply,
+    'dating_advice' => l10n.communityCategoryDatingAdvice,
+    'rate_my_profile' => l10n.communityCategoryRateMyProfile,
+    'wins' => l10n.communityCategoryWins,
+    _ => cat,
+  };
+}
 
-String _timeAgo(DateTime date) {
+String timeAgoFromDate(BuildContext context, DateTime date) => _timeAgo(context, date);
+
+String _timeAgo(BuildContext context, DateTime date) {
+  final l10n = context.l10n;
   final diff = DateTime.now().difference(date);
-  if (diff.inSeconds < 60) return 'just now';
-  if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-  if (diff.inHours < 24) return '${diff.inHours}h ago';
-  if (diff.inDays < 7) return '${diff.inDays}d ago';
-  return '${(diff.inDays / 7).floor()}w ago';
+  if (diff.inSeconds < 60) return l10n.communityTimeJustNow;
+  if (diff.inMinutes < 60) return l10n.communityTimeMinutesAgo(diff.inMinutes);
+  if (diff.inHours < 24) return l10n.communityTimeHoursAgo(diff.inHours);
+  if (diff.inDays < 7) return l10n.communityTimeDaysAgo(diff.inDays);
+  return l10n.communityTimeWeeksAgo((diff.inDays / 7).floor());
 }

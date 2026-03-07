@@ -947,14 +947,14 @@ class ApiClient {
 
   Future<CommunityFeedResponse> getCommunityPosts({
     String? category,
-    String sort = 'hot',
+    String? sort,
     int page = 1,
   }) async {
     try {
       final headers = await _getHeaders();
       final params = <String, String>{
-        'sort': sort,
         'page': page.toString(),
+        if (sort != null && sort.isNotEmpty) 'sort': sort,
         if (category != null && category.isNotEmpty) 'category': category,
       };
       final uri = Uri.parse(
@@ -1299,7 +1299,10 @@ class ApiClient {
         body: jsonEncode({'reason': reason, 'detail': detail}),
       );
       if (response.statusCode == 409) {
-        throw ApiException('You have already reported this.', ApiErrorCode.server);
+        throw ApiException(
+          'You have already reported this.',
+          ApiErrorCode.server,
+        );
       }
       if (response.statusCode != 201) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -1310,7 +1313,10 @@ class ApiClient {
       }
     } catch (e) {
       if (e is ApiException) rethrow;
-      AppLogger.error('reportCommunityContent error', e is Exception ? e : null);
+      AppLogger.error(
+        'reportCommunityContent error',
+        e is Exception ? e : null,
+      );
       throw ApiException('Failed to report content.', ApiErrorCode.network);
     }
   }
