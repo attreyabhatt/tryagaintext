@@ -104,6 +104,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   bool _isShowingReviewPrompt = false;
   final Set<String> _handledPurchaseTokens = {};
   final Set<String> _processingPurchaseTokens = {};
+  _VaultTier? _lastObservedVaultTier;
 
   @override
   void initState() {
@@ -126,6 +127,26 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshSubscriptionStatus();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final appState = AppStateScope.of(context);
+    final currentTier = _vaultTier(appState);
+    final previousTier = _lastObservedVaultTier;
+    _lastObservedVaultTier = currentTier;
+
+    if (previousTier == null || previousTier == currentTier) {
+      return;
+    }
+
+    unawaited(
+      _refreshVaultAfterTierChange(
+        previousTier: previousTier,
+        currentTier: currentTier,
+      ),
+    );
   }
 
   @override
@@ -495,6 +516,20 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     if (appState.isSubscribed) return _VaultTier.elite;
     if (appState.isLoggedIn) return _VaultTier.free;
     return _VaultTier.guest;
+  }
+
+  Future<void> _refreshVaultAfterTierChange({
+    required _VaultTier previousTier,
+    required _VaultTier currentTier,
+  }) async {
+    if (!_isVaultRecommendedMode) {
+      return;
+    }
+
+    AppLogger.debug(
+      'Vault tier changed: ${previousTier.name} -> ${currentTier.name}; refreshing openers',
+    );
+    await _loadRecommendedOpeners();
   }
 
   Future<void> _handleVaultUnlockPressed() async {
