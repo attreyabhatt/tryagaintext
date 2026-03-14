@@ -660,20 +660,11 @@ class _PricingScreenState extends State<PricingScreen>
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          l10n.pricingHeroSubtitle,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                            height: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 24),
                         _buildPremiumFeature(
                           icon: Icons.diamond_outlined,
                           title: l10n.pricingFeatureReasoningTitle,
                           subtitle: l10n.pricingFeatureReasoningSubtitle,
-                          badgeText: l10n.pricingFeatureReasoningBadge,
                           colorScheme: colorScheme,
                         ),
                         _buildPremiumFeature(
@@ -789,15 +780,6 @@ class _PricingScreenState extends State<PricingScreen>
                         ),
                         const SizedBox(height: 24),
                         _buildSocialProofBadge(colorScheme),
-                        const SizedBox(height: 14),
-                        Text(
-                          l10n.pricingCancelAnytime,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                            height: 1.45,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
                       ],
                     ),
                   ),
@@ -1002,4 +984,3 @@ class _PricingScreenState extends State<PricingScreen>
     super.dispose();
   }
 }
-

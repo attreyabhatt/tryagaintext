@@ -828,7 +828,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get pricingRefreshPurchases => 'Käufe aktualisieren';
 
   @override
-  String get pricingHeroLabel => 'ELITE INTELLIGENZ';
+  String get pricingHeroLabel => 'ELITE-ZUGANG';
 
   @override
   String get pricingHeroTitle => 'DER UNFAIRE\nVORTEIL.';
@@ -838,35 +838,35 @@ class AppLocalizationsDe extends AppLocalizations {
       'Schalte die einzige KI frei, die zu tiefer psychologischer Analyse fähig ist.';
 
   @override
-  String get pricingFeatureReasoningTitle => 'Deep Reasoning Engine';
+  String get pricingFeatureReasoningTitle => 'Top-Tier-Intelligenz';
 
   @override
   String get pricingFeatureReasoningSubtitle =>
-      'Opener, analysiert von unserem fortschrittlichsten Modell.';
+      'Unwiderstehliche, schlagfertige Antworten mit unserer fortschrittlichsten KI.';
 
   @override
   String get pricingFeatureReasoningBadge => 'PRO MODELL';
 
   @override
-  String get pricingFeatureFlowTitle => 'Uneingeschränkter Flow';
+  String get pricingFeatureFlowTitle => 'Das Coach-Playbook';
 
   @override
   String get pricingFeatureFlowSubtitle =>
-      'Unbegrenzte Antworten. Keine Timer. Komplette kreative Freiheit.';
+      '20+ bewährte Opener mit hoher Antwortrate, kuratiert von Elite-Dating-Coaches.';
 
   @override
-  String get pricingFeatureTonalityTitle => 'Adaptive Tonalität';
+  String get pricingFeatureTonalityTitle => 'Keine Limits';
 
   @override
   String get pricingFeatureTonalitySubtitle =>
-      'Wechsle sofort zwischen Charmant, Frech oder Aufrichtig.';
+      'Unbegrenzte Antworten und Opener. Triff nie wieder auf eine Bezahlschranke.';
 
   @override
-  String get pricingFeatureContextTitle => 'Sofortiger Kontext';
+  String get pricingFeatureContextTitle => 'Der Inner Circle';
 
   @override
   String get pricingFeatureContextSubtitle =>
-      'Nahtlose Screenshot-Analyse ohne Wartezeit.';
+      'Privater Community-Zugang für Profil-Reviews und Echtzeit-Ratschläge.';
 
   @override
   String get pricingWeeklyFallback => '6,99 € / Woche';
@@ -877,7 +877,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get pricingCoffeeLine => 'Weniger als ein Kaffee am Tag.';
+  String get pricingCoffeeLine => 'Nur \$0.99 pro Tag. Jederzeit kündbar.';
 
   @override
   String get pricingUnlockEliteAccess => 'Elite-Zugang Freischalten';

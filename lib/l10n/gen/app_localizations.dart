@@ -1577,7 +1577,7 @@ abstract class AppLocalizations {
   /// No description provided for @pricingHeroLabel.
   ///
   /// In en, this message translates to:
-  /// **'ELITE INTELLIGENCE'**
+  /// **'ELITE ACCESS'**
   String get pricingHeroLabel;
 
   /// No description provided for @pricingHeroTitle.
@@ -1589,61 +1589,61 @@ abstract class AppLocalizations {
   /// No description provided for @pricingHeroSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Unlock the only AI capable of deep psychological analysis and subtext reading.'**
+  /// **'Stop guessing. Unlock the ultimate toolkit to multiply your responses, secure dates, and master the game.'**
   String get pricingHeroSubtitle;
 
   /// No description provided for @pricingFeatureReasoningTitle.
   ///
   /// In en, this message translates to:
-  /// **'Deep Reasoning Engine'**
+  /// **'Top-Tier Intelligence'**
   String get pricingFeatureReasoningTitle;
 
   /// No description provided for @pricingFeatureReasoningSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Openers analyzed by our most advanced, human-level model.'**
+  /// **'Irresistible, witty replies powered by our most advanced AI.'**
   String get pricingFeatureReasoningSubtitle;
 
   /// No description provided for @pricingFeatureReasoningBadge.
   ///
   /// In en, this message translates to:
-  /// **'PRO MODEL'**
+  /// **'TOP-TIER'**
   String get pricingFeatureReasoningBadge;
 
   /// No description provided for @pricingFeatureFlowTitle.
   ///
   /// In en, this message translates to:
-  /// **'Unrestricted Flow'**
+  /// **'The Coach\'s Playbook'**
   String get pricingFeatureFlowTitle;
 
   /// No description provided for @pricingFeatureFlowSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Unlimited replies. Zero timers. Complete creative freedom.'**
+  /// **'20+ proven, high-response openers curated by elite dating coaches.'**
   String get pricingFeatureFlowSubtitle;
 
   /// No description provided for @pricingFeatureTonalityTitle.
   ///
   /// In en, this message translates to:
-  /// **'Adaptive Tonality'**
+  /// **'Zero Limits'**
   String get pricingFeatureTonalityTitle;
 
   /// No description provided for @pricingFeatureTonalitySubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Switch between Charming, Cocky, or Sincere modes instantly.'**
+  /// **'Unlimited replies and openers. Never hit a paywall again.'**
   String get pricingFeatureTonalitySubtitle;
 
   /// No description provided for @pricingFeatureContextTitle.
   ///
   /// In en, this message translates to:
-  /// **'Instant Context'**
+  /// **'The Inner Circle'**
   String get pricingFeatureContextTitle;
 
   /// No description provided for @pricingFeatureContextSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Seamless screenshot analysis without the wait.'**
+  /// **'Private community access for profile reviews and real-time advice.'**
   String get pricingFeatureContextSubtitle;
 
   /// No description provided for @pricingWeeklyFallback.
@@ -1661,7 +1661,7 @@ abstract class AppLocalizations {
   /// No description provided for @pricingCoffeeLine.
   ///
   /// In en, this message translates to:
-  /// **'Less than a coffee a day.'**
+  /// **'Just \$0.99 a day. Cancel anytime.'**
   String get pricingCoffeeLine;
 
   /// No description provided for @pricingUnlockEliteAccess.

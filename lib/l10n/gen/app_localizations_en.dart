@@ -815,45 +815,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pricingRefreshPurchases => 'Refresh purchases';
 
   @override
-  String get pricingHeroLabel => 'ELITE INTELLIGENCE';
+  String get pricingHeroLabel => 'ELITE ACCESS';
 
   @override
   String get pricingHeroTitle => 'THE UNFAIR\nADVANTAGE.';
 
   @override
   String get pricingHeroSubtitle =>
-      'Unlock the only AI capable of deep psychological analysis and subtext reading.';
+      'Stop guessing. Unlock the ultimate toolkit to multiply your responses, secure dates, and master the game.';
 
   @override
-  String get pricingFeatureReasoningTitle => 'Deep Reasoning Engine';
+  String get pricingFeatureReasoningTitle => 'Top-Tier Intelligence';
 
   @override
   String get pricingFeatureReasoningSubtitle =>
-      'Openers analyzed by our most advanced, human-level model.';
+      'Irresistible, witty replies powered by our most advanced AI.';
 
   @override
-  String get pricingFeatureReasoningBadge => 'PRO MODEL';
+  String get pricingFeatureReasoningBadge => 'TOP-TIER';
 
   @override
-  String get pricingFeatureFlowTitle => 'Unrestricted Flow';
+  String get pricingFeatureFlowTitle => 'The Coach\'s Playbook';
 
   @override
   String get pricingFeatureFlowSubtitle =>
-      'Unlimited replies. Zero timers. Complete creative freedom.';
+      '20+ proven, high-response openers curated by elite dating coaches.';
 
   @override
-  String get pricingFeatureTonalityTitle => 'Adaptive Tonality';
+  String get pricingFeatureTonalityTitle => 'Zero Limits';
 
   @override
   String get pricingFeatureTonalitySubtitle =>
-      'Switch between Charming, Cocky, or Sincere modes instantly.';
+      'Unlimited replies and openers. Never hit a paywall again.';
 
   @override
-  String get pricingFeatureContextTitle => 'Instant Context';
+  String get pricingFeatureContextTitle => 'The Inner Circle';
 
   @override
   String get pricingFeatureContextSubtitle =>
-      'Seamless screenshot analysis without the wait.';
+      'Private community access for profile reviews and real-time advice.';
 
   @override
   String get pricingWeeklyFallback => '\$6.99 / week';
@@ -864,7 +864,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get pricingCoffeeLine => 'Less than a coffee a day.';
+  String get pricingCoffeeLine => 'Just \$0.99 a day. Cancel anytime.';
 
   @override
   String get pricingUnlockEliteAccess => 'Unlock Elite Access';

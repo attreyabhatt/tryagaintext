@@ -10,7 +10,9 @@ import 'pricing_screen.dart';
 import 'report_issue_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final bool showAppBar;
+
+  const ProfileScreen({super.key, this.showAppBar = true});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -85,93 +87,100 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(l10n.profileTitle),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.help_outline),
-            onPressed: () {
-              HapticFeedback.selectionClick();
-              showModalBottomSheet(
-                context: context,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                ),
-                builder: (context) => SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.profileHelpPolicies,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+      appBar: widget.showAppBar
+          ? AppBar(
+              title: Text(l10n.profileTitle),
+              centerTitle: true,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.help_outline),
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    showModalBottomSheet(
+                      context: context,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(16),
+                        ),
+                      ),
+                      builder: (context) => SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                l10n.profileHelpPolicies,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              ListTile(
+                                leading: const Icon(Icons.report_outlined),
+                                title: Text(l10n.reportIssueTitle),
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  Navigator.pop(context);
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const ReportIssueScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              ListTile(
+                                leading: const Icon(Icons.privacy_tip_outlined),
+                                title: Text(l10n.policyPrivacyTitle),
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  Navigator.pop(context);
+                                  _openPolicy('privacy');
+                                },
+                              ),
+                              ListTile(
+                                leading: const Icon(Icons.description_outlined),
+                                title: Text(l10n.policyTermsTitle),
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  Navigator.pop(context);
+                                  _openPolicy('terms');
+                                },
+                              ),
+                              ListTile(
+                                leading: const Icon(
+                                  Icons.receipt_long_outlined,
+                                ),
+                                title: Text(l10n.policyRefundTitle),
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  Navigator.pop(context);
+                                  _openPolicy('refund');
+                                },
+                              ),
+                              ListTile(
+                                leading: const Icon(Icons.delete_outline),
+                                title: Text(l10n.deleteAccountTitle),
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  Navigator.pop(context);
+                                  _openDeleteAccount();
+                                },
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        ListTile(
-                          leading: const Icon(Icons.report_outlined),
-                          title: Text(l10n.reportIssueTitle),
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const ReportIssueScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.privacy_tip_outlined),
-                          title: Text(l10n.policyPrivacyTitle),
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            Navigator.pop(context);
-                            _openPolicy('privacy');
-                          },
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.description_outlined),
-                          title: Text(l10n.policyTermsTitle),
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            Navigator.pop(context);
-                            _openPolicy('terms');
-                          },
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.receipt_long_outlined),
-                          title: Text(l10n.policyRefundTitle),
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            Navigator.pop(context);
-                            _openPolicy('refund');
-                          },
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.delete_outline),
-                          title: Text(l10n.deleteAccountTitle),
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            Navigator.pop(context);
-                            _openDeleteAccount();
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
-        ],
-      ),
+              ],
+            )
+          : null,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(20),

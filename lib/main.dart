@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flirtfix/l10n/gen/app_localizations.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -534,7 +535,7 @@ class _MainShellState extends State<MainShell> {
           _communityRefreshAction = action;
         },
       ),
-      const ProfileScreen(),
+      const ProfileScreen(showAppBar: false),
     ];
   }
 
@@ -557,10 +558,9 @@ class _MainShellState extends State<MainShell> {
     final cs = theme.colorScheme;
     final isLight = theme.brightness == Brightness.light;
     final appState = AppStateScope.of(context);
-    final showMainAppBar = _selectedIndex != 2;
 
     return Scaffold(
-      appBar: showMainAppBar ? _buildMainAppBar(theme) : null,
+      appBar: _buildMainAppBar(theme, appState),
       body: IndexedStack(index: _selectedIndex, children: _screens),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
@@ -621,13 +621,31 @@ class _MainShellState extends State<MainShell> {
     );
   }
 
-  PreferredSizeWidget _buildMainAppBar(ThemeData theme) {
+  void _openPricing() {
+    HapticFeedback.selectionClick();
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const PricingScreen()),
+    );
+  }
+
+  Widget _buildProAction() {
+    return IconButton(
+      onPressed: _openPricing,
+      tooltip: 'Upgrade',
+      icon: const FaIcon(FontAwesomeIcons.crown, color: Color(0xFFD4AF37)),
+    );
+  }
+
+  PreferredSizeWidget _buildMainAppBar(ThemeData theme, AppState appState) {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
     final l10n = context.l10n;
-    final subtitle = _selectedIndex == 1
+    final isCommunityTab = _selectedIndex == 1;
+    final isProfileTab = _selectedIndex == 2;
+    final subtitle = isCommunityTab
         ? l10n.communityTitle
-        : l10n.conversationsAppbarSubtitle;
+        : (isProfileTab ? l10n.profileTitle : l10n.conversationsAppbarSubtitle);
 
     return AppBar(
       backgroundColor: Colors.transparent,
@@ -644,30 +662,42 @@ class _MainShellState extends State<MainShell> {
             fit: BoxFit.contain,
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.appTitle,
-                style: textTheme.headlineSmall?.copyWith(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: -0.2,
-                  color: colorScheme.onSurface,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.appTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.headlineSmall?.copyWith(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.2,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
-              ),
-              Text(
-                subtitle,
-                style: textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.5,
+                    fontStyle: isCommunityTab
+                        ? FontStyle.italic
+                        : FontStyle.normal,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
       actions: [
+        if (!appState.isSubscribed) _buildProAction(),
         if (_selectedIndex == 1)
           IconButton(
             onPressed: _communitySortAction,
