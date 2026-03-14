@@ -534,13 +534,19 @@ class _ConversationsScreenState extends State<ConversationsScreen>
 
   Future<void> _handleVaultUnlockPressed() async {
     final appState = AppStateScope.of(context);
-    if (!appState.isLoggedIn) {
+    final startedAsGuest = !appState.isLoggedIn;
+    if (startedAsGuest) {
       await _navigateToSignup();
       if (!mounted) return;
       await appState.reloadFromStorage();
       if (!mounted || !appState.isLoggedIn) {
         return;
       }
+
+      if (_isVaultRecommendedMode) {
+        await _loadRecommendedOpeners();
+      }
+      return;
     }
 
     await _navigateToPricing();
