@@ -10,7 +10,6 @@ import '../../services/api_client.dart';
 import '../../services/local_notification_service.dart';
 import '../../state/app_state.dart';
 import '../../utils/app_logger.dart';
-import 'login_screen.dart';
 import 'signup_screen.dart';
 import '../widgets/premium_gradient_button.dart';
 import '../widgets/thinking_indicator.dart';
@@ -217,54 +216,14 @@ class _PricingScreenState extends State<PricingScreen>
 
     final appState = AppStateScope.of(context);
     if (!appState.isLoggedIn) {
-      // In guest conversion mode, skip dialog and go directly to signup
-      if (widget.guestConversionMode) {
-        final loginResult = await Navigator.push<bool>(
-          context,
-          MaterialPageRoute(builder: (context) => const SignupScreen()),
-        );
-
-        if (loginResult == true && mounted) {
-          await appState.reloadFromStorage();
-          // Automatically trigger purchase after successful signup
-          _processPurchase(plan);
-        }
-        return;
-      }
-
-      // Original flow: Show login dialog for non-guest conversion
-      final result = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          title: Text(l10n.pricingSignInRequiredTitle),
-          content: Text(l10n.pricingSignInRequiredMessage),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(l10n.commonCancel),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(l10n.commonSignIn),
-            ),
-          ],
-        ),
+      final loginResult = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(builder: (context) => const SignupScreen()),
       );
 
-      if (result == true && mounted) {
-        final loginResult = await Navigator.push<bool>(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-        );
-
-        if (loginResult == true) {
-          await appState.reloadFromStorage();
-          // Proceed with purchase after login
-          _processPurchase(plan);
-        }
+      if (loginResult == true && mounted) {
+        await appState.reloadFromStorage();
+        _processPurchase(plan);
       }
       return;
     }

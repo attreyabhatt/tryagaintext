@@ -21,6 +21,7 @@ import 'views/screens/pricing_screen.dart';
 import 'views/screens/profile_screen.dart';
 import 'views/screens/settings_screen.dart';
 import 'views/screens/signup_screen.dart';
+import 'views/screens/onboarding/onboarding_flow.dart';
 
 ThemeData buildPremiumDarkNeonTheme() {
   const baseDark = Color(0xFF0E0F12);
@@ -794,20 +795,24 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _initializeApp() async {
     await Future.delayed(const Duration(milliseconds: 1800));
+    if (!mounted) return;
 
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              const MainShell(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 300),
-        ),
-      );
-    }
+    final onboardingDone = await OnboardingFlow.isOnboardingCompleted();
+    if (!mounted) return;
+
+    final destination =
+        onboardingDone ? const MainShell() : const OnboardingFlow();
+
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => destination,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 300),
+      ),
+    );
   }
 
   @override
