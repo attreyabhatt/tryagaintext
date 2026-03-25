@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../../config/app_config.dart';
 import '../../l10n/l10n.dart';
 import '../../services/auth_service.dart';
 import '../../services/local_notification_service.dart';
@@ -23,6 +26,63 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String? _errorMessage;
+
+  Future<void> _googleSignIn() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final googleUser = await GoogleSignIn(
+        serverClientId: AppConfig.googleWebClientId,
+      ).signIn();
+      if (googleUser == null) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
+      final googleAuth = await googleUser.authentication;
+      final idToken = googleAuth.idToken;
+      if (idToken == null) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _errorMessage = context.l10n.errorNetworkTryAgain;
+          });
+        }
+        return;
+      }
+
+      final response = await AuthService.googleSignIn(idToken: idToken);
+
+      if (mounted) {
+        if (response.success) {
+          await LocalNotificationService.cancelGuestSignupNudge();
+          await AuthService.markJustSignedUp();
+          if (mounted) {
+            Navigator.of(context).pop(true);
+          }
+        } else {
+          setState(() {
+            _errorMessage = _mapAuthError(response.error);
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = context.l10n.errorNetworkTryAgain;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   Future<void> _signup() async {
     if (!_formKey.currentState!.validate()) return;
@@ -281,6 +341,74 @@ class _SignupScreenState extends State<SignupScreen> {
                                         ),
                                       ),
                                     ],
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(height: 24),
+
+                              // Divider
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Divider(
+                                      color: colorScheme.outlineVariant,
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                    ),
+                                    child: Text(
+                                      l10n.commonOr,
+                                      style: TextStyle(
+                                        color: colorScheme.onSurfaceVariant,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Divider(
+                                      color: colorScheme.outlineVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              // Google Sign-In Button
+                              OutlinedButton(
+                                onPressed: _isLoading ? null : _googleSignIn,
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  side: BorderSide(
+                                    color: colorScheme.outlineVariant,
+                                  ),
+                                  foregroundColor: colorScheme.onSurface,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    FaIcon(
+                                      FontAwesomeIcons.google,
+                                      size: 18,
+                                      color: colorScheme.onSurface,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      'Continue with Google',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: colorScheme.onSurface,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),

@@ -12,7 +12,12 @@
           "package_name": "com.tryagaintext.flirtfix"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "941554814597-u5qhhenkvsi2boho1o5ld24d9kbv6o6t.apps.googleusercontent.com",
+          "client_type": 1
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDeqI774qKSuxny55DfOaeoM-kpGT180J4"
@@ -20,7 +25,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "941554814597-5uc7h3hfputl889m24cf6gu3u33t24uv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

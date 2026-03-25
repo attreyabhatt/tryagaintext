@@ -7,6 +7,10 @@ class AppConfig {
     'ONESIGNAL_APP_ID',
     defaultValue: '',
   );
+  static const String googleWebClientId = String.fromEnvironment(
+    'GOOGLE_WEB_CLIENT_ID',
+    defaultValue: '',
+  );
 
   static const String apiPath = '/api';
   static String get apiBaseUrl => '$baseUrl$apiPath';

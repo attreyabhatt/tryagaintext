@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../../config/app_config.dart';
 import '../../l10n/l10n.dart';
 import '../../state/app_state.dart';
 import '../../services/auth_service.dart';
@@ -24,6 +27,65 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   String? _errorMessage;
+
+  Future<void> _googleSignIn() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final googleUser = await GoogleSignIn(
+        serverClientId: AppConfig.googleWebClientId,
+      ).signIn();
+      if (googleUser == null) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
+      final googleAuth = await googleUser.authentication;
+      final idToken = googleAuth.idToken;
+      if (idToken == null) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _errorMessage = context.l10n.errorNetworkTryAgain;
+          });
+        }
+        return;
+      }
+
+      final response = await AuthService.googleSignIn(idToken: idToken);
+
+      if (mounted) {
+        if (response.success) {
+          final appState = AppStateScope.of(context);
+          await LocalNotificationService.cancelGuestSignupNudge();
+          await appState.reloadFromStorage();
+          if (!mounted) return;
+          await appState.loadBlockedUsers();
+          if (!mounted) return;
+          Navigator.of(context).pop(true);
+        } else {
+          setState(() {
+            _errorMessage = _mapAuthError(response.error);
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = context.l10n.errorNetworkTryAgain;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
@@ -328,7 +390,45 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ],
                               ),
 
-                              const SizedBox(height: 24),
+                              const SizedBox(height: 16),
+
+                              // Google Sign-In Button
+                              OutlinedButton(
+                                onPressed: _isLoading ? null : _googleSignIn,
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  side: BorderSide(
+                                    color: colorScheme.outlineVariant,
+                                  ),
+                                  foregroundColor: colorScheme.onSurface,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    FaIcon(
+                                      FontAwesomeIcons.google,
+                                      size: 18,
+                                      color: colorScheme.onSurface,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      'Continue with Google',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(height: 16),
 
                               // Sign Up Button
                               OutlinedButton(

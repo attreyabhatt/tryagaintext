@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug",
+      "request": "launch",
+      "type": "dart",
+      "args": [
+        "--dart-define-from-file=env/android.debug.env"
+      ]
+    },
+    {
+      "name": "Release",
+      "request": "launch",
+      "type": "dart",
+      "args": [
+        "--release",
+        "--dart-define-from-file=env/android.release.env"
+      ]
+    }
+  ]
+}

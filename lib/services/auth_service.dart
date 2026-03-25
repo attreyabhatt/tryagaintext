@@ -381,6 +381,45 @@ class AuthService {
     }
   }
 
+  // Google Sign-In
+  static Future<AuthResponse> googleSignIn({required String idToken}) async {
+    try {
+      final deviceFingerprint = await getOrCreateDeviceFingerprint();
+      final response = await http.post(
+        Uri.parse('$baseUrl/google-signin/'),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Device-Fingerprint': deviceFingerprint,
+          'X-Guest-Id': deviceFingerprint,
+        },
+        body: jsonEncode({'id_token': idToken}),
+      );
+
+      final data = jsonDecode(response.body);
+      final authResponse = AuthResponse.fromJson(data);
+
+      if (authResponse.success &&
+          authResponse.token != null &&
+          authResponse.user != null) {
+        await updateSubscriptionFromPayload(data);
+        await _storeToken(authResponse.token!);
+        await _storeUser(
+          authResponse.user!,
+          authResponse.chatCredits ?? 0,
+          isSubscribed: authResponse.isSubscribed,
+          subscriptionExpiry: authResponse.subscriptionExpiry,
+          subscriberWeeklyRemaining: authResponse.subscriberWeeklyRemaining,
+          subscriberWeeklyLimit: authResponse.subscriberWeeklyLimit,
+        );
+      }
+
+      return authResponse;
+    } catch (e) {
+      AppLogger.error('Google sign-in error', e is Exception ? e : null);
+      return AuthResponse(success: false, error: 'network_error');
+    }
+  }
+
   // Get profile
   static Future<ProfileResponse> getProfile() async {
     try {
