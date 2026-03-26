@@ -7,6 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flirtfix/models/suggestion.dart';
 import 'package:flirtfix/services/api_client.dart';
+import 'package:flirtfix/l10n/l10n.dart';
 import 'package:flirtfix/utils/app_logger.dart';
 import 'package:flirtfix/views/widgets/premium_gradient_button.dart';
 
@@ -88,7 +89,7 @@ class _OnboardingUploadScreenState extends State<OnboardingUploadScreen> {
       if (!mounted) return;
       setState(() {
         _isProcessing = false;
-        _errorMessage = 'Something went wrong. Tap your image to retry.';
+        _errorMessage = context.l10n.onboardingUploadError;
       });
     }
   }
@@ -97,6 +98,7 @@ class _OnboardingUploadScreenState extends State<OnboardingUploadScreen> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final l10n = context.l10n;
     final hasImage = _selectedImage != null;
     final hasResults = _suggestions.isNotEmpty;
 
@@ -111,8 +113,8 @@ class _OnboardingUploadScreenState extends State<OnboardingUploadScreen> {
               const SizedBox(height: 48),
               Text(
                 hasResults
-                    ? 'Here are your replies'
-                    : (hasImage ? 'Analyzing...' : 'See it in action'),
+                    ? l10n.onboardingUploadTitleResults
+                    : (hasImage ? l10n.onboardingUploadTitleAnalyzing : l10n.onboardingUploadTitleDefault),
                 style: textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                   height: 1.2,
@@ -128,10 +130,10 @@ class _OnboardingUploadScreenState extends State<OnboardingUploadScreen> {
               const SizedBox(height: 8),
               Text(
                 hasResults
-                    ? 'Tap any reply to copy it'
+                    ? l10n.onboardingUploadSubtitleResults
                     : (_isProcessing
-                        ? 'Our AI is scanning the vibe...'
-                        : 'Upload a screenshot to see the magic'),
+                        ? l10n.onboardingUploadSubtitleAnalyzing
+                        : l10n.onboardingUploadSubtitleDefault),
                 style: textTheme.bodyMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
@@ -157,7 +159,7 @@ class _OnboardingUploadScreenState extends State<OnboardingUploadScreen> {
               PremiumGradientButton(
                 onPressed:
                     _suggestions.isNotEmpty ? widget.onContinue : null,
-                child: const Text('Continue'),
+                child: Text(l10n.commonContinue),
               )
                   .animate()
                   .fadeIn(
@@ -206,6 +208,7 @@ class _OnboardingUploadScreenState extends State<OnboardingUploadScreen> {
   }
 
   Widget _buildResultsView(ColorScheme colorScheme, TextTheme textTheme) {
+    final l10n = context.l10n;
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -244,7 +247,7 @@ class _OnboardingUploadScreenState extends State<OnboardingUploadScreen> {
                           size: 16, color: colorScheme.onSurfaceVariant),
                       const SizedBox(width: 4),
                       Text(
-                        'Change',
+                        l10n.onboardingUploadChange,
                         style: textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                           fontSize: 11,
@@ -311,7 +314,7 @@ class _OnboardingUploadScreenState extends State<OnboardingUploadScreen> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Curated Responses',
+                  l10n.onboardingUploadCuratedResponses,
                   style: textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: colorScheme.onSurface,
@@ -339,7 +342,7 @@ class _OnboardingUploadScreenState extends State<OnboardingUploadScreen> {
                   Clipboard.setData(ClipboardData(text: suggestion.message));
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text('Copied to clipboard!'),
+                      content: Text(l10n.onboardingUploadCopied),
                       duration: const Duration(seconds: 1),
                       backgroundColor: colorScheme.secondaryContainer,
                     ),
@@ -368,6 +371,7 @@ class _OnboardingUploadScreenState extends State<OnboardingUploadScreen> {
 
   Widget _buildLoadingIndicator(
       ColorScheme colorScheme, TextTheme textTheme) {
+    final l10n = context.l10n;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 40),
       child: Column(
@@ -399,7 +403,7 @@ class _OnboardingUploadScreenState extends State<OnboardingUploadScreen> {
               ),
           const SizedBox(height: 16),
           Text(
-            'Generating replies...',
+            l10n.onboardingUploadGenerating,
             style: textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
@@ -410,6 +414,7 @@ class _OnboardingUploadScreenState extends State<OnboardingUploadScreen> {
   }
 
   Widget _buildDropZone(ColorScheme colorScheme, TextTheme textTheme) {
+    final l10n = context.l10n;
     return CustomPaint(
       painter: _DashedBorderPainter(
         color: colorScheme.secondary,
@@ -435,7 +440,7 @@ class _OnboardingUploadScreenState extends State<OnboardingUploadScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Tap to Upload\nChat or Profile',
+              l10n.onboardingUploadDropZone,
               textAlign: TextAlign.center,
               style: textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
@@ -445,7 +450,7 @@ class _OnboardingUploadScreenState extends State<OnboardingUploadScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'PNG, JPG or screenshot',
+              l10n.onboardingUploadFormats,
               style: textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),

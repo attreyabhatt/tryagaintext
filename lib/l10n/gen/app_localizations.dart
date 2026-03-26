@@ -2659,6 +2659,228 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Home'**
   String get navHome;
+
+  /// No description provided for @onboardingProblemTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s holding your\nmatches back?'**
+  String get onboardingProblemTitle;
+
+  /// No description provided for @onboardingProblemSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all that apply'**
+  String get onboardingProblemSubtitle;
+
+  /// No description provided for @onboardingProblemFizzleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations fizzle out'**
+  String get onboardingProblemFizzleTitle;
+
+  /// No description provided for @onboardingProblemFizzleSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Strong start, then silence'**
+  String get onboardingProblemFizzleSubtitle;
+
+  /// No description provided for @onboardingProblemOpenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sure how to open'**
+  String get onboardingProblemOpenTitle;
+
+  /// No description provided for @onboardingProblemOpenSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'First messages feel awkward'**
+  String get onboardingProblemOpenSubtitle;
+
+  /// No description provided for @onboardingProblemReadTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Left on read'**
+  String get onboardingProblemReadTitle;
+
+  /// No description provided for @onboardingProblemReadSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages go unanswered'**
+  String get onboardingProblemReadSubtitle;
+
+  /// No description provided for @onboardingProblemBoringTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Boring replies'**
+  String get onboardingProblemBoringTitle;
+
+  /// No description provided for @onboardingProblemBoringSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hard to keep it interesting'**
+  String get onboardingProblemBoringSubtitle;
+
+  /// No description provided for @onboardingProblemFlirtTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Awkward flirting'**
+  String get onboardingProblemFlirtTitle;
+
+  /// No description provided for @onboardingProblemFlirtSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t find the right tone'**
+  String get onboardingProblemFlirtSubtitle;
+
+  /// No description provided for @onboardingAnalysisLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing your\ncommunication style...'**
+  String get onboardingAnalysisLoading;
+
+  /// No description provided for @onboardingAnalysisHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re not alone.'**
+  String get onboardingAnalysisHeadline;
+
+  /// No description provided for @onboardingAnalysisStatPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'82% of matches are lost to '**
+  String get onboardingAnalysisStatPrefix;
+
+  /// No description provided for @onboardingAnalysisStatHighlight.
+  ///
+  /// In en, this message translates to:
+  /// **'dry texting.'**
+  String get onboardingAnalysisStatHighlight;
+
+  /// No description provided for @onboardingSolutionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your AI Wingman,\nin 3 Steps'**
+  String get onboardingSolutionTitle;
+
+  /// No description provided for @onboardingSolutionStep1Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Snap a profile or chat'**
+  String get onboardingSolutionStep1Title;
+
+  /// No description provided for @onboardingSolutionStep1Subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload a screenshot from any dating app'**
+  String get onboardingSolutionStep1Subtitle;
+
+  /// No description provided for @onboardingSolutionStep2Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Our AI scans the vibe'**
+  String get onboardingSolutionStep2Title;
+
+  /// No description provided for @onboardingSolutionStep2Subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Instant analysis of their personality & tone'**
+  String get onboardingSolutionStep2Subtitle;
+
+  /// No description provided for @onboardingSolutionStep3Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Get the perfect response'**
+  String get onboardingSolutionStep3Title;
+
+  /// No description provided for @onboardingSolutionStep3Subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tailored replies that actually get answers'**
+  String get onboardingSolutionStep3Subtitle;
+
+  /// No description provided for @onboardingGetStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Started'**
+  String get onboardingGetStarted;
+
+  /// No description provided for @onboardingUploadTitleDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'See it in action'**
+  String get onboardingUploadTitleDefault;
+
+  /// No description provided for @onboardingUploadTitleAnalyzing.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing...'**
+  String get onboardingUploadTitleAnalyzing;
+
+  /// No description provided for @onboardingUploadTitleResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Here are your replies'**
+  String get onboardingUploadTitleResults;
+
+  /// No description provided for @onboardingUploadSubtitleResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap any reply to copy it'**
+  String get onboardingUploadSubtitleResults;
+
+  /// No description provided for @onboardingUploadSubtitleAnalyzing.
+  ///
+  /// In en, this message translates to:
+  /// **'Our AI is scanning the vibe...'**
+  String get onboardingUploadSubtitleAnalyzing;
+
+  /// No description provided for @onboardingUploadSubtitleDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload a screenshot to see the magic'**
+  String get onboardingUploadSubtitleDefault;
+
+  /// No description provided for @onboardingUploadDropZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to Upload\nChat or Profile'**
+  String get onboardingUploadDropZone;
+
+  /// No description provided for @onboardingUploadFormats.
+  ///
+  /// In en, this message translates to:
+  /// **'PNG, JPG or screenshot'**
+  String get onboardingUploadFormats;
+
+  /// No description provided for @onboardingUploadChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get onboardingUploadChange;
+
+  /// No description provided for @onboardingUploadGenerating.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating replies...'**
+  String get onboardingUploadGenerating;
+
+  /// No description provided for @onboardingUploadCuratedResponses.
+  ///
+  /// In en, this message translates to:
+  /// **'Curated Responses'**
+  String get onboardingUploadCuratedResponses;
+
+  /// No description provided for @onboardingUploadCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard!'**
+  String get onboardingUploadCopied;
+
+  /// No description provided for @onboardingUploadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Tap your image to retry.'**
+  String get onboardingUploadError;
 }
 
 class _AppLocalizationsDelegate

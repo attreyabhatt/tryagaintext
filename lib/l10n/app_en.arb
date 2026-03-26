@@ -561,5 +561,46 @@
 
   "communityAnonymous": "Anonymous",
 
-  "navHome": "Home"
+  "navHome": "Home",
+
+  "onboardingProblemTitle": "What's holding your\nmatches back?",
+  "onboardingProblemSubtitle": "Select all that apply",
+  "onboardingProblemFizzleTitle": "Conversations fizzle out",
+  "onboardingProblemFizzleSubtitle": "Strong start, then silence",
+  "onboardingProblemOpenTitle": "Not sure how to open",
+  "onboardingProblemOpenSubtitle": "First messages feel awkward",
+  "onboardingProblemReadTitle": "Left on read",
+  "onboardingProblemReadSubtitle": "Messages go unanswered",
+  "onboardingProblemBoringTitle": "Boring replies",
+  "onboardingProblemBoringSubtitle": "Hard to keep it interesting",
+  "onboardingProblemFlirtTitle": "Awkward flirting",
+  "onboardingProblemFlirtSubtitle": "Can't find the right tone",
+
+  "onboardingAnalysisLoading": "Analyzing your\ncommunication style...",
+  "onboardingAnalysisHeadline": "You're not alone.",
+  "onboardingAnalysisStatPrefix": "82% of matches are lost to ",
+  "onboardingAnalysisStatHighlight": "dry texting.",
+
+  "onboardingSolutionTitle": "Your AI Wingman,\nin 3 Steps",
+  "onboardingSolutionStep1Title": "Snap a profile or chat",
+  "onboardingSolutionStep1Subtitle": "Upload a screenshot from any dating app",
+  "onboardingSolutionStep2Title": "Our AI scans the vibe",
+  "onboardingSolutionStep2Subtitle": "Instant analysis of their personality & tone",
+  "onboardingSolutionStep3Title": "Get the perfect response",
+  "onboardingSolutionStep3Subtitle": "Tailored replies that actually get answers",
+  "onboardingGetStarted": "Get Started",
+
+  "onboardingUploadTitleDefault": "See it in action",
+  "onboardingUploadTitleAnalyzing": "Analyzing...",
+  "onboardingUploadTitleResults": "Here are your replies",
+  "onboardingUploadSubtitleResults": "Tap any reply to copy it",
+  "onboardingUploadSubtitleAnalyzing": "Our AI is scanning the vibe...",
+  "onboardingUploadSubtitleDefault": "Upload a screenshot to see the magic",
+  "onboardingUploadDropZone": "Tap to Upload\nChat or Profile",
+  "onboardingUploadFormats": "PNG, JPG or screenshot",
+  "onboardingUploadChange": "Change",
+  "onboardingUploadGenerating": "Generating replies...",
+  "onboardingUploadCuratedResponses": "Curated Responses",
+  "onboardingUploadCopied": "Copied to clipboard!",
+  "onboardingUploadError": "Something went wrong. Tap your image to retry."
 }

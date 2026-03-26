@@ -1455,4 +1455,130 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get navHome => 'Startseite';
+
+  @override
+  String get onboardingProblemTitle => 'Was hält deine\nMatches zurück?';
+
+  @override
+  String get onboardingProblemSubtitle => 'Wähle alles Zutreffende aus';
+
+  @override
+  String get onboardingProblemFizzleTitle => 'Gespräche verlaufen im Sand';
+
+  @override
+  String get onboardingProblemFizzleSubtitle => 'Guter Start, dann Stille';
+
+  @override
+  String get onboardingProblemOpenTitle => 'Unsicher beim Eröffnen';
+
+  @override
+  String get onboardingProblemOpenSubtitle =>
+      'Erste Nachrichten fühlen sich komisch an';
+
+  @override
+  String get onboardingProblemReadTitle => 'Auf gelesen gelassen';
+
+  @override
+  String get onboardingProblemReadSubtitle =>
+      'Nachrichten bleiben unbeantwortet';
+
+  @override
+  String get onboardingProblemBoringTitle => 'Langweilige Antworten';
+
+  @override
+  String get onboardingProblemBoringSubtitle =>
+      'Schwer, es interessant zu halten';
+
+  @override
+  String get onboardingProblemFlirtTitle => 'Unbeholfenes Flirten';
+
+  @override
+  String get onboardingProblemFlirtSubtitle => 'Den richtigen Ton nicht finden';
+
+  @override
+  String get onboardingAnalysisLoading =>
+      'Analysiere deinen\nKommunikationsstil...';
+
+  @override
+  String get onboardingAnalysisHeadline => 'Du bist nicht allein.';
+
+  @override
+  String get onboardingAnalysisStatPrefix =>
+      '82% der Matches gehen verloren durch ';
+
+  @override
+  String get onboardingAnalysisStatHighlight => 'langweilige Texte.';
+
+  @override
+  String get onboardingSolutionTitle => 'Dein KI-Wingman,\nin 3 Schritten';
+
+  @override
+  String get onboardingSolutionStep1Title =>
+      'Mach ein Foto vom Profil oder Chat';
+
+  @override
+  String get onboardingSolutionStep1Subtitle =>
+      'Lade einen Screenshot von jeder Dating-App hoch';
+
+  @override
+  String get onboardingSolutionStep2Title =>
+      'Unsere KI analysiert die Stimmung';
+
+  @override
+  String get onboardingSolutionStep2Subtitle =>
+      'Sofortige Analyse von Persönlichkeit und Ton';
+
+  @override
+  String get onboardingSolutionStep3Title => 'Erhalte die perfekte Antwort';
+
+  @override
+  String get onboardingSolutionStep3Subtitle =>
+      'Maßgeschneiderte Antworten, die wirklich ankommen';
+
+  @override
+  String get onboardingGetStarted => 'Los geht\'s';
+
+  @override
+  String get onboardingUploadTitleDefault => 'Sieh es in Aktion';
+
+  @override
+  String get onboardingUploadTitleAnalyzing => 'Analysiere...';
+
+  @override
+  String get onboardingUploadTitleResults => 'Hier sind deine Antworten';
+
+  @override
+  String get onboardingUploadSubtitleResults =>
+      'Tippe auf eine Antwort zum Kopieren';
+
+  @override
+  String get onboardingUploadSubtitleAnalyzing =>
+      'Unsere KI analysiert die Stimmung...';
+
+  @override
+  String get onboardingUploadSubtitleDefault =>
+      'Lade einen Screenshot hoch und erlebe die Magie';
+
+  @override
+  String get onboardingUploadDropZone =>
+      'Tippen zum Hochladen\nChat oder Profil';
+
+  @override
+  String get onboardingUploadFormats => 'PNG, JPG oder Screenshot';
+
+  @override
+  String get onboardingUploadChange => 'Ändern';
+
+  @override
+  String get onboardingUploadGenerating => 'Antworten werden generiert...';
+
+  @override
+  String get onboardingUploadCuratedResponses => 'Ausgewählte Antworten';
+
+  @override
+  String get onboardingUploadCopied => 'In die Zwischenablage kopiert!';
+
+  @override
+  String get onboardingUploadError =>
+      'Etwas ist schiefgelaufen. Tippe auf dein Bild, um es erneut zu versuchen.';
 }

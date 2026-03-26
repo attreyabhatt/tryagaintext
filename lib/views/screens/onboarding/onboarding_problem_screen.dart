@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flirtfix/l10n/l10n.dart';
 import 'package:flirtfix/views/widgets/premium_gradient_button.dart';
 
 class OnboardingProblemScreen extends StatelessWidget {
@@ -15,38 +16,39 @@ class OnboardingProblemScreen extends StatelessWidget {
     required this.onContinue,
   });
 
-  static const List<_ProblemOption> _problems = [
-    _ProblemOption(
-      title: 'Conversations fizzle out',
-      subtitle: 'Strong start, then silence',
-      icon: Icons.trending_down_rounded,
-    ),
-    _ProblemOption(
-      title: 'Not sure how to open',
-      subtitle: 'First messages feel awkward',
-      icon: Icons.chat_bubble_outline_rounded,
-    ),
-    _ProblemOption(
-      title: 'Left on read',
-      subtitle: 'Messages go unanswered',
-      icon: Icons.visibility_off_outlined,
-    ),
-    _ProblemOption(
-      title: 'Boring replies',
-      subtitle: 'Hard to keep it interesting',
-      icon: Icons.sentiment_neutral_outlined,
-    ),
-    _ProblemOption(
-      title: 'Awkward flirting',
-      subtitle: "Can't find the right tone",
-      icon: Icons.favorite_border_rounded,
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final l10n = context.l10n;
+
+    final problems = [
+      _ProblemOption(
+        title: l10n.onboardingProblemFizzleTitle,
+        subtitle: l10n.onboardingProblemFizzleSubtitle,
+        icon: Icons.trending_down_rounded,
+      ),
+      _ProblemOption(
+        title: l10n.onboardingProblemOpenTitle,
+        subtitle: l10n.onboardingProblemOpenSubtitle,
+        icon: Icons.chat_bubble_outline_rounded,
+      ),
+      _ProblemOption(
+        title: l10n.onboardingProblemReadTitle,
+        subtitle: l10n.onboardingProblemReadSubtitle,
+        icon: Icons.visibility_off_outlined,
+      ),
+      _ProblemOption(
+        title: l10n.onboardingProblemBoringTitle,
+        subtitle: l10n.onboardingProblemBoringSubtitle,
+        icon: Icons.sentiment_neutral_outlined,
+      ),
+      _ProblemOption(
+        title: l10n.onboardingProblemFlirtTitle,
+        subtitle: l10n.onboardingProblemFlirtSubtitle,
+        icon: Icons.favorite_border_rounded,
+      ),
+    ];
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -55,7 +57,7 @@ class OnboardingProblemScreen extends StatelessWidget {
         children: [
           const SizedBox(height: 48),
           Text(
-            "What's holding your\nmatches back?",
+            l10n.onboardingProblemTitle,
             style: textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.w700,
               height: 1.2,
@@ -70,7 +72,7 @@ class OnboardingProblemScreen extends StatelessWidget {
               .slideY(begin: 0.1, curve: Curves.easeOutExpo),
           const SizedBox(height: 8),
           Text(
-            'Select all that apply',
+            l10n.onboardingProblemSubtitle,
             style: textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
@@ -88,7 +90,7 @@ class OnboardingProblemScreen extends StatelessWidget {
                 SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
-                      final problem = _problems[index];
+                      final problem = problems[index];
                       final isSelected =
                           selectedProblems.contains(problem.title);
                       return Padding(
@@ -115,7 +117,7 @@ class OnboardingProblemScreen extends StatelessWidget {
                             curve: Curves.easeOutExpo,
                           );
                     },
-                    childCount: _problems.length,
+                    childCount: problems.length,
                   ),
                 ),
               ],
@@ -124,7 +126,7 @@ class OnboardingProblemScreen extends StatelessWidget {
           const SizedBox(height: 16),
           PremiumGradientButton(
             onPressed: selectedProblems.isNotEmpty ? onContinue : null,
-            child: const Text('Continue'),
+            child: Text(l10n.commonContinue),
           )
               .animate()
               .fadeIn(

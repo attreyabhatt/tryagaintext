@@ -561,5 +561,46 @@
 
   "communityAnonymous": "Anónimo",
 
-  "navHome": "Inicio"
+  "navHome": "Inicio",
+
+  "onboardingProblemTitle": "¿Qué frena tus\nconversaciones?",
+  "onboardingProblemSubtitle": "Selecciona todo lo que aplique",
+  "onboardingProblemFizzleTitle": "Las conversaciones se apagan",
+  "onboardingProblemFizzleSubtitle": "Buen comienzo, luego silencio",
+  "onboardingProblemOpenTitle": "No sé cómo empezar",
+  "onboardingProblemOpenSubtitle": "Los primeros mensajes son incómodos",
+  "onboardingProblemReadTitle": "Me dejan en visto",
+  "onboardingProblemReadSubtitle": "Los mensajes quedan sin respuesta",
+  "onboardingProblemBoringTitle": "Respuestas aburridas",
+  "onboardingProblemBoringSubtitle": "Difícil mantener el interés",
+  "onboardingProblemFlirtTitle": "Coqueteo incómodo",
+  "onboardingProblemFlirtSubtitle": "No encuentro el tono correcto",
+
+  "onboardingAnalysisLoading": "Analizando tu\nestilo de comunicación...",
+  "onboardingAnalysisHeadline": "No estás solo.",
+  "onboardingAnalysisStatPrefix": "El 82% de los matches se pierden por ",
+  "onboardingAnalysisStatHighlight": "mensajes aburridos.",
+
+  "onboardingSolutionTitle": "Tu Wingman con IA,\nen 3 Pasos",
+  "onboardingSolutionStep1Title": "Captura un perfil o chat",
+  "onboardingSolutionStep1Subtitle": "Sube una captura de cualquier app de citas",
+  "onboardingSolutionStep2Title": "Nuestra IA analiza el ambiente",
+  "onboardingSolutionStep2Subtitle": "Análisis instantáneo de personalidad y tono",
+  "onboardingSolutionStep3Title": "Obtén la respuesta perfecta",
+  "onboardingSolutionStep3Subtitle": "Respuestas personalizadas que realmente funcionan",
+  "onboardingGetStarted": "Comenzar",
+
+  "onboardingUploadTitleDefault": "Míralo en acción",
+  "onboardingUploadTitleAnalyzing": "Analizando...",
+  "onboardingUploadTitleResults": "Aquí están tus respuestas",
+  "onboardingUploadSubtitleResults": "Toca cualquier respuesta para copiarla",
+  "onboardingUploadSubtitleAnalyzing": "Nuestra IA está analizando el ambiente...",
+  "onboardingUploadSubtitleDefault": "Sube una captura para ver la magia",
+  "onboardingUploadDropZone": "Toca para Subir\nChat o Perfil",
+  "onboardingUploadFormats": "PNG, JPG o captura de pantalla",
+  "onboardingUploadChange": "Cambiar",
+  "onboardingUploadGenerating": "Generando respuestas...",
+  "onboardingUploadCuratedResponses": "Respuestas Seleccionadas",
+  "onboardingUploadCopied": "¡Copiado al portapapeles!",
+  "onboardingUploadError": "Algo salió mal. Toca tu imagen para reintentar."
 }

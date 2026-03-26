@@ -561,5 +561,46 @@
 
   "communityAnonymous": "Anônimo",
 
-  "navHome": "Início"
+  "navHome": "Início",
+
+  "onboardingProblemTitle": "O que está travando\nseus matches?",
+  "onboardingProblemSubtitle": "Selecione tudo que se aplica",
+  "onboardingProblemFizzleTitle": "As conversas morrem",
+  "onboardingProblemFizzleSubtitle": "Bom começo, depois silêncio",
+  "onboardingProblemOpenTitle": "Não sei como começar",
+  "onboardingProblemOpenSubtitle": "As primeiras mensagens são estranhas",
+  "onboardingProblemReadTitle": "Deixado no vácuo",
+  "onboardingProblemReadSubtitle": "Mensagens ficam sem resposta",
+  "onboardingProblemBoringTitle": "Respostas entediantes",
+  "onboardingProblemBoringSubtitle": "Difícil manter o interesse",
+  "onboardingProblemFlirtTitle": "Flerte desajeitado",
+  "onboardingProblemFlirtSubtitle": "Não consigo achar o tom certo",
+
+  "onboardingAnalysisLoading": "Analisando seu\nestilo de comunicação...",
+  "onboardingAnalysisHeadline": "Você não está sozinho.",
+  "onboardingAnalysisStatPrefix": "82% dos matches são perdidos por ",
+  "onboardingAnalysisStatHighlight": "mensagens sem graça.",
+
+  "onboardingSolutionTitle": "Seu Wingman com IA,\nem 3 Passos",
+  "onboardingSolutionStep1Title": "Capture um perfil ou chat",
+  "onboardingSolutionStep1Subtitle": "Envie um print de qualquer app de namoro",
+  "onboardingSolutionStep2Title": "Nossa IA analisa o clima",
+  "onboardingSolutionStep2Subtitle": "Análise instantânea de personalidade e tom",
+  "onboardingSolutionStep3Title": "Receba a resposta perfeita",
+  "onboardingSolutionStep3Subtitle": "Respostas personalizadas que realmente funcionam",
+  "onboardingGetStarted": "Começar",
+
+  "onboardingUploadTitleDefault": "Veja em ação",
+  "onboardingUploadTitleAnalyzing": "Analisando...",
+  "onboardingUploadTitleResults": "Aqui estão suas respostas",
+  "onboardingUploadSubtitleResults": "Toque em qualquer resposta para copiar",
+  "onboardingUploadSubtitleAnalyzing": "Nossa IA está analisando o clima...",
+  "onboardingUploadSubtitleDefault": "Envie um print para ver a mágica",
+  "onboardingUploadDropZone": "Toque para Enviar\nChat ou Perfil",
+  "onboardingUploadFormats": "PNG, JPG ou captura de tela",
+  "onboardingUploadChange": "Alterar",
+  "onboardingUploadGenerating": "Gerando respostas...",
+  "onboardingUploadCuratedResponses": "Respostas Selecionadas",
+  "onboardingUploadCopied": "Copiado para a área de transferência!",
+  "onboardingUploadError": "Algo deu errado. Toque na sua imagem para tentar novamente."
 }

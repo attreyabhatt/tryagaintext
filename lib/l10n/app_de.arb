@@ -561,5 +561,46 @@
 
   "communityAnonymous": "Anonym",
 
-  "navHome": "Startseite"
+  "navHome": "Startseite",
+
+  "onboardingProblemTitle": "Was hält deine\nMatches zurück?",
+  "onboardingProblemSubtitle": "Wähle alles Zutreffende aus",
+  "onboardingProblemFizzleTitle": "Gespräche verlaufen im Sand",
+  "onboardingProblemFizzleSubtitle": "Guter Start, dann Stille",
+  "onboardingProblemOpenTitle": "Unsicher beim Eröffnen",
+  "onboardingProblemOpenSubtitle": "Erste Nachrichten fühlen sich komisch an",
+  "onboardingProblemReadTitle": "Auf gelesen gelassen",
+  "onboardingProblemReadSubtitle": "Nachrichten bleiben unbeantwortet",
+  "onboardingProblemBoringTitle": "Langweilige Antworten",
+  "onboardingProblemBoringSubtitle": "Schwer, es interessant zu halten",
+  "onboardingProblemFlirtTitle": "Unbeholfenes Flirten",
+  "onboardingProblemFlirtSubtitle": "Den richtigen Ton nicht finden",
+
+  "onboardingAnalysisLoading": "Analysiere deinen\nKommunikationsstil...",
+  "onboardingAnalysisHeadline": "Du bist nicht allein.",
+  "onboardingAnalysisStatPrefix": "82% der Matches gehen verloren durch ",
+  "onboardingAnalysisStatHighlight": "langweilige Texte.",
+
+  "onboardingSolutionTitle": "Dein KI-Wingman,\nin 3 Schritten",
+  "onboardingSolutionStep1Title": "Mach ein Foto vom Profil oder Chat",
+  "onboardingSolutionStep1Subtitle": "Lade einen Screenshot von jeder Dating-App hoch",
+  "onboardingSolutionStep2Title": "Unsere KI analysiert die Stimmung",
+  "onboardingSolutionStep2Subtitle": "Sofortige Analyse von Persönlichkeit und Ton",
+  "onboardingSolutionStep3Title": "Erhalte die perfekte Antwort",
+  "onboardingSolutionStep3Subtitle": "Maßgeschneiderte Antworten, die wirklich ankommen",
+  "onboardingGetStarted": "Los geht's",
+
+  "onboardingUploadTitleDefault": "Sieh es in Aktion",
+  "onboardingUploadTitleAnalyzing": "Analysiere...",
+  "onboardingUploadTitleResults": "Hier sind deine Antworten",
+  "onboardingUploadSubtitleResults": "Tippe auf eine Antwort zum Kopieren",
+  "onboardingUploadSubtitleAnalyzing": "Unsere KI analysiert die Stimmung...",
+  "onboardingUploadSubtitleDefault": "Lade einen Screenshot hoch und erlebe die Magie",
+  "onboardingUploadDropZone": "Tippen zum Hochladen\nChat oder Profil",
+  "onboardingUploadFormats": "PNG, JPG oder Screenshot",
+  "onboardingUploadChange": "Ändern",
+  "onboardingUploadGenerating": "Antworten werden generiert...",
+  "onboardingUploadCuratedResponses": "Ausgewählte Antworten",
+  "onboardingUploadCopied": "In die Zwischenablage kopiert!",
+  "onboardingUploadError": "Etwas ist schiefgelaufen. Tippe auf dein Bild, um es erneut zu versuchen."
 }

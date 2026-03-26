@@ -561,5 +561,46 @@
 
   "communityAnonymous": "Anonyme",
 
-  "navHome": "Accueil"
+  "navHome": "Accueil",
+
+  "onboardingProblemTitle": "Qu'est-ce qui bloque\nvos matchs ?",
+  "onboardingProblemSubtitle": "Sélectionnez tout ce qui s'applique",
+  "onboardingProblemFizzleTitle": "Les conversations s'essoufflent",
+  "onboardingProblemFizzleSubtitle": "Bon début, puis silence",
+  "onboardingProblemOpenTitle": "Pas sûr de comment ouvrir",
+  "onboardingProblemOpenSubtitle": "Les premiers messages sont gênants",
+  "onboardingProblemReadTitle": "Laissé en vu",
+  "onboardingProblemReadSubtitle": "Les messages restent sans réponse",
+  "onboardingProblemBoringTitle": "Réponses ennuyeuses",
+  "onboardingProblemBoringSubtitle": "Difficile de garder l'intérêt",
+  "onboardingProblemFlirtTitle": "Drague maladroite",
+  "onboardingProblemFlirtSubtitle": "Impossible de trouver le bon ton",
+
+  "onboardingAnalysisLoading": "Analyse de votre\nstyle de communication...",
+  "onboardingAnalysisHeadline": "Vous n'êtes pas seul.",
+  "onboardingAnalysisStatPrefix": "82% des matchs sont perdus à cause de ",
+  "onboardingAnalysisStatHighlight": "messages plats.",
+
+  "onboardingSolutionTitle": "Votre Wingman IA,\nen 3 Étapes",
+  "onboardingSolutionStep1Title": "Capturez un profil ou un chat",
+  "onboardingSolutionStep1Subtitle": "Importez une capture d'écran de n'importe quelle appli de rencontre",
+  "onboardingSolutionStep2Title": "Notre IA analyse l'ambiance",
+  "onboardingSolutionStep2Subtitle": "Analyse instantanée de la personnalité et du ton",
+  "onboardingSolutionStep3Title": "Obtenez la réponse parfaite",
+  "onboardingSolutionStep3Subtitle": "Des réponses sur mesure qui obtiennent vraiment des réponses",
+  "onboardingGetStarted": "Commencer",
+
+  "onboardingUploadTitleDefault": "Voyez-le en action",
+  "onboardingUploadTitleAnalyzing": "Analyse en cours...",
+  "onboardingUploadTitleResults": "Voici vos réponses",
+  "onboardingUploadSubtitleResults": "Appuyez sur une réponse pour la copier",
+  "onboardingUploadSubtitleAnalyzing": "Notre IA analyse l'ambiance...",
+  "onboardingUploadSubtitleDefault": "Importez une capture pour voir la magie",
+  "onboardingUploadDropZone": "Appuyez pour Importer\nChat ou Profil",
+  "onboardingUploadFormats": "PNG, JPG ou capture d'écran",
+  "onboardingUploadChange": "Changer",
+  "onboardingUploadGenerating": "Génération des réponses...",
+  "onboardingUploadCuratedResponses": "Réponses Sélectionnées",
+  "onboardingUploadCopied": "Copié dans le presse-papiers !",
+  "onboardingUploadError": "Une erreur est survenue. Appuyez sur votre image pour réessayer."
 }

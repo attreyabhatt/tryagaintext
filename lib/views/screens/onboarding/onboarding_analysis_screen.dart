@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flirtfix/l10n/l10n.dart';
 import 'package:flirtfix/views/widgets/premium_gradient_button.dart';
 
 class OnboardingAnalysisScreen extends StatefulWidget {
@@ -44,6 +45,7 @@ class _OnboardingAnalysisScreenState extends State<OnboardingAnalysisScreen> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final l10n = context.l10n;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -56,14 +58,14 @@ class _OnboardingAnalysisScreenState extends State<OnboardingAnalysisScreen> {
             switchInCurve: Curves.easeOutExpo,
             switchOutCurve: Curves.easeInOutCubic,
             child: _showResult
-                ? _buildResult(colorScheme, textTheme)
-                : _buildLoader(colorScheme, textTheme),
+                ? _buildResult(colorScheme, textTheme, l10n)
+                : _buildLoader(colorScheme, textTheme, l10n),
           ),
           const Spacer(flex: 2),
           if (_showResult)
             PremiumGradientButton(
               onPressed: widget.onContinue,
-              child: const Text('Continue'),
+              child: Text(l10n.commonContinue),
             )
                 .animate()
                 .fadeIn(
@@ -83,7 +85,7 @@ class _OnboardingAnalysisScreenState extends State<OnboardingAnalysisScreen> {
     );
   }
 
-  Widget _buildLoader(ColorScheme colorScheme, TextTheme textTheme) {
+  Widget _buildLoader(ColorScheme colorScheme, TextTheme textTheme, dynamic l10n) {
     return Column(
       key: const ValueKey('loader'),
       mainAxisSize: MainAxisSize.min,
@@ -116,7 +118,7 @@ class _OnboardingAnalysisScreenState extends State<OnboardingAnalysisScreen> {
             .fadeIn(duration: 600.ms),
         const SizedBox(height: 32),
         Text(
-          'Analyzing your\ncommunication style...',
+          l10n.onboardingAnalysisLoading,
           textAlign: TextAlign.center,
           style: textTheme.titleMedium?.copyWith(
             color: colorScheme.onSurfaceVariant,
@@ -127,13 +129,13 @@ class _OnboardingAnalysisScreenState extends State<OnboardingAnalysisScreen> {
     );
   }
 
-  Widget _buildResult(ColorScheme colorScheme, TextTheme textTheme) {
+  Widget _buildResult(ColorScheme colorScheme, TextTheme textTheme, dynamic l10n) {
     return Column(
       key: const ValueKey('result'),
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          "You're not alone.",
+          l10n.onboardingAnalysisHeadline,
           textAlign: TextAlign.center,
           style: textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.w700,
@@ -156,7 +158,7 @@ class _OnboardingAnalysisScreenState extends State<OnboardingAnalysisScreen> {
               height: 1.5,
             ),
             children: [
-              const TextSpan(text: '82% of matches are lost to '),
+              TextSpan(text: l10n.onboardingAnalysisStatPrefix),
               WidgetSpan(
                 alignment: PlaceholderAlignment.baseline,
                 baseline: TextBaseline.alphabetic,
@@ -170,7 +172,7 @@ class _OnboardingAnalysisScreenState extends State<OnboardingAnalysisScreen> {
                     Rect.fromLTWH(0, 0, bounds.width, bounds.height),
                   ),
                   child: Text(
-                    'dry texting.',
+                    l10n.onboardingAnalysisStatHighlight,
                     style: textTheme.titleMedium?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,

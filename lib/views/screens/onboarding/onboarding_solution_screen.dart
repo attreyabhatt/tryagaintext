@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flirtfix/l10n/l10n.dart';
 import 'package:flirtfix/views/widgets/gradient_icon.dart';
 import 'package:flirtfix/views/widgets/premium_gradient_button.dart';
 
@@ -15,6 +16,7 @@ class OnboardingSolutionScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final l10n = context.l10n;
 
     final steps = [
       _SolutionStep(
@@ -22,24 +24,24 @@ class OnboardingSolutionScreen extends StatelessWidget {
         iconGradient: LinearGradient(
           colors: [colorScheme.secondary, const Color(0xFFE8C84A)],
         ),
-        title: 'Snap a profile or chat',
-        subtitle: 'Upload a screenshot from any dating app',
+        title: l10n.onboardingSolutionStep1Title,
+        subtitle: l10n.onboardingSolutionStep1Subtitle,
       ),
       _SolutionStep(
         icon: Icons.auto_awesome,
         iconGradient: LinearGradient(
           colors: [colorScheme.secondary, const Color(0xFFE8C84A)],
         ),
-        title: 'Our AI scans the vibe',
-        subtitle: 'Instant analysis of their personality & tone',
+        title: l10n.onboardingSolutionStep2Title,
+        subtitle: l10n.onboardingSolutionStep2Subtitle,
       ),
       _SolutionStep(
         icon: Icons.send_rounded,
         iconGradient: LinearGradient(
           colors: [colorScheme.primary, colorScheme.tertiary],
         ),
-        title: 'Get the perfect response',
-        subtitle: 'Tailored replies that actually get answers',
+        title: l10n.onboardingSolutionStep3Title,
+        subtitle: l10n.onboardingSolutionStep3Subtitle,
       ),
     ];
 
@@ -50,7 +52,7 @@ class OnboardingSolutionScreen extends StatelessWidget {
         children: [
           const Spacer(flex: 1),
           Text(
-            'Your AI Wingman,\nin 3 Steps',
+            l10n.onboardingSolutionTitle,
             style: textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.w700,
               height: 1.2,
@@ -86,7 +88,7 @@ class OnboardingSolutionScreen extends StatelessWidget {
           const Spacer(flex: 2),
           PremiumGradientButton(
             onPressed: onContinue,
-            child: const Text('Get Started')
+            child: Text(l10n.onboardingGetStarted)
                 .animate(onPlay: (c) => c.repeat())
                 .shimmer(
                   duration: 1800.ms,

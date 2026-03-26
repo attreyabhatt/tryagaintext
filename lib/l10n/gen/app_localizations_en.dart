@@ -1441,4 +1441,122 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navHome => 'Home';
+
+  @override
+  String get onboardingProblemTitle => 'What\'s holding your\nmatches back?';
+
+  @override
+  String get onboardingProblemSubtitle => 'Select all that apply';
+
+  @override
+  String get onboardingProblemFizzleTitle => 'Conversations fizzle out';
+
+  @override
+  String get onboardingProblemFizzleSubtitle => 'Strong start, then silence';
+
+  @override
+  String get onboardingProblemOpenTitle => 'Not sure how to open';
+
+  @override
+  String get onboardingProblemOpenSubtitle => 'First messages feel awkward';
+
+  @override
+  String get onboardingProblemReadTitle => 'Left on read';
+
+  @override
+  String get onboardingProblemReadSubtitle => 'Messages go unanswered';
+
+  @override
+  String get onboardingProblemBoringTitle => 'Boring replies';
+
+  @override
+  String get onboardingProblemBoringSubtitle => 'Hard to keep it interesting';
+
+  @override
+  String get onboardingProblemFlirtTitle => 'Awkward flirting';
+
+  @override
+  String get onboardingProblemFlirtSubtitle => 'Can\'t find the right tone';
+
+  @override
+  String get onboardingAnalysisLoading =>
+      'Analyzing your\ncommunication style...';
+
+  @override
+  String get onboardingAnalysisHeadline => 'You\'re not alone.';
+
+  @override
+  String get onboardingAnalysisStatPrefix => '82% of matches are lost to ';
+
+  @override
+  String get onboardingAnalysisStatHighlight => 'dry texting.';
+
+  @override
+  String get onboardingSolutionTitle => 'Your AI Wingman,\nin 3 Steps';
+
+  @override
+  String get onboardingSolutionStep1Title => 'Snap a profile or chat';
+
+  @override
+  String get onboardingSolutionStep1Subtitle =>
+      'Upload a screenshot from any dating app';
+
+  @override
+  String get onboardingSolutionStep2Title => 'Our AI scans the vibe';
+
+  @override
+  String get onboardingSolutionStep2Subtitle =>
+      'Instant analysis of their personality & tone';
+
+  @override
+  String get onboardingSolutionStep3Title => 'Get the perfect response';
+
+  @override
+  String get onboardingSolutionStep3Subtitle =>
+      'Tailored replies that actually get answers';
+
+  @override
+  String get onboardingGetStarted => 'Get Started';
+
+  @override
+  String get onboardingUploadTitleDefault => 'See it in action';
+
+  @override
+  String get onboardingUploadTitleAnalyzing => 'Analyzing...';
+
+  @override
+  String get onboardingUploadTitleResults => 'Here are your replies';
+
+  @override
+  String get onboardingUploadSubtitleResults => 'Tap any reply to copy it';
+
+  @override
+  String get onboardingUploadSubtitleAnalyzing =>
+      'Our AI is scanning the vibe...';
+
+  @override
+  String get onboardingUploadSubtitleDefault =>
+      'Upload a screenshot to see the magic';
+
+  @override
+  String get onboardingUploadDropZone => 'Tap to Upload\nChat or Profile';
+
+  @override
+  String get onboardingUploadFormats => 'PNG, JPG or screenshot';
+
+  @override
+  String get onboardingUploadChange => 'Change';
+
+  @override
+  String get onboardingUploadGenerating => 'Generating replies...';
+
+  @override
+  String get onboardingUploadCuratedResponses => 'Curated Responses';
+
+  @override
+  String get onboardingUploadCopied => 'Copied to clipboard!';
+
+  @override
+  String get onboardingUploadError =>
+      'Something went wrong. Tap your image to retry.';
 }

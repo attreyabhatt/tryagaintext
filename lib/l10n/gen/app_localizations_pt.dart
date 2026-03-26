@@ -1451,4 +1451,125 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get navHome => 'Início';
+
+  @override
+  String get onboardingProblemTitle => 'O que está travando\nseus matches?';
+
+  @override
+  String get onboardingProblemSubtitle => 'Selecione tudo que se aplica';
+
+  @override
+  String get onboardingProblemFizzleTitle => 'As conversas morrem';
+
+  @override
+  String get onboardingProblemFizzleSubtitle => 'Bom começo, depois silêncio';
+
+  @override
+  String get onboardingProblemOpenTitle => 'Não sei como começar';
+
+  @override
+  String get onboardingProblemOpenSubtitle =>
+      'As primeiras mensagens são estranhas';
+
+  @override
+  String get onboardingProblemReadTitle => 'Deixado no vácuo';
+
+  @override
+  String get onboardingProblemReadSubtitle => 'Mensagens ficam sem resposta';
+
+  @override
+  String get onboardingProblemBoringTitle => 'Respostas entediantes';
+
+  @override
+  String get onboardingProblemBoringSubtitle => 'Difícil manter o interesse';
+
+  @override
+  String get onboardingProblemFlirtTitle => 'Flerte desajeitado';
+
+  @override
+  String get onboardingProblemFlirtSubtitle => 'Não consigo achar o tom certo';
+
+  @override
+  String get onboardingAnalysisLoading =>
+      'Analisando seu\nestilo de comunicação...';
+
+  @override
+  String get onboardingAnalysisHeadline => 'Você não está sozinho.';
+
+  @override
+  String get onboardingAnalysisStatPrefix =>
+      '82% dos matches são perdidos por ';
+
+  @override
+  String get onboardingAnalysisStatHighlight => 'mensagens sem graça.';
+
+  @override
+  String get onboardingSolutionTitle => 'Seu Wingman com IA,\nem 3 Passos';
+
+  @override
+  String get onboardingSolutionStep1Title => 'Capture um perfil ou chat';
+
+  @override
+  String get onboardingSolutionStep1Subtitle =>
+      'Envie um print de qualquer app de namoro';
+
+  @override
+  String get onboardingSolutionStep2Title => 'Nossa IA analisa o clima';
+
+  @override
+  String get onboardingSolutionStep2Subtitle =>
+      'Análise instantânea de personalidade e tom';
+
+  @override
+  String get onboardingSolutionStep3Title => 'Receba a resposta perfeita';
+
+  @override
+  String get onboardingSolutionStep3Subtitle =>
+      'Respostas personalizadas que realmente funcionam';
+
+  @override
+  String get onboardingGetStarted => 'Começar';
+
+  @override
+  String get onboardingUploadTitleDefault => 'Veja em ação';
+
+  @override
+  String get onboardingUploadTitleAnalyzing => 'Analisando...';
+
+  @override
+  String get onboardingUploadTitleResults => 'Aqui estão suas respostas';
+
+  @override
+  String get onboardingUploadSubtitleResults =>
+      'Toque em qualquer resposta para copiar';
+
+  @override
+  String get onboardingUploadSubtitleAnalyzing =>
+      'Nossa IA está analisando o clima...';
+
+  @override
+  String get onboardingUploadSubtitleDefault =>
+      'Envie um print para ver a mágica';
+
+  @override
+  String get onboardingUploadDropZone => 'Toque para Enviar\nChat ou Perfil';
+
+  @override
+  String get onboardingUploadFormats => 'PNG, JPG ou captura de tela';
+
+  @override
+  String get onboardingUploadChange => 'Alterar';
+
+  @override
+  String get onboardingUploadGenerating => 'Gerando respostas...';
+
+  @override
+  String get onboardingUploadCuratedResponses => 'Respostas Selecionadas';
+
+  @override
+  String get onboardingUploadCopied => 'Copiado para a área de transferência!';
+
+  @override
+  String get onboardingUploadError =>
+      'Algo deu errado. Toque na sua imagem para tentar novamente.';
 }
