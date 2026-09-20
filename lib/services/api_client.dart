@@ -6,6 +6,7 @@ import '../config/app_config.dart';
 import '../models/community_post.dart';
 import '../models/generate_response.dart';
 import '../models/payment_history.dart';
+import '../models/reply_thread.dart';
 import '../models/suggestion.dart';
 import '../utils/app_logger.dart';
 import 'auth_service.dart';
@@ -937,6 +938,152 @@ class ApiClient {
       throw ApiException(
         'Failed to load recommended openers',
         ApiErrorCode.server,
+      );
+    }
+  }
+
+  Future<List<ReplyThreadSummary>> getReplyThreads() async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/reply-threads/'),
+        headers: headers,
+      );
+      final data = _decodeJson(response.body);
+      if (response.statusCode >= 400) {
+        throw ApiException(
+          _extractApiMessage(data, 'Failed to load archives.'),
+          _mapErrorCode(data['error']?.toString()),
+        );
+      }
+
+      await AuthService.updateSubscriptionFromPayload(data);
+      final rawThreads = data['threads'];
+      if (rawThreads is! List) {
+        return <ReplyThreadSummary>[];
+      }
+
+      return rawThreads
+          .whereType<Map>()
+          .map((item) => ReplyThreadSummary.fromJson(item.cast<String, dynamic>()))
+          .toList();
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      AppLogger.error('getReplyThreads error', e is Exception ? e : null);
+      throw ApiException(
+        'Failed to load archives.',
+        ApiErrorCode.network,
+      );
+    }
+  }
+
+  Future<ReplyThreadDetail> getReplyThreadDetail(int threadId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/reply-threads/$threadId/'),
+        headers: headers,
+      );
+      final data = _decodeJson(response.body);
+      await AuthService.updateSubscriptionFromPayload(data);
+      if (response.statusCode >= 400) {
+        throw ApiException(
+          _extractApiMessage(data, 'Failed to load archived conversation.'),
+          _mapErrorCode(data['error']?.toString()),
+        );
+      }
+      final rawThread = data['thread'];
+      if (rawThread is! Map<String, dynamic>) {
+        throw ApiException(
+          'Invalid archived conversation payload.',
+          ApiErrorCode.server,
+        );
+      }
+      return ReplyThreadDetail.fromJson(rawThread);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      AppLogger.error('getReplyThreadDetail error', e is Exception ? e : null);
+      throw ApiException(
+        'Failed to load archived conversation.',
+        ApiErrorCode.network,
+      );
+    }
+  }
+
+  Future<ReplyThreadDetail> saveReplyThread({
+    int? threadId,
+    required String conversationText,
+    String? latestOcrText,
+    String? title,
+    String? thumbnailUrl,
+    int? generationEventId,
+    required List<ReplyThreadPreview> latestReplies,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/reply-threads/'),
+        headers: headers,
+        body: jsonEncode({
+          if (threadId != null) 'thread_id': threadId,
+          if (title != null && title.trim().isNotEmpty) 'title': title.trim(),
+          'conversation_text': conversationText.trim(),
+          if (latestOcrText != null && latestOcrText.trim().isNotEmpty)
+            'latest_ocr_text': latestOcrText.trim(),
+          if (thumbnailUrl != null && thumbnailUrl.trim().isNotEmpty)
+            'thumbnail_url': thumbnailUrl.trim(),
+          if (generationEventId != null) 'generation_event_id': generationEventId,
+          'latest_replies': latestReplies.map((item) => item.toJson()).toList(),
+        }),
+      );
+
+      final data = _decodeJson(response.body);
+      await AuthService.updateSubscriptionFromPayload(data);
+      if (response.statusCode >= 400) {
+        throw ApiException(
+          _extractApiMessage(data, 'Failed to save archived conversation.'),
+          _mapErrorCode(data['error']?.toString()),
+        );
+      }
+
+      final rawThread = data['thread'];
+      if (rawThread is! Map<String, dynamic>) {
+        throw ApiException(
+          'Invalid archived conversation payload.',
+          ApiErrorCode.server,
+        );
+      }
+      return ReplyThreadDetail.fromJson(rawThread);
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      AppLogger.error('saveReplyThread error', e is Exception ? e : null);
+      throw ApiException(
+        'Failed to save archived conversation.',
+        ApiErrorCode.network,
+      );
+    }
+  }
+
+  Future<void> deleteReplyThread(int threadId) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http.delete(
+        Uri.parse('$baseUrl/api/reply-threads/$threadId/'),
+        headers: headers,
+      );
+      final data = _decodeJson(response.body);
+      if (response.statusCode >= 400) {
+        throw ApiException(
+          _extractApiMessage(data, 'Failed to delete archived conversation.'),
+          _mapErrorCode(data['error']?.toString()),
+        );
+      }
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      AppLogger.error('deleteReplyThread error', e is Exception ? e : null);
+      throw ApiException(
+        'Failed to delete archived conversation.',
+        ApiErrorCode.network,
       );
     }
   }

@@ -638,12 +638,6 @@ class _PricingScreenState extends State<PricingScreen>
                           subtitle: l10n.pricingFeatureTonalitySubtitle,
                           colorScheme: colorScheme,
                         ),
-                        _buildPremiumFeature(
-                          icon: Icons.visibility_outlined,
-                          title: l10n.pricingFeatureContextTitle,
-                          subtitle: l10n.pricingFeatureContextSubtitle,
-                          colorScheme: colorScheme,
-                        ),
                         const SizedBox(height: 18),
                         Container(
                           padding: const EdgeInsets.all(16),

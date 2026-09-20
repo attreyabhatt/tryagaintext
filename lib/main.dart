@@ -12,9 +12,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'services/local_notification_service.dart';
 import 'services/push_notification_service.dart';
 import 'l10n/l10n.dart';
+import 'models/reply_thread.dart';
 import 'state/app_state.dart';
-import 'views/screens/community_post_route_screen.dart';
-import 'views/screens/community_screen.dart';
+import 'views/screens/archives_screen.dart';
 import 'views/screens/conversations_screen.dart';
 import 'views/screens/login_screen.dart';
 import 'views/screens/pricing_screen.dart';
@@ -194,7 +194,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   await LocalNotificationService.initialize();
-  await PushNotificationService.initialize();
+  await PushNotificationService.clearAuthenticatedUser();
   FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
   PlatformDispatcher.instance.onError = (error, stack) {
     FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
@@ -214,43 +214,16 @@ class _MyAppState extends State<MyApp> {
   late final AppState _appState;
   late final FirebaseAnalytics _analytics;
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
-  int? _lastSyncedOneSignalUserId;
-  bool _oneSignalLoggedOutSynced = false;
 
   @override
   void initState() {
     super.initState();
     _appState = AppState();
-    _appState.addListener(_handleAppStateChange);
     _appState.initialize();
     _analytics = FirebaseAnalytics.instance;
     unawaited(
       LocalNotificationService.setTapHandler(_handleLocalNotificationTapAction),
     );
-    unawaited(PushNotificationService.setTapHandler(_handlePushTapAction));
-    unawaited(_syncOneSignalIdentity());
-  }
-
-  void _handleAppStateChange() {
-    unawaited(_syncOneSignalIdentity());
-  }
-
-  Future<void> _syncOneSignalIdentity() async {
-    final isLoggedIn = _appState.isLoggedIn;
-    final userId = _appState.user?.id;
-
-    if (isLoggedIn && userId != null) {
-      if (_lastSyncedOneSignalUserId == userId) return;
-      await PushNotificationService.syncAuthenticatedUser(userId);
-      _lastSyncedOneSignalUserId = userId;
-      _oneSignalLoggedOutSynced = false;
-      return;
-    }
-
-    if (_oneSignalLoggedOutSynced) return;
-    await PushNotificationService.clearAuthenticatedUser();
-    _lastSyncedOneSignalUserId = null;
-    _oneSignalLoggedOutSynced = true;
   }
 
   Future<void> _handleLocalNotificationTapAction(String action) async {
@@ -287,32 +260,6 @@ class _MyAppState extends State<MyApp> {
     }
 
     // Daily refill taps intentionally stay on the default home flow.
-  }
-
-  Future<void> _handlePushTapAction(PushTapAction action) async {
-    await _appState.reloadFromStorage();
-    if (!mounted) return;
-
-    final navigator = _navigatorKey.currentState;
-    if (navigator == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        unawaited(_handlePushTapAction(action));
-      });
-      return;
-    }
-
-    navigator.popUntil((route) => route.isFirst);
-
-    if (action.action == PushNotificationService.actionCommunityComment) {
-      final postId = action.postId;
-      if (postId == null) return;
-      await navigator.push(
-        MaterialPageRoute(
-          builder: (context) => CommunityPostRouteScreen(postId: postId),
-        ),
-      );
-    }
   }
 
   @override
@@ -496,8 +443,6 @@ class _MyAppState extends State<MyApp> {
   @override
   void dispose() {
     unawaited(LocalNotificationService.setTapHandler(null));
-    unawaited(PushNotificationService.setTapHandler(null));
-    _appState.removeListener(_handleAppStateChange);
     _appState.dispose();
     super.dispose();
   }
@@ -517,28 +462,7 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _selectedIndex = 0;
   bool _prevLoggedIn = false;
-  VoidCallback? _communitySortAction;
-  VoidCallback? _communityRefreshAction;
-
-  late final List<Widget> _screens;
-
-  @override
-  void initState() {
-    super.initState();
-    _screens = <Widget>[
-      const ConversationsScreen(showAppBar: false),
-      CommunityScreen(
-        showAppBar: false,
-        onSortActionChanged: (action) {
-          _communitySortAction = action;
-        },
-        onRefreshActionChanged: (action) {
-          _communityRefreshAction = action;
-        },
-      ),
-      const ProfileScreen(showAppBar: false),
-    ];
-  }
+  ArchiveContinueRequest? _pendingArchiveRequest;
 
   @override
   void didChangeDependencies() {
@@ -559,10 +483,23 @@ class _MainShellState extends State<MainShell> {
     final cs = theme.colorScheme;
     final isLight = theme.brightness == Brightness.light;
     final appState = AppStateScope.of(context);
+    final screens = <Widget>[
+      ConversationsScreen(
+        showAppBar: false,
+        archiveContinueRequest: _pendingArchiveRequest,
+        onArchiveContinueHandled: _handleArchiveContinueHandled,
+      ),
+      ArchivesScreen(
+        showAppBar: false,
+        onContinueRequested: _handleArchiveContinueRequested,
+        onJumpHomeRequested: _jumpToHomeTab,
+      ),
+      const ProfileScreen(showAppBar: false),
+    ];
 
     return Scaffold(
       appBar: _buildMainAppBar(theme, appState),
-      body: IndexedStack(index: _selectedIndex, children: _screens),
+      body: IndexedStack(index: _selectedIndex, children: screens),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (i) async {
@@ -578,9 +515,6 @@ class _MainShellState extends State<MainShell> {
             }
             return;
           }
-          if (i == 1) {
-            _communityRefreshAction?.call();
-          }
           setState(() => _selectedIndex = i);
         },
         backgroundColor: isLight ? cs.surface : cs.surfaceContainerLow,
@@ -593,9 +527,9 @@ class _MainShellState extends State<MainShell> {
             label: context.l10n.navHome,
           ),
           NavigationDestination(
-            icon: const Icon(Icons.people_outline),
-            selectedIcon: Icon(Icons.people, color: cs.primary),
-            label: context.l10n.communityTitle,
+            icon: const Icon(Icons.inventory_2_outlined),
+            selectedIcon: Icon(Icons.inventory_2, color: cs.primary),
+            label: 'Archives',
           ),
           if (appState.isLoggedIn)
             NavigationDestination(
@@ -612,6 +546,29 @@ class _MainShellState extends State<MainShell> {
         ],
       ),
     );
+  }
+
+  Future<void> _handleArchiveContinueRequested(
+    ArchiveContinueRequest request,
+  ) async {
+    if (!mounted) return;
+    setState(() {
+      _pendingArchiveRequest = request;
+      _selectedIndex = 0;
+    });
+  }
+
+  void _handleArchiveContinueHandled() {
+    if (!mounted) return;
+    if (_pendingArchiveRequest == null) return;
+    setState(() {
+      _pendingArchiveRequest = null;
+    });
+  }
+
+  void _jumpToHomeTab() {
+    if (!mounted) return;
+    setState(() => _selectedIndex = 0);
   }
 
   void _openSettings() {
@@ -642,11 +599,11 @@ class _MainShellState extends State<MainShell> {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
     final l10n = context.l10n;
-    final isCommunityTab = _selectedIndex == 1;
+    final isArchivesTab = _selectedIndex == 1;
     final isProfileTab = _selectedIndex == 2;
-    final subtitle = isCommunityTab
-        ? l10n.communityTitle
-        : (isProfileTab ? l10n.profileTitle : l10n.conversationsAppbarSubtitle);
+    final subtitle = isProfileTab
+        ? l10n.profileTitle
+        : (isArchivesTab ? 'Archives' : l10n.conversationsAppbarSubtitle);
 
     return AppBar(
       backgroundColor: Colors.transparent,
@@ -687,9 +644,7 @@ class _MainShellState extends State<MainShell> {
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     letterSpacing: 0.5,
-                    fontStyle: isCommunityTab
-                        ? FontStyle.italic
-                        : FontStyle.normal,
+                    fontStyle: FontStyle.normal,
                   ),
                 ),
               ],
@@ -699,23 +654,6 @@ class _MainShellState extends State<MainShell> {
       ),
       actions: [
         if (!appState.isSubscribed) _buildProAction(),
-        if (_selectedIndex == 1)
-          IconButton(
-            onPressed: _communitySortAction,
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: colorScheme.outlineVariant),
-                color: Colors.transparent,
-              ),
-              child: Icon(
-                Icons.sort_outlined,
-                color: colorScheme.onSurfaceVariant,
-                size: 20,
-              ),
-            ),
-          ),
         IconButton(
           onPressed: _openSettings,
           icon: Container(
@@ -800,8 +738,9 @@ class _SplashScreenState extends State<SplashScreen>
     final onboardingDone = await OnboardingFlow.isOnboardingCompleted();
     if (!mounted) return;
 
-    final destination =
-        onboardingDone ? const MainShell() : const OnboardingFlow();
+    final destination = onboardingDone
+        ? const MainShell()
+        : const OnboardingFlow();
 
     Navigator.pushReplacement(
       context,

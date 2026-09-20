@@ -14,13 +14,10 @@ import '../../state/app_state.dart';
 import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
 import '../../services/local_notification_service.dart';
-import '../../services/push_notification_service.dart';
 import '../../services/review_prompt_service.dart';
-import '../../models/community_post.dart';
+import '../../models/reply_thread.dart';
 import '../../models/suggestion.dart';
 import '../../utils/app_logger.dart';
-import 'create_post_screen.dart';
-import 'community_post_detail_screen.dart';
 import 'login_screen.dart';
 import 'signup_screen.dart';
 import 'package:flirtfix/views/screens/pricing_screen.dart';
@@ -32,8 +29,15 @@ const _smartReplyCardShadow = Color(0x0D000000); // Black at 5% opacity
 
 class ConversationsScreen extends StatefulWidget {
   final bool showAppBar;
+  final ArchiveContinueRequest? archiveContinueRequest;
+  final VoidCallback? onArchiveContinueHandled;
 
-  const ConversationsScreen({super.key, this.showAppBar = true});
+  const ConversationsScreen({
+    super.key,
+    this.showAppBar = true,
+    this.archiveContinueRequest,
+    this.onArchiveContinueHandled,
+  });
 
   @override
   State<ConversationsScreen> createState() => _ConversationsScreenState();
@@ -93,6 +97,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   File? _uploadedProfileImage;
   String _replyInputSource = 'manual';
   String? _replyOcrText;
+  int? _activeReplyThreadId;
   NewMatchMode _newMatchMode = NewMatchMode.ai;
   int _generateRequestId = 0;
   int _conversationExtractionRequestId = 0;
@@ -102,6 +107,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   bool _suppressActivationSnackbar = false;
   bool _hasShownSubscriptionActivated = false;
   bool _isShowingReviewPrompt = false;
+  bool _isApplyingArchiveRequest = false;
   final Set<String> _handledPurchaseTokens = {};
   final Set<String> _processingPurchaseTokens = {};
   _VaultTier? _lastObservedVaultTier;
@@ -127,6 +133,16 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshSubscriptionStatus();
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant ConversationsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final request = widget.archiveContinueRequest;
+    if (request == null || request == oldWidget.archiveContinueRequest) {
+      return;
+    }
+    _applyArchiveContinueRequest(request);
   }
 
   @override
@@ -200,6 +216,119 @@ class _ConversationsScreenState extends State<ConversationsScreen>
     setState(() {
       _keepItShort = prefs.getBool(_keepItShortKey) ?? false;
     });
+  }
+
+  String _stitchConversationText(String existingText, String newText) {
+    final seen = <String>{};
+    final stitched = <String>[];
+
+    void addBlock(String block) {
+      for (final rawLine in block.split('\n')) {
+        final cleanLine = rawLine.trim().replaceAll(RegExp(r'\s+'), ' ');
+        if (cleanLine.isEmpty || seen.contains(cleanLine)) {
+          continue;
+        }
+        seen.add(cleanLine);
+        stitched.add(cleanLine);
+      }
+    }
+
+    addBlock(existingText);
+    addBlock(newText);
+    return stitched.join('\n');
+  }
+
+  void _applyArchiveContinueRequest(ArchiveContinueRequest request) {
+    _isApplyingArchiveRequest = true;
+    setState(() {
+      _tabController.index = 1;
+      _situation = 'stuck_after_reply';
+      _activeReplyThreadId = request.threadId;
+      _uploadedConversationImage = null;
+      _suggestions = [];
+      _errorMessage = null;
+      _isLoading = false;
+      _isExtractingImage = false;
+      _conversationCtrl.text = request.conversationText;
+      _replyInputSource = 'ocr';
+      _replyOcrText = request.conversationText;
+      _animationController.reset();
+      _generateRequestId++;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _isApplyingArchiveRequest = false;
+      if (!mounted) {
+        return;
+      }
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
+      }
+      widget.onArchiveContinueHandled?.call();
+      if (request.autoGenerate && !_isLoading && !_isExtractingImage) {
+        _generateSuggestions();
+      }
+    });
+  }
+
+  Future<void> _saveReplyThreadSnapshot({
+    required List<Suggestion> suggestions,
+  }) async {
+    if (_situation == 'just_matched') {
+      return;
+    }
+    final appState = AppStateScope.of(context);
+    if (!appState.isLoggedIn) {
+      return;
+    }
+    final conversationText = _conversationCtrl.text.trim();
+    if (conversationText.isEmpty) {
+      return;
+    }
+
+    final previews = suggestions
+        .take(3)
+        .map(
+          (suggestion) => ReplyThreadPreview(
+            message: suggestion.message,
+            confidenceScore: suggestion.confidence,
+            whyItWorks: suggestion.whyItWorks,
+          ),
+        )
+        .toList();
+    if (previews.isEmpty) {
+      return;
+    }
+
+    int? generationEventId;
+    for (final suggestion in suggestions) {
+      if (suggestion.generationEventId != null) {
+        generationEventId = suggestion.generationEventId;
+        break;
+      }
+    }
+
+    try {
+      final saved = await _apiClient.saveReplyThread(
+        threadId: _activeReplyThreadId,
+        conversationText: conversationText,
+        latestOcrText: _replyInputSource == 'ocr' ? _replyOcrText : null,
+        generationEventId: generationEventId,
+        latestReplies: previews,
+      );
+      if (!mounted) return;
+      setState(() {
+        _activeReplyThreadId = saved.id;
+      });
+    } catch (e) {
+      AppLogger.error(
+        'Failed to persist reply archive thread',
+        e is Exception ? e : null,
+      );
+    }
   }
 
   Future<void> _setupPurchaseListener() async {
@@ -367,7 +496,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
   }
 
   void _onTabChanged() {
-    if (_tabController.indexIsChanging) return;
+    if (_tabController.indexIsChanging || _isApplyingArchiveRequest) return;
     HapticFeedback.selectionClick();
     final previousSituation = _situation;
     setState(() {
@@ -379,6 +508,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       _isLoading = false;
       _animationController.reset();
       _generateRequestId++;
+      _activeReplyThreadId = null;
       if (previousSituation == 'just_matched' && _situation != 'just_matched') {
         _uploadedProfileImage = null;
         _replyInputSource = 'manual';
@@ -425,7 +555,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       await AppStateScope.of(context).reloadFromStorage();
       await _scheduleDailyRefillIfEligible(resetTimer: true);
       if (suggestions.isNotEmpty) {
-        await _maybePromptNotificationPermissionAfterSuccess();
         if (!mounted) return;
         HapticFeedback.heavyImpact();
         _animationController.forward();
@@ -697,11 +826,10 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       if (!mounted) return;
 
       if (suggestions.isNotEmpty) {
-        await _maybePromptNotificationPermissionAfterSuccess();
-        if (!mounted) return;
         HapticFeedback.heavyImpact();
         _animationController.forward();
         if (requestSituation != 'just_matched') {
+          await _saveReplyThreadSnapshot(suggestions: suggestions);
           await _handleNeedReplySuccessReviewSignal();
         }
       }
@@ -760,11 +888,15 @@ class _ConversationsScreenState extends State<ConversationsScreen>
           _uploadedConversationImage == null) {
         return;
       }
+      final stitchedConversation = _stitchConversationText(
+        _conversationCtrl.text,
+        extractedText,
+      );
       setState(() {
-        _conversationCtrl.text = extractedText;
+        _conversationCtrl.text = stitchedConversation;
         _isExtractingImage = false;
         _replyInputSource = 'ocr';
-        _replyOcrText = extractedText;
+        _replyOcrText = stitchedConversation;
       });
     } catch (e) {
       if (!mounted) return;
@@ -861,6 +993,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
       _errorMessage = null;
       _isOpenerLimitExceeded = false;
       _isReplyLimitExceeded = false;
+      _activeReplyThreadId = null;
       _animationController.reset();
       if (_situation == 'just_matched') {
         _uploadedProfileImage = null;
@@ -933,11 +1066,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         requestId == _generateRequestId &&
         _situation == requestSituation &&
         (requestSituation != 'just_matched' || _newMatchMode == requestMode);
-  }
-
-  Future<void> _maybePromptNotificationPermissionAfterSuccess() async {
-    if (!mounted) return;
-    await PushNotificationService.requestPermissionFromSystem();
   }
 
   Future<void> _scheduleDailyRefillIfEligible({bool resetTimer = false}) async {
@@ -1980,7 +2108,7 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                         opacity: animation,
                         child: SizeTransition(
                           sizeFactor: animation,
-                          axisAlignment: -1.0,
+                          alignment: AlignmentDirectional.topStart,
                           child: child,
                         ),
                       );
@@ -3625,11 +3753,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                           ? () => _handleVaultUnlockPressed()
                           : () => _showUpgradePopup(suggestion.lockedReplyId))
                     : () => _copySuggestion(suggestion),
-                onAskCommunity: suggestion.isLocked
-                    ? null
-                    : () {
-                        _askCommunity(suggestion);
-                      },
               ),
             ),
           );
@@ -3637,52 +3760,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         const SizedBox(height: 32),
       ],
     );
-  }
-
-  Future<void> _askCommunity(Suggestion suggestion) async {
-    final appState = AppStateScope.of(context);
-    if (!appState.isLoggedIn) {
-      HapticFeedback.lightImpact();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sign in to post in the community.')),
-      );
-      return;
-    }
-    HapticFeedback.lightImpact();
-    final createdPost = await Navigator.push<CommunityPost>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CreatePostScreen(
-          prefillBody: _buildAskCommunityPrefillBody(suggestion),
-          prefillCategory: 'help_me_reply',
-          prefillImage: _situation == 'just_matched'
-              ? _uploadedProfileImage
-              : null,
-        ),
-      ),
-    );
-    if (!mounted || createdPost == null) return;
-    await Navigator.push<void>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CommunityPostDetailScreen(post: createdPost),
-      ),
-    );
-  }
-
-  String _buildAskCommunityPrefillBody(Suggestion suggestion) {
-    final ocrConversation = _replyInputSource == 'ocr'
-        ? _replyOcrText?.trim()
-        : null;
-    final hasOcrConversation =
-        ocrConversation != null && ocrConversation.isNotEmpty;
-
-    final sections = <String>[
-      if (hasOcrConversation) 'Conversation (OCR):\n$ocrConversation',
-      'AI suggested: "${suggestion.message}"',
-      'What do you think?',
-    ];
-    return sections.join('\n\n');
   }
 
   @override
@@ -3716,7 +3793,6 @@ class _SuggestionCard extends StatelessWidget {
   final bool isVaultStyle;
   final bool isOpenerContext;
   final VoidCallback onTap;
-  final VoidCallback? onAskCommunity;
 
   const _SuggestionCard({
     required this.index,
@@ -3725,7 +3801,6 @@ class _SuggestionCard extends StatelessWidget {
     required this.isVaultStyle,
     required this.isOpenerContext,
     required this.onTap,
-    this.onAskCommunity,
   });
 
   @override
@@ -3976,31 +4051,6 @@ class _SuggestionCard extends StatelessWidget {
                               ? colorScheme.tertiary
                               : colorScheme.onTertiaryContainer,
                         ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            if (onAskCommunity != null) ...[
-              const SizedBox(height: 10),
-              GestureDetector(
-                onTap: onAskCommunity,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.people_outline,
-                      size: 15,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      'Ask the Community',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
