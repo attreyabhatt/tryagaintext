@@ -1274,6 +1274,12 @@ abstract class AppLocalizations {
   /// **'Your conversation'**
   String get conversationsYourConversation;
 
+  /// No description provided for @conversationsChatInputHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type or paste your chat here, or edit the text from your screenshot.'**
+  String get conversationsChatInputHint;
+
   /// No description provided for @reviewNeedsCalibration.
   ///
   /// In en, this message translates to:

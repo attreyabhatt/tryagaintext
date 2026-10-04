@@ -644,6 +644,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get conversationsYourConversation => 'Your conversation';
 
   @override
+  String get conversationsChatInputHint =>
+      'Type or paste your chat here, or edit the text from your screenshot.';
+
+  @override
   String get reviewNeedsCalibration => 'Needs Calibration';
 
   @override

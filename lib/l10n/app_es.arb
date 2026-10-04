@@ -257,6 +257,7 @@
   "conversationsWorkspaceReady": "Espacio de Trabajo Listo",
   "conversationsWorkspaceReadySubtitle": "Sube una captura de pantalla o proporciona contexto para comenzar a crear tu próximo movimiento.",
   "conversationsYourConversation": "Tu conversación",
+  "conversationsChatInputHint": "Escribe o pega tu chat aquí, o edita el texto de tu captura de pantalla.",
 
   "reviewNeedsCalibration": "Necesita Calibración",
   "reviewFeedbackReceived": "Comentarios recibidos. Estamos calibrando.",

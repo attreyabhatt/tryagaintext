@@ -2008,8 +2008,6 @@ class _ConversationsScreenState extends State<ConversationsScreen>
         _newMatchMode == NewMatchMode.recommended;
     final isAiNewMatch =
         _situation == 'just_matched' && _newMatchMode == NewMatchMode.ai;
-    final hideNeedReplyConversationSection =
-        _situation != 'just_matched' && (_isLoading || _suggestions.isNotEmpty);
     final showGenerateRow = !isAiNewMatch || _uploadedProfileImage != null;
     final shouldShowGenerateRow = !isRecommendedNewMatch && showGenerateRow;
     final shouldShowVaultUnlockAfterOpeners =
@@ -2099,30 +2097,8 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                   ],
 
                   // Input section
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 280),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeInCubic,
-                    transitionBuilder: (child, animation) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: SizeTransition(
-                          sizeFactor: animation,
-                          alignment: AlignmentDirectional.topStart,
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: hideNeedReplyConversationSection
-                        ? const SizedBox(key: ValueKey('reply-input-hidden'))
-                        : Column(
-                            key: const ValueKey('reply-input-visible'),
-                            children: [
-                              _buildInputSection(colorScheme),
-                              SizedBox(height: sectionSpacing),
-                            ],
-                          ),
-                  ),
+                  _buildInputSection(colorScheme),
+                  SizedBox(height: sectionSpacing),
 
                   // Custom instructions section
                   if (showCustomInstructions) ...[
@@ -3149,7 +3125,9 @@ class _ConversationsScreenState extends State<ConversationsScreen>
             // Upload button (only show if no image uploaded)
             if (_uploadedConversationImage == null)
               OutlinedButton(
-                onPressed: _isExtractingImage ? null : _uploadScreenshot,
+                onPressed: (_isLoading || _isExtractingImage)
+                    ? null
+                    : _uploadScreenshot,
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 44),
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -3295,16 +3273,18 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                       ),
                     ),
                     IconButton(
-                      onPressed: () {
-                        setState(() {
-                          _uploadedConversationImage = null;
-                          _conversationCtrl.clear();
-                          _replyInputSource = 'manual';
-                          _replyOcrText = null;
-                          _suggestions = [];
-                          _animationController.reset();
-                        });
-                      },
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              setState(() {
+                                _uploadedConversationImage = null;
+                                _conversationCtrl.clear();
+                                _replyInputSource = 'manual';
+                                _replyOcrText = null;
+                                _suggestions = [];
+                                _animationController.reset();
+                              });
+                            },
                       icon: Icon(
                         Icons.close_outlined,
                         size: 18,
@@ -3321,6 +3301,36 @@ class _ConversationsScreenState extends State<ConversationsScreen>
                 ),
               ),
             ],
+            const SizedBox(height: 16),
+            TextField(
+              controller: _conversationCtrl,
+              enabled: !_isLoading && !_isExtractingImage,
+              keyboardType: TextInputType.multiline,
+              minLines: 4,
+              maxLines: 8,
+              style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
+              decoration: InputDecoration(
+                hintText: context.l10n.conversationsChatInputHint,
+                hintStyle: TextStyle(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: 13,
+                ),
+                filled: true,
+                fillColor: colorScheme.surface,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                contentPadding: const EdgeInsets.all(12),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  if (_replyInputSource == 'ocr') {
+                    _replyOcrText = value;
+                  }
+                  _errorMessage = null;
+                });
+              },
+            ),
           ],
         ),
       ),

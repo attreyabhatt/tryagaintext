@@ -257,6 +257,7 @@
   "conversationsWorkspaceReady": "Workspace Ready",
   "conversationsWorkspaceReadySubtitle": "Upload a screenshot or provide context to begin crafting your next move.",
   "conversationsYourConversation": "Your conversation",
+  "conversationsChatInputHint": "Type or paste your chat here, or edit the text from your screenshot.",
 
   "reviewNeedsCalibration": "Needs Calibration",
   "reviewFeedbackReceived": "Feedback received. We are calibrating.",

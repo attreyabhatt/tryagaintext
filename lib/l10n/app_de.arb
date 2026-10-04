@@ -257,6 +257,7 @@
   "conversationsWorkspaceReady": "Arbeitsbereich Bereit",
   "conversationsWorkspaceReadySubtitle": "Lade einen Screenshot hoch oder gib Kontext, um deinen nächsten Move zu planen.",
   "conversationsYourConversation": "Deine Konversation",
+  "conversationsChatInputHint": "Tippe deinen Chat hier ein, füge ihn ein oder bearbeite den Text aus deinem Screenshot.",
 
   "reviewNeedsCalibration": "Braucht Kalibrierung",
   "reviewFeedbackReceived": "Feedback erhalten. Wir kalibrieren.",
